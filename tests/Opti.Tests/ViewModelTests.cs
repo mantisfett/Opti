@@ -568,4 +568,22 @@ public sealed class ViewModelTests : IDisposable
         Assert.Equal(rec.After, svc.Map[ChangeType.Registry].Read(rec.Target));
         Assert.False(restarted.History.HasDrift);
     }
+
+    [Fact]
+    public async Task Verify_DoesNotPreselectBootSettings()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        var s = main.Session!;
+        s.FixOptions[FixIds.BcdTimersReset] = new() { ["bitlockerAcknowledged"] = "1" };
+        svc.Workflow.Apply(s, new[] { svc.Workflow.Catalog.Single(f => f.Id == FixIds.BcdTimersReset) });
+        var rec = svc.Journal.GetAll().First(r => r.Type == ChangeType.Bcd);
+        svc.Map[ChangeType.Bcd].Write(rec.Target, rec.Before);
+
+        await main.History.VerifyCommand.ExecuteAsync(null);
+        var row = Assert.Single(main.History.VerifyRows, r => r.Item.Record.Type == ChangeType.Bcd && r.Item.Record.Target == rec.Target);
+        Assert.False(row.IsChecked);
+        Assert.Contains("BitLocker", row.StatusText);
+    }
 }

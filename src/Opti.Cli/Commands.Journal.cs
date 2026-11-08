@@ -83,7 +83,10 @@ internal static partial class Commands
         }
         if (a.Has("reapply"))
         {
-            var items = report.Items.Where(i => i.Status == VerifyStatus.Reverted || (a.Has("all") && i.Status == VerifyStatus.Changed)).ToList();
+            // Параметры загрузки (BCD) — только с --all: при BitLocker их изменение может запросить ключ восстановления
+            var items = report.Items.Where(i => a.Has("all")
+                ? i.Status is VerifyStatus.Reverted or VerifyStatus.Changed
+                : i.Status == VerifyStatus.Reverted && i.Record.Type != ChangeType.Bcd).ToList();
             var (done, errors) = wf.Reapply(items);
             Output.Color(ConsoleColor.Green, $"Применено снова: {done}\n");
             foreach (var e in errors) Output.Color(ConsoleColor.Red, "  ошибка: " + e + "\n");

@@ -53,6 +53,8 @@ public sealed partial class HistoryViewModel : PageViewModel
         {
             var (status, color) = i.Status switch
             {
+                VerifyStatus.Reverted when i.Record.Type == ChangeType.Bcd =>
+                    ("Windows вернула параметр загрузки. Если включён BitLocker, перед повторным применением подготовьте ключ восстановления", Palette.Warn),
                 VerifyStatus.Reverted => ("Windows или драйвер вернули исходное значение", Palette.Warn),
                 VerifyStatus.Changed => ("изменено после Opti — возможно, вами", Palette.Neutral),
                 _ => ("не удалось проверить: " + i.Error, Palette.Bad),
@@ -62,7 +64,8 @@ public sealed partial class HistoryViewModel : PageViewModel
                 Item = i, Title = wf.FixTitle(i.Record.FixId), StatusText = status, Color = color,
                 Detail = $"{ShortTarget(i.Record.Target)}: сейчас {Show(i.Current)}, Opti ставил {Show(i.Record.After)}",
                 // Возврат Windows — почти всегда случайность; своё изменение человек отмечает сам
-                IsChecked = i.Status == VerifyStatus.Reverted,
+                // Параметры загрузки (BCD) — только осознанно: при BitLocker их изменение может запросить ключ восстановления
+                IsChecked = i.Status == VerifyStatus.Reverted && i.Record.Type != ChangeType.Bcd,
             };
             row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(VerifyRow.IsChecked)) ReapplyCommand.NotifyCanExecuteChanged(); };
             VerifyRows.Add(row);
