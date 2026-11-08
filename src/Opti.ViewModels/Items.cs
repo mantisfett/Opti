@@ -183,12 +183,18 @@ public sealed class MetricCard
         Before = Fmt(m.Before);
         After = Fmt(m.After);
         Unit = m.Metric.Unit;
-        Delta = double.IsNaN(m.DeltaPercent) ? "" : $"{(m.DeltaPercent >= 0 ? "+" : "")}{m.DeltaPercent:0.#} %";
+        Delta = double.IsNaN(m.DeltaPercent) ? "" : m.DeltaPercent.ToString("+0.#;−0.#;0", Ru) + " %";
         VerdictText = m.Verdict switch { Verdict.Better => "лучше, достоверно", Verdict.Worse => "хуже, достоверно", Verdict.NoChange => "в пределах шума", _ => "мало данных" };
         Color = m.Verdict switch { Verdict.Better => Palette.Good, Verdict.Worse => Palette.Bad, _ => Palette.Neutral };
-        Ci = $"95 % ДИ: {m.BeforeCi.Low:0.##}–{m.BeforeCi.High:0.##} → {m.AfterCi.Low:0.##}–{m.AfterCi.High:0.##} · разность {m.DiffCi.Low:+0.##;−0.##;0}…{m.DiffCi.High:+0.##;−0.##;0}";
+        // Коротко — интервал разности (на нём основан вердикт); подробности — во всплывающей подсказке
+        Ci = double.IsNaN(m.DiffCi.Low) ? "" : $"разница {Signed(m.DiffCi.Low)}…{Signed(m.DiffCi.High)} {Unit}";
+        CiDetails = $"Интервал разницы «после − до» — 95 % доверительный (для ключевых метрик 98,3 %). Интервалы замеров: до {F2(m.BeforeCi.Low)}–{F2(m.BeforeCi.High)}, после {F2(m.AfterCi.Low)}–{F2(m.AfterCi.High)} {Unit}. " +
+                    $"Разброс между прогонами: {F2(m.RunSpread)}. «Лучше» или «хуже» — только если интервал разницы не содержит ноль и разница больше разброса.";
     }
-    private static string Fmt(double v) => double.IsNaN(v) ? "—" : v.ToString(v >= 100 ? "0" : "0.#");
+    private static readonly System.Globalization.CultureInfo Ru = System.Globalization.CultureInfo.GetCultureInfo("ru-RU");
+    private static string Fmt(double v) => double.IsNaN(v) ? "—" : v.ToString(v >= 100 ? "0" : "0.#", Ru);
+    private static string F2(double v) => double.IsNaN(v) ? "—" : v.ToString(Math.Abs(v) >= 100 ? "0" : "0.##", Ru);
+    private static string Signed(double v) => v.ToString(Math.Abs(v) >= 100 ? "+0;−0;0" : Math.Abs(v) >= 10 ? "+0.#;−0.#;0" : "+0.##;−0.##;0", Ru);
     public string Name { get; }
     public string Before { get; }
     public string After { get; }
@@ -197,4 +203,5 @@ public sealed class MetricCard
     public string VerdictText { get; }
     public string Color { get; }
     public string Ci { get; }
+    public string CiDetails { get; }
 }

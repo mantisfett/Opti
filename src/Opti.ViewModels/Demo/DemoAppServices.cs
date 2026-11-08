@@ -26,14 +26,25 @@ public sealed class DemoAppServices : IAppServices
         DataDir = dataDir;
         Directory.CreateDirectory(dataDir);
         Profile = profile ?? LoadEmbeddedProfile("desktop-rtx");
-        var backends = ProfileSeeder.CreateEmulation(Profile, out _);
+        var backends = ProfileSeeder.CreateEmulation(Profile, out _emulation);
         Journal = new InMemoryChangeJournal();
         Settings = new OptiSettings { MeasureRuns = 3, CheckForUpdates = false };
         Workflow = new TuneWorkflow(Settings, new SessionStore(Path.Combine(dataDir, "sessions")), backends, Journal);
         Tweaks = new TweakService(backends, Journal);
     }
 
+    private readonly Dictionary<ChangeType, InMemoryBackend> _emulation;
+
     public SystemProfile Profile { get; }
+
+    /// <summary>Демо «Стража»: будто обновление Windows вернуло одну из настроек, изменённых Opti.</summary>
+    public bool SimulateWindowsRevert()
+    {
+        var rec = Journal.GetAll().LastOrDefault(r => !r.RolledBack && r.Type == ChangeType.Registry);
+        if (rec is null) return false;
+        _emulation[ChangeType.Registry].Write(rec.Target, rec.Before);
+        return true;
+    }
     public TuneWorkflow Workflow { get; }
     public OptiSettings Settings { get; }
     public IChangeJournal Journal { get; }
@@ -74,7 +85,7 @@ public sealed class DemoAppServices : IAppServices
     public static MeasurementRun SyntheticRun(string label, bool after, int seed)
     {
         var rng = new Random(seed);
-        double baseMs = after ? 6.9 : 8.4, spike = after ? 9 : 22, rate = after ? 0.006 : 0.025;
+        double baseMs = after ? 7.6 : 8.4, spike = after ? 14 : 22, rate = after ? 0.012 : 0.025;
         var ft = new List<double>(5000);
         for (int i = 0; i < 5000; i++)
             ft.Add(baseMs + (rng.NextDouble() - 0.5) * 1.2 + (rng.NextDouble() < rate ? spike * rng.NextDouble() : 0));

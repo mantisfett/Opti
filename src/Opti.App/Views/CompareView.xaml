@@ -38,7 +38,7 @@
                                     <Run Text="{Binding Delta, Mode=OneWay}" FontWeight="SemiBold"/>
                                     <Run Text="{Binding VerdictText, Mode=OneWay}"/>
                                 </TextBlock>
-                                <TextBlock Text="{Binding Ci}" Style="{StaticResource Caption}" Margin="0,4,0,0"/>
+                                <TextBlock Text="{Binding Ci}" Style="{StaticResource Caption}" Margin="0,4,0,0" ToolTip="{Binding CiDetails}"/>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

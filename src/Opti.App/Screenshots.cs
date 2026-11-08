@@ -80,6 +80,10 @@ internal static class Screenshots
         vm.ShowCompare(CompareViewModel.ForSession(vm, s));
         await Shot("compare");
 
+        // «Страж» в «Истории»: будто обновление Windows вернуло одну настройку
+        services.SimulateWindowsRevert();
+        await vm.History.VerifyCommand.ExecuteAsync(null);
+
         foreach (var (page, title) in new (PageViewModel, string)[]
                  {
                      (vm.Drivers, "drivers"), (vm.Tweaks, "tweaks"), (vm.Cleanup, "cleanup"),
@@ -97,17 +101,11 @@ internal static class Screenshots
         await SettleAsync(window);
         Save(app, window, Path.Combine(outDir, name + "-view.png"));
 
-        // Вся страница: окно растягивается по высоте содержимого прокрутки
+        // Вся страница: содержимое прокрутки уже размечено на полную высоту — рисуем его целиком
+        // (растянуть окно нельзя: Windows ограничивает его высотой экрана)
         var scroll = FindScroll(window);
-        if (scroll is not null && scroll.ExtentHeight > scroll.ViewportHeight + 1)
-        {
-            double extra = scroll.ExtentHeight - scroll.ViewportHeight;
-            window.Height = Math.Min(780 + extra + 8, 4000);
-            await SettleAsync(window);
-            Save(app, window, Path.Combine(outDir, name + "-full.png"));
-            window.Height = 780;
-            await SettleAsync(window);
-        }
+        if (scroll is { Content: FrameworkElement content } && scroll.ExtentHeight > scroll.ViewportHeight + 1)
+            SaveElement(app, content, Path.Combine(outDir, name + "-full.png"), withLayer: true);
     }
 
     private static async Task SettleAsync(Window window)
@@ -136,17 +134,20 @@ internal static class Screenshots
         return best;
     }
 
-    private static void Save(App app, Window window, string path)
+    private static void Save(App app, Window window, string path) =>
+        SaveElement(app, (FrameworkElement)window.Content, path, withLayer: false);
+
+    private static void SaveElement(App app, FrameworkElement root, string path, bool withLayer)
     {
-        var root = (FrameworkElement)window.Content;
         double w = root.ActualWidth, h = root.ActualHeight;
-        // Подложка окна: Mica в снимок не попадает, поэтому рисуем базовый фон темы
-        var bg = window.Background is SolidColorBrush { Color.A: > 0 } solid ? solid
-               : app.TryFindResource("SolidBackgroundFillColorBaseBrush") as Brush ?? Brushes.White;
+        // Подложка: Mica в снимок не попадает, поэтому рисуем базовый фон темы (и слой страницы для «всей страницы»)
+        var bg = app.TryFindResource("SolidBackgroundFillColorBaseBrush") as Brush ?? Brushes.White;
+        var layer = withLayer ? app.TryFindResource("LayerFillColorDefaultBrush") as Brush : null;
         var dv = new DrawingVisual();
         using (var dc = dv.RenderOpen())
         {
             dc.DrawRectangle(bg, null, new Rect(0, 0, w, h));
+            if (layer is not null) dc.DrawRectangle(layer, null, new Rect(0, 0, w, h));
             dc.DrawRectangle(new VisualBrush(root), null, new Rect(0, 0, w, h));
         }
         var rtb = new RenderTargetBitmap((int)Math.Ceiling(w * Scale), (int)Math.Ceiling(h * Scale), 96 * Scale, 96 * Scale, PixelFormats.Pbgra32);
