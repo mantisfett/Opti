@@ -10,7 +10,7 @@
             <Border Style="{StaticResource Card}" Margin="0,18,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
                 <StackPanel>
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Проверить" Command="{Binding VerifyCommand}" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Проверить" Command="{Binding VerifyCommand}" VerticalAlignment="Center"/>
                         <Border Style="{StaticResource IconTile}" Margin="0,0,14,0" VerticalAlignment="Center">
                             <TextBlock Text="&#xE9F5;" Style="{StaticResource IconTileGlyph}"/>
                         </Border>
@@ -54,7 +54,7 @@
                     <DataTemplate>
                         <Border Style="{StaticResource Card}">
                             <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Content="Отчёт" Margin="0,0,8,0" CommandParameter="{Binding}"
                                             Command="{Binding DataContext.OpenReportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     <Button Content="Откатить" CommandParameter="{Binding}"

@@ -38,7 +38,7 @@
             <Border Style="{StaticResource Card}" Margin="0,20,0,0" Padding="20,18">
                 <StackPanel>
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Исправить" Margin="0"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Исправить" Margin="16,0,0,0"
                                 Command="{Binding AutoFixCommand}" IsEnabled="{Binding CanAutoFix}" VerticalAlignment="Center"/>
                         <Border Style="{StaticResource IconTile}" Margin="0,0,16,0" VerticalAlignment="Center">
                             <TextBlock Text="&#xE90F;" Style="{StaticResource IconTileGlyph}"/>
@@ -57,7 +57,7 @@
             </Border>
 
             <DockPanel Margin="0,28,0,10">
-                <Button DockPanel.Dock="Right" Style="{StaticResource LinkButton}" Content="Показать всё" Command="{Binding ClearFilterCommand}" VerticalAlignment="Bottom"
+                <Button DockPanel.Dock="Right" Margin="16,0,0,0" Style="{StaticResource LinkButton}" Content="Показать всё" Command="{Binding ClearFilterCommand}" VerticalAlignment="Bottom"
                         Visibility="{Binding IsFiltered, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="Что найдено" Style="{StaticResource SectionTitle}" Margin="0"/>
             </DockPanel>

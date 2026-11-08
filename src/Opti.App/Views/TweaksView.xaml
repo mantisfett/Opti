@@ -4,7 +4,7 @@
     <DockPanel>
         <Border DockPanel.Dock="Bottom" Style="{StaticResource ActionBar}">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Right" Text="{Binding Summary}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                <TextBlock DockPanel.Dock="Right" Margin="16,0,0,0" Text="{Binding Summary}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
                 <Button Style="{StaticResource AccentButton}" Content="Включить рекомендуемые" Command="{Binding EnableRecommendedCommand}"/>
                 <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,16,0"
                            Text="Каждый твик выключается тем же переключателем — вернётся то, что было до Opti."/>
@@ -20,7 +20,7 @@
                 <Border Style="{StaticResource Callout}" Margin="0,16,0,0" Background="{Binding Source=accent, Converter={StaticResource ToneToSoft}}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Visibility="{Binding PendingText, Converter={StaticResource StrToVis}}">
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Перезапустить Проводник" Command="{Binding RestartExplorerCommand}" VerticalAlignment="Center"
+                        <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Перезапустить Проводник" Command="{Binding RestartExplorerCommand}" VerticalAlignment="Center"
                                 Visibility="{Binding NeedsExplorerRestart, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Text="&#xE946;" Style="{StaticResource Icon}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,12,0"/>
                         <TextBlock Text="{Binding PendingText}" Style="{StaticResource Body}" VerticalAlignment="Center" Margin="0,0,12,0"/>

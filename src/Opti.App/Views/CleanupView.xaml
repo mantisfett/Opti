@@ -5,7 +5,7 @@
         <!-- Панель действий всегда видна внизу -->
         <Border DockPanel.Dock="Bottom" Style="{StaticResource ActionBar}">
             <DockPanel>
-                <ProgressBar DockPanel.Dock="Right" IsIndeterminate="True" Width="160" VerticalAlignment="Center"
+                <ProgressBar DockPanel.Dock="Right" Margin="16,0,0,0" IsIndeterminate="True" Width="160" VerticalAlignment="Center"
                              Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
                 <Button Style="{StaticResource AccentButton}" Content="Очистить" Command="{Binding CleanCommand}"/>
                 <Button Content="Пересчитать" Command="{Binding EstimateCommand}" Margin="0,0,8,0"/>

@@ -82,7 +82,7 @@
                         <DataTemplate>
                             <Border Style="{StaticResource Card}">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="Проверить" VerticalAlignment="Center" CommandParameter="{Binding}"
+                                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Проверить" VerticalAlignment="Center" CommandParameter="{Binding}"
                                             Command="{Binding DataContext.StartAbCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     <StackPanel Margin="0,0,12,0">
                                         <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>

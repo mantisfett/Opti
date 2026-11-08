@@ -26,6 +26,7 @@ public sealed class DemoAppServices : IAppServices
         DataDir = dataDir;
         Directory.CreateDirectory(dataDir);
         Profile = profile ?? LoadEmbeddedProfile("desktop-rtx");
+        if (Profile.Drivers.Count == 0) Profile.Drivers.AddRange(DemoDrivers);
         var backends = ProfileSeeder.CreateEmulation(Profile, out _emulation);
         Journal = new InMemoryChangeJournal();
         Settings = new OptiSettings { MeasureRuns = 3, CheckForUpdates = false };
@@ -57,6 +58,17 @@ public sealed class DemoAppServices : IAppServices
     public int OsBuild => 26100;
     /// <summary>Что «открыла» бы программа (ссылки, папки) — в демо только запоминается.</summary>
     public List<string> Opened { get; } = new();
+
+    /// <summary>Драйверы демо-ПК: свежий видеодрайвер, старый сетевой, стандартный звук Microsoft, чипсет, NVMe.</summary>
+    private static readonly DriverInfo[] DemoDrivers =
+    {
+        new() { DeviceName = "NVIDIA GeForce RTX 4070", Category = DriverCategory.Display, Manufacturer = "NVIDIA", Provider = "NVIDIA", Version = "32.0.15.6614", Date = new DateTime(2026, 9, 24), HardwareId = @"PCI\VEN_10DE&DEV_2786" },
+        new() { DeviceName = "Realtek PCIe 2.5GbE Family Controller", Category = DriverCategory.Network, Manufacturer = "Realtek", Provider = "Realtek", Version = "10.38.1110.2019", Date = new DateTime(2019, 11, 10), HardwareId = @"PCI\VEN_10EC&DEV_8125" },
+        new() { DeviceName = "High Definition Audio Device", Category = DriverCategory.Audio, Manufacturer = "Realtek", Provider = "Microsoft", Version = "10.0.26100.1", Date = new DateTime(2006, 6, 21), HardwareId = @"HDAUDIO\FUNC_01&VEN_10EC&DEV_0897" },
+        new() { DeviceName = "AMD SMBus", Category = DriverCategory.Chipset, Manufacturer = "AMD", Provider = "Advanced Micro Devices, Inc", Version = "5.12.0.38", Date = new DateTime(2025, 3, 14), HardwareId = @"PCI\VEN_1022&DEV_790B" },
+        new() { DeviceName = "Samsung SSD 990 PRO 2TB", Category = DriverCategory.Storage, Manufacturer = "Samsung", Provider = "Microsoft", Version = "10.0.26100.1", Date = new DateTime(2006, 6, 21), HardwareId = @"SCSI\DiskSamsung_SSD_990_PRO" },
+        new() { DeviceName = "Intel(R) Wireless Bluetooth(R)", Category = DriverCategory.Bluetooth, Manufacturer = "Intel Corporation", Provider = "Intel Corporation", Version = "23.60.5.10", Date = new DateTime(2025, 7, 2), HardwareId = @"USB\VID_8087&PID_0033" },
+    };
 
     public static SystemProfile LoadEmbeddedProfile(string name)
     {
@@ -122,22 +134,31 @@ internal static class DemoCleanup
         new Fake("wu", "Загруженные обновления Windows", "Уже установленные пакеты обновлений", 3_100_000_000, 96, true),
         new Fake("shader", "Кеш шейдеров", "Пересоздаётся при запуске игр — первый запуск будет дольше", 1_200_000_000, 2_410, false,
             caution: "Первый запуск игр после очистки будет дольше."),
+        new Fake("downloads", "Загрузки", "Установщики и архивы, которые давно не нужны", 14_700_000_000, 420, false,
+            manualUri: "demo:downloads", warnAbove: 5L << 30, warnText: "Больше 5 ГБ — стоит разобрать: обычно это старые установщики.", action: "Открыть папку"),
+        new Fake("restore", "Точки восстановления", "Windows хранит их сама; объём можно ограничить", 6_400_000_000, 3, false,
+            manualUri: "demo:restore", action: "Открыть «Защиту системы»"),
     };
 
     private sealed class Fake : ICleanupTarget
     {
         private readonly long _bytes;
         private readonly int _files;
-        public Fake(string id, string title, string desc, long bytes, int files, bool selected, string? caution = null)
+        public Fake(string id, string title, string desc, long bytes, int files, bool selected, string? caution = null,
+            string? manualUri = null, long? warnAbove = null, string? warnText = null, string action = "Открыть параметры")
         {
             Id = id; Title = title; Description = desc; _bytes = bytes; _files = files; DefaultSelected = selected; Caution = caution;
+            ManualUri = manualUri; WarnAboveBytes = warnAbove; WarnText = warnText; ManualActionText = action;
         }
+        public long? WarnAboveBytes { get; }
+        public string? WarnText { get; }
+        public string ManualActionText { get; }
         public string Id { get; }
         public string Title { get; }
         public string Description { get; }
         public bool DefaultSelected { get; }
         public string? Caution { get; }
-        public string? ManualUri => null;
+        public string? ManualUri { get; }
         public Task<CleanupEstimate> EstimateAsync(CancellationToken ct = default) => Task.FromResult(new CleanupEstimate(_bytes, _files));
         public Task<CleanupResult> CleanAsync(CancellationToken ct = default) => Task.FromResult(new CleanupResult { FreedBytes = _bytes, Deleted = _files });
     }

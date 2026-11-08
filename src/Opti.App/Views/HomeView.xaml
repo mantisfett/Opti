@@ -145,7 +145,7 @@
 
             <Border Style="{StaticResource Card}" Margin="0,20,0,0" Padding="16,12" Visibility="{Binding HasOpenSession, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Продолжить" Command="{Binding ContinueSessionCommand}" VerticalAlignment="Center" Margin="0"/>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Продолжить" Command="{Binding ContinueSessionCommand}" VerticalAlignment="Center" Margin="16,0,0,0"/>
                     <Border Style="{StaticResource IconTile}" Width="36" Height="36" Margin="0,0,14,0">
                         <TextBlock Text="&#xE823;" Style="{StaticResource IconTileGlyph}" FontSize="16"/>
                     </Border>

@@ -32,19 +32,19 @@
             <TextBlock Text="Замеры" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="90" Text="{Binding MeasureRuns, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="90" Text="{Binding MeasureRuns, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     <StackPanel><TextBlock Text="Прогонов" Style="{StaticResource Strong}"/><TextBlock Text="Больше прогонов — точнее вывод (1–10)" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="90" Text="{Binding SyntheticDuration, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="90" Text="{Binding SyntheticDuration, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     <StackPanel><TextBlock Text="Синтетический тест, секунд на прогон" Style="{StaticResource Strong}"/><TextBlock Text="Сцена всегда одинаковая — 30 секунд обычно достаточно" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBox Width="70" Text="{Binding MeasureDuration, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
                         <TextBox Width="70" Text="{Binding MeasureWarmup, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
@@ -55,25 +55,25 @@
             <TextBlock Text="Поведение" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding RollbackWhenNoEffect}" VerticalAlignment="Center" MinWidth="0"/>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding RollbackWhenNoEffect}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Предлагать откат, если эффекта нет" Style="{StaticResource Strong}"/><TextBlock Text="Иначе изменения остаются с пометкой «не дало эффекта»" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding VerifyOnStartup}" VerticalAlignment="Center" MinWidth="0"/>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding VerifyOnStartup}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Проверять при запуске, на месте ли изменения" Style="{StaticResource Strong}"/><TextBlock Text="Обновления Windows и драйверов иногда возвращают настройки — Opti подскажет и применит их снова по вашему выбору" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Сообщать о новых версиях" Style="{StaticResource Strong}"/><TextBlock Text="Только уведомление — ничего не скачивается" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="160" Text="{Binding NetworkTarget, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="160" Text="{Binding NetworkTarget, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     <StackPanel><TextBlock Text="Сервер для теста сети" Style="{StaticResource Strong}"/><TextBlock Text="Пинг и проверка bufferbloat" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
@@ -108,7 +108,7 @@
             <TextBlock Text="Удаление" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Удалить Opti с компьютера" Command="{Binding UninstallCommand}" VerticalAlignment="Center"/>
+                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Удалить Opti с компьютера" Command="{Binding UninstallCommand}" VerticalAlignment="Center"/>
                     <StackPanel>
                         <TextBlock Text="Вернуть всё как было и убрать следы Opti" Style="{StaticResource Strong}"/>
                         <TextBlock Style="{StaticResource Caption}"
