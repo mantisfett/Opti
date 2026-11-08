@@ -41,6 +41,8 @@ public interface IAppServices
     Task<Opti.Workflow.UninstallReport?> UninstallAsync() => Task.FromResult<Opti.Workflow.UninstallReport?>(null);
     /// <summary>Закрыть программу (после удаления).</summary>
     void Exit() { }
+    /// <summary>Демо-режим: данные примерные, система не меняется.</summary>
+    bool IsDemo => false;
 }
 
 /// <summary>

@@ -45,7 +45,7 @@ internal static class Screenshots
 
     private static async Task ShootThemeAsync(App app, string dataDir, string outDir, string theme)
     {
-        var services = new DemoAppServices(dataDir);
+        var services = new DemoAppServices(dataDir) { IsDemo = false };
         var vm = new MainViewModel(services);
         var window = new MainWindow
         {

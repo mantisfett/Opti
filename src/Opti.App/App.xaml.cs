@@ -13,6 +13,8 @@ public partial class App : Application
 
     /// <summary>Папка для снимков интерфейса (Opti.exe --screenshots): демо-данные, система не трогается.</summary>
     public static string? ScreenshotDir { get; set; }
+    /// <summary>Opti.exe --demo: настоящий интерфейс на демо-данных, система не меняется.</summary>
+    public static bool DemoMode { get; set; }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -25,9 +27,12 @@ public partial class App : Application
             return;
         }
         DispatcherUnhandledException += OnUnhandled;
+        IAppServices services;
         try
         {
-            _services = new WindowsAppServices();
+            services = DemoMode
+                ? new Opti.ViewModels.Demo.DemoAppServices(Path.Combine(Path.GetTempPath(), "opti-demo-" + Environment.ProcessId))
+                : _services = new WindowsAppServices();
         }
         catch (Exception ex)
         {
@@ -38,7 +43,7 @@ public partial class App : Application
         }
         ApplyBrandTheme();
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, _) => Dispatcher.BeginInvoke(ApplyBrandTheme);
-        var vm = new MainViewModel(_services);
+        var vm = new MainViewModel(services);
         var window = new MainWindow { DataContext = vm };
         MainWindow = window;
         window.Show();

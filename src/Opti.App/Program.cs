@@ -22,6 +22,15 @@ public static class Program
             demo.ThemeMode = System.Windows.ThemeMode.Light;
             return demo.Run();
         }
+        // Демо: систему не трогает, поэтому ни блокировка экземпляра, ни папка данных не нужны
+        if (args.Contains("--demo", StringComparer.OrdinalIgnoreCase))
+        {
+            App.DemoMode = true;
+            var demo = new App();
+            demo.InitializeComponent();
+            demo.ThemeMode = System.Windows.ThemeMode.System;
+            return demo.Run();
+        }
         // Один экземпляр: два процесса, меняющие систему одновременно, могут перепутать исходные значения для отката.
         using var instance = Opti.Workflow.SingleInstance.TryAcquire(TimeSpan.FromSeconds(3));
         if (instance is null)

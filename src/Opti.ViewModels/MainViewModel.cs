@@ -79,6 +79,10 @@ public sealed partial class MainViewModel : ObservableObject
     public IEnumerable<NavItem> NavTop => Nav.Where(n => !n.IsFooter);
     public IEnumerable<NavItem> NavBottom => Nav.Where(n => n.IsFooter);
     public string WindowTitle => $"Opti {Services.AppVersion}";
+    /// <summary>Плашка демо-режима над страницей.</summary>
+    public string? DemoBanner => Services.IsDemo
+        ? "Демо-режим: пример настольного ПК с RTX 4070. Анализ, исправления, замеры и откат работают на эмуляции — система не меняется."
+        : null;
 
     [ObservableProperty] private PageViewModel _currentPage;
     [ObservableProperty] private TuneSession? _session;

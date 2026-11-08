@@ -55,6 +55,8 @@ public sealed class DemoAppServices : IAppServices
     public string DataDir { get; }
     public string ResumeExePath => "Opti.exe";
     public string? StartupNotice => null;
+    /// <summary>Плашка «Демо-режим». В снимках интерфейса выключена, чтобы они показывали программу как есть.</summary>
+    public bool IsDemo { get; init; } = true;
     public int OsBuild => 26100;
     /// <summary>Что «открыла» бы программа (ссылки, папки) — в демо только запоминается.</summary>
     public List<string> Opened { get; } = new();

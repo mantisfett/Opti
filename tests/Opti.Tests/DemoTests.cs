@@ -37,4 +37,11 @@ public sealed class DemoTests : IDisposable
         Assert.NotNull(DemoAppServices.LoadEmbeddedProfile("desktop-rtx").DiscreteGpu);
         Assert.True(DemoAppServices.LoadEmbeddedProfile("laptop-optimus").Device.IsLaptop);
     }
+
+    [Fact]
+    public void Demo_ShowsBanner_ButScreenshotsDoNot()
+    {
+        Assert.NotNull(new MainViewModel(new DemoAppServices(_dir)).DemoBanner);
+        Assert.Null(new MainViewModel(new DemoAppServices(_dir) { IsDemo = false }).DemoBanner);
+    }
 }

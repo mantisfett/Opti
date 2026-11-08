@@ -82,6 +82,14 @@
                     <RowDefinition/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+                <StackPanel>
+                <Border Margin="24,16,24,0" Padding="14,10" CornerRadius="{StaticResource RadiusCard}" Background="{StaticResource AccentSoftBrush}"
+                        Visibility="{Binding DemoBanner, Converter={StaticResource StrToVis}}">
+                    <DockPanel>
+                        <TextBlock Text="&#xE7B3;" Style="{StaticResource Icon}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding DemoBanner}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
                 <Border Margin="24,16,24,0" Padding="14,10" CornerRadius="{StaticResource RadiusCard}" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
                         Visibility="{Binding UpdateMessage, Converter={StaticResource StrToVis}}">
@@ -91,6 +99,7 @@
                         <TextBlock Text="{Binding UpdateMessage}" VerticalAlignment="Center"/>
                     </DockPanel>
                 </Border>
+                </StackPanel>
                 <ContentControl Grid.Row="1" Content="{Binding CurrentPage}" Focusable="False"/>
                 <Border Grid.Row="2" Margin="24,0,24,16" Padding="14,10" CornerRadius="{StaticResource RadiusCard}"
                         Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
