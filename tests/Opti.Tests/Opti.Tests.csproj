@@ -18,6 +18,10 @@
     <ProjectReference Include="..\..\src\Opti.ViewModels\Opti.ViewModels.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Лаунчер — отдельный однофайловый exe; его логику распаковки проверяем, подключив исходник -->
+    <Compile Include="..\..\src\Opti.Launcher\PayloadInstaller.cs" Link="Launcher\PayloadInstaller.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Profiles\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>

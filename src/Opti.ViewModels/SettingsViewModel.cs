@@ -86,6 +86,25 @@ public sealed partial class SettingsViewModel : PageViewModel
 
     [RelayCommand] private void OpenDataDir() => Main.Services.OpenPath(DataDir);
 
+    [RelayCommand]
+    private async Task UninstallAsync()
+    {
+        if (!await Main.Services.ConfirmAsync("Удалить Opti с компьютера?",
+                "Opti откатит ВСЕ свои изменения, уберёт задачу продолжения и удалит свою папку данных (журнал, отчёты, файлы программы в " +
+                DataDir + "). После этого закроется; файл Opti.exe удалите сами. Для части настроек понадобится перезагрузка.")) return;
+        var r = await Main.Services.UninstallAsync();
+        if (r is null) { Main.ShowMessage("В этом режиме удаление недоступно."); return; }
+        if (r.Rollback.Errors.Count > 0)
+        {
+            Main.ShowMessage("Часть изменений откатить не удалось, поэтому папка данных оставлена — без журнала их не вернуть. " +
+                             string.Join("; ", r.Rollback.Errors), error: true);
+            return;
+        }
+        Main.ShowMessage(r.Rollback.Summary("Откачено изменений") + " Папка данных будет удалена после закрытия. Перезагрузите компьютер.");
+        await Task.Delay(1500);
+        Main.Services.Exit();
+    }
+
     /// <summary>Архив для обращения в поддержку: сохраняется на рабочий стол и показывается в Проводнике.</summary>
     [RelayCommand]
     private void CreateProblemReport()

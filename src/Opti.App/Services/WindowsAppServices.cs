@@ -17,6 +17,7 @@ namespace Opti.App.Services;
 public sealed class WindowsAppServices : IAppServices, IDisposable
 {
     private readonly SqliteChangeJournal _journal;
+    private readonly WindowsResumeScheduler _scheduler;
 
     public WindowsAppServices()
     {
@@ -27,7 +28,7 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
         foreach (var n in notices) Opti.Core.Diagnostics.OptiLog.Warn(n);
         if (Opti.Native.SessionUser.MismatchWarning() is { } who) notices.Add(who);
         StartupNotice = notices.Count > 0 ? string.Join("\n\n", notices) : null;
-        var scheduler = new WindowsResumeScheduler();
+        var scheduler = _scheduler = new WindowsResumeScheduler();
         scheduler.CancelLegacy();
         Settings = OptiSettings.Load();
         _journal = new SqliteChangeJournal(OptiPaths.JournalPath);
@@ -58,6 +59,15 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
     public string ReportsDir => OptiPaths.ReportsDir;
     public string DataDir => OptiPaths.DataDir;
     public string? StartupNotice { get; }
+    public Task<UninstallReport?> UninstallAsync() =>
+        Task.Run<UninstallReport?>(() => Uninstaller.Run(Workflow, _journal, _scheduler, OptiPaths.DataDir));
+
+    public void Exit()
+    {
+        _journal.Dispose(); // файл журнала не должен мешать удалению папки
+        Application.Current.Shutdown();
+    }
+
     public string ResumeExePath => Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Opti.exe");
 
     public Task<AnalysisResult> AnalyzeAsync(IProgress<string> progress, CancellationToken ct) =>

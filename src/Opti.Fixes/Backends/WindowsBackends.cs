@@ -53,6 +53,9 @@ public static class OptiPaths
     public static IReadOnlyList<string> PrepareDataDir()
     {
         var notes = new List<string>();
+        // Лаунчер релиза уже защитил папку до распаковки приложения — его сообщения (карантин и т. п.) показываем здесь
+        if (Environment.GetEnvironmentVariable("OPTI_LAUNCHER_NOTES") is { Length: > 0 } fromLauncher)
+            notes.AddRange(fromLauncher.Split('\n', StringSplitOptions.RemoveEmptyEntries));
         if (MigrateLegacyData() is { } m) notes.Add(m);
         if (OperatingSystem.IsWindows())
         {

@@ -54,6 +54,10 @@ public static class ResumeBinary
             var src = Path.GetFullPath(exePath);
             var dest = Path.Combine(Path.GetFullPath(binDir), Path.GetFileName(src));
             if (string.Equals(src, dest, StringComparison.OrdinalIgnoreCase)) return dest;
+            // Запуск через лаунчер релиза: программа уже лежит в защищённой папке данных, и одна она без своей папки не работает
+            var dataRoot = Path.GetFullPath(Path.Combine(binDir, ".."));
+            if (src.StartsWith(dataRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) return src;
+            if (File.Exists(Path.ChangeExtension(src, ".dll"))) return src; // не однофайловая сборка (разработка)
             Directory.CreateDirectory(binDir);
             if (!File.Exists(dest) || !SameContent(src, dest))
             {

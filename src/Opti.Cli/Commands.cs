@@ -51,6 +51,7 @@ internal static class Commands
               verify   [--reapply] [--all]                                   На месте ли изменения Opti (обновления Windows и драйверов
                                                                              их иногда возвращают); --reapply — применить снова
                                                                              возвращённое Windows, --all — и изменённое после Opti
+              uninstall [--yes]                                              Удалить Opti: откат всего, задача продолжения, папка данных
               bugreport [--out папка]                                        Архив для обращения: журнал работы, сессии, журнал изменений
                                                                              (никуда не отправляется)
 
@@ -684,6 +685,25 @@ internal static class Commands
             return errors.Count > 0 ? 3 : 0;
         }
         return report.AllInPlace ? 0 : 1;
+    }
+
+    public static int Uninstall(Args a)
+    {
+        RequireWindows("Удаление");
+        if (!a.Has("yes") && !Output.Confirm("Откатить ВСЕ изменения Opti и удалить его папку данных?")) return 1;
+        UninstallReport r;
+        using (var host = new CliHost())
+            r = Uninstaller.Run(host.Workflow, host.Journal, new WindowsResumeScheduler(), OptiPaths.DataDir);
+        PrintRollback(r.Rollback);
+        if (r.Rollback.Errors.Count > 0)
+        {
+            Output.Color(ConsoleColor.Red, "Часть изменений откатить не удалось — папка данных оставлена, без журнала их не вернуть.\n");
+            return 3;
+        }
+        Console.WriteLine(r.DataRemovalScheduled
+            ? $"Папка {r.DataDir} будет удалена через несколько секунд. Файл opti-cli.exe удалите сами. Перезагрузите компьютер."
+            : $"Удалите папку {r.DataDir} вручную. Перезагрузите компьютер.");
+        return 0;
     }
 
     public static int BugReport(Args a)

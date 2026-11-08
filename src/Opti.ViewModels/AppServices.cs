@@ -37,6 +37,10 @@ public interface IAppServices
     void RestartExplorer() { }
     /// <summary>Сообщение о переносе данных из GameTune (если был перенос).</summary>
     string? StartupNotice { get; }
+    /// <summary>Удалить Opti с компьютера: откат всего, задача продолжения, папка данных. null — недоступно (демо, тесты).</summary>
+    Task<Opti.Workflow.UninstallReport?> UninstallAsync() => Task.FromResult<Opti.Workflow.UninstallReport?>(null);
+    /// <summary>Закрыть программу (после удаления).</summary>
+    void Exit() { }
 }
 
 /// <summary>

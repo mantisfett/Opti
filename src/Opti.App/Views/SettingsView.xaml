@@ -104,6 +104,18 @@
                 <Button Content="Все версии" Command="{Binding OpenReleasesCommand}"/>
             </StackPanel>
             <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Caption}" Margin="0,8,0,0"/>
+
+            <TextBlock Text="Удаление" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Удалить Opti с компьютера" Command="{Binding UninstallCommand}" VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBlock Text="Вернуть всё как было и убрать следы Opti" Style="{StaticResource Strong}"/>
+                        <TextBlock Style="{StaticResource Caption}"
+                                   Text="Откат всех изменений, удаление задачи продолжения и папки данных. Файл Opti.exe после этого просто удалите."/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
             <TextBlock Style="{StaticResource Caption}" Margin="0,16,0,0">
                 <Run Text="Opti"/>
                 <Run Text="{Binding Version, Mode=OneWay}"/>
