@@ -25,6 +25,8 @@
             <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#3A88FF"/>
             <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#155FD6"/>
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="AccentSolidBrush" Color="#2563EB"/>
+            <SolidColorBrush x:Key="AccentSolidHoverBrush" Color="#1D4ED8"/>
             <SolidColorBrush x:Key="BrandGreenBrush" Color="{StaticResource BrandGreen}"/>
             <!-- Мягкая акцентная подложка (плитки значков, плашки) — читается и в светлой, и в тёмной теме -->
             <SolidColorBrush x:Key="AccentSoftBrush" Color="#241A72FF"/>
@@ -53,7 +55,7 @@
             <!-- ===== Токены: сетка 4/8 px, единые отступы страниц и карточек ===== -->
             <Thickness x:Key="PageMargin">40,28,40,40</Thickness>
             <Thickness x:Key="BarPadding">40,12,40,12</Thickness>
-            <sys:Double x:Key="ContentMaxWidth">960</sys:Double>
+            <sys:Double x:Key="ContentMaxWidth">880</sys:Double>
             <CornerRadius x:Key="RadiusCard">8</CornerRadius>
             <CornerRadius x:Key="RadiusLarge">12</CornerRadius>
             <CornerRadius x:Key="RadiusPill">10</CornerRadius>
@@ -228,7 +230,7 @@
             <Style x:Key="AccentButton" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                <Setter Property="Background" Value="{StaticResource BrandGradientBrush}"/>
+                <Setter Property="Background" Value="{StaticResource AccentSolidBrush}"/>
                 <Setter Property="Padding" Value="20,8"/>
                 <Setter Property="MinHeight" Value="36"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -242,7 +244,7 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource BrandGradientHoverBrush}"/>
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentSolidHoverBrush}"/>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
                                     <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentFillColorTertiaryBrush}"/>
@@ -374,7 +376,7 @@
             <!-- Плитка с цифрой (сводка) -->
             <Style x:Key="StatValue" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-                <Setter Property="FontSize" Value="28"/>
+                <Setter Property="FontSize" Value="24"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style x:Key="StatTile" TargetType="ToggleButton">
@@ -385,7 +387,7 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
                             <Border x:Name="Bd" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                                    BorderThickness="1" CornerRadius="{StaticResource RadiusCard}" Padding="16,12" Margin="0,0,8,0">
+                                    BorderThickness="1" CornerRadius="{StaticResource RadiusCard}" Padding="14,10" Margin="0,0,8,0">
                                 <ContentPresenter/>
                             </Border>
                             <ControlTemplate.Triggers>
@@ -395,7 +397,7 @@
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
                                     <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
-                                    <Setter TargetName="Bd" Property="Padding" Value="15,11"/>
+                                    <Setter TargetName="Bd" Property="Padding" Value="13,9"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -439,6 +441,29 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Плитка-кнопка (инструменты на главной): карточка, которая целиком нажимается -->
+            <Style x:Key="ToolTile" TargetType="Button">
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1" CornerRadius="{StaticResource RadiusLarge}" Padding="16,14">
+                                <ContentPresenter HorizontalAlignment="Left"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -495,7 +520,7 @@
                                     <ControlTemplate TargetType="ListBoxItem">
                                         <Border x:Name="Bd" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                                                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                                                CornerRadius="{StaticResource RadiusLarge}" Padding="20,18" Margin="0,0,12,0">
+                                                CornerRadius="{StaticResource RadiusLarge}" Padding="18,16" Margin="0,0,12,0">
                                             <Grid>
                                                 <ContentPresenter/>
                                                 <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Width="20" Height="20" Margin="0,2,0,0">
@@ -514,7 +539,7 @@
                                             <Trigger Property="IsSelected" Value="True">
                                                 <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
                                                 <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
-                                                <Setter TargetName="Bd" Property="Padding" Value="19,17"/>
+                                                <Setter TargetName="Bd" Property="Padding" Value="17,15"/>
                                                 <Setter TargetName="Ring" Property="Visibility" Value="Collapsed"/>
                                                 <Setter TargetName="Fill" Property="Visibility" Value="Visible"/>
                                                 <Setter TargetName="Check" Property="Visibility" Value="Visible"/>

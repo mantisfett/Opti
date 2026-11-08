@@ -161,5 +161,10 @@
 "Сессии": "Sessions",
 "Обновить": "Refresh",
 "Откатить все изменения Opti": "Roll back all Opti changes",
-"Отчёт": "Report"
+"Отчёт": "Report",
+"Выберите режим": "Choose a mode",
+"Подробное сравнение режимов": "Compare modes in detail",
+"Анализ ничего не меняет. Исправления откатываются, результат подтверждается замером.": "Analysis changes nothing. Fixes can be rolled back, and the result is confirmed by a measurement.",
+"Состояние и ссылки на сайты производителей": "Status and links to manufacturers’ sites",
+"Только официальные источники": "Official sources only"
 }

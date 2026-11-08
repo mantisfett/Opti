@@ -2,10 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer>
-        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="Драйверы" Style="{StaticResource PageTitle}"/>
             <TextBlock Style="{StaticResource Secondary}" MaxWidth="680" HorizontalAlignment="Left"
-                       Text="Видеокарта, сеть, звук, чипсет, Bluetooth и накопители. Opti ничего не скачивает сам — у каждого устройства ссылка на официальный сайт производителя."/>
+                       Text="Состояние драйверов и ссылки на официальные сайты. Opti ничего не скачивает."/>
 
             <Border Style="{StaticResource Card}" Margin="0,20,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
                 <StackPanel>
@@ -16,7 +16,6 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{Binding Summary}" Style="{StaticResource Strong}" FontSize="15"/>
                             <TextBlock Text="{Binding BoardText}" Style="{StaticResource Caption}" Visibility="{Binding BoardText, Converter={StaticResource StrToVis}}"/>
-                            <TextBlock Style="{StaticResource Caption}" Text="Порядок: сначала чипсет, затем видеокарта, сеть и звук. После установки — перезагрузка и повторный анализ."/>
                         </StackPanel>
                     </DockPanel>
                     <!-- Кнопки отдельной строкой: на узком окне не наезжают на текст -->

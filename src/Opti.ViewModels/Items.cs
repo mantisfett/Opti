@@ -20,6 +20,8 @@ public sealed class GoalOption
     public required string Icon { get; init; }
     public required IReadOnlyList<string> Includes { get; init; }
     public required IReadOnlyList<string> Skips { get; init; }
+    /// <summary>Три главных пункта для карточки (полный список — в таблице сравнения).</summary>
+    public IReadOnlyList<string> Highlights => Includes.Take(3).ToList();
     public required string ChangesLevel { get; init; }
     public required string HeatLevel { get; init; }
     public required string Verification { get; init; }

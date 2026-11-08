@@ -10,7 +10,7 @@
             </DockPanel>
         </Border>
         <ScrollViewer>
-            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
+            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock Text="Исправить автоматически" Style="{StaticResource PageTitle}"/>
                 <TextBlock Style="{StaticResource Secondary}" MaxWidth="660" HorizontalAlignment="Left"
                            Text="Выберите, что исправить и нужен ли тест. Перед изменениями создаётся точка восстановления, каждое изменение можно откатить."/>

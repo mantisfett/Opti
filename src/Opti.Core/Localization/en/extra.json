@@ -17,5 +17,11 @@
 "{} {} · тест до и после · всё откатывается": "{0} {1} · before/after test · everything can be rolled back",
 "выкл": "off",
 "вкл": "on",
-"по умолчанию": "default"
+"по умолчанию": "default",
+"Состояние драйверов и ссылки на официальные сайты. Opti ничего не скачивает.": "Driver status and links to official sites. Opti downloads nothing.",
+"Только официальные сайты разработчиков.": "Official developer sites only.",
+"Мелкие настройки удобства. На FPS не влияют; каждую можно выключить.": "Small convenience tweaks. They do not affect FPS; each can be switched off.",
+"Только временные файлы и кеши. Документы, игры и реестр не трогаются.": "Only temporary files and caches. Documents, games and the registry are untouched.",
+"Сессии и состояние изменений.": "Sessions and the state of changes.",
+"Обновления Windows иногда возвращают настройки. Opti сверит журнал с системой.": "Windows updates sometimes revert settings. Opti compares the journal with the system."
 }

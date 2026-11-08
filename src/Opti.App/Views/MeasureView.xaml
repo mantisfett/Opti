@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:Opti.App.Controls">
     <ScrollViewer>
-        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitle}"/>
             <TextBlock Text="{Binding Hint}" Style="{StaticResource Secondary}" MaxWidth="640" HorizontalAlignment="Left"/>
 

@@ -2,12 +2,33 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer>
-        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="Результаты анализа" Style="{StaticResource PageTitle}"/>
             <TextBlock Text="{Binding DeviceText}" Style="{StaticResource Secondary}"/>
 
+            <Border Style="{StaticResource Card}" Margin="0,20,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Исправить" Margin="16,0,0,0"
+                                Command="{Binding AutoFixCommand}" IsEnabled="{Binding CanAutoFix}" VerticalAlignment="Center"/>
+                        <Border Style="{StaticResource IconTile}" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE90F;" Style="{StaticResource IconTileGlyph}"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Исправить автоматически" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
+                            <TextBlock Text="{Binding AutoFixText}" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <WrapPanel Margin="56,12,0,0">
+                        <Button Style="{StaticResource LinkButton}" Content="Выбрать исправления вручную" Command="{Binding MeasureBeforeCommand}" Margin="0,0,20,0"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Без замера" Command="{Binding SkipToStrategyCommand}" Margin="0,0,20,0"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Отчёт в HTML" Command="{Binding ExportReportCommand}"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Сводка: плитки работают как фильтр списка -->
-            <UniformGrid Columns="4" Margin="0,20,-8,0">
+            <UniformGrid Columns="4" Margin="0,16,-8,0">
                 <ToggleButton Style="{StaticResource StatTile}" IsChecked="{Binding FilterCritical}" ToolTip="Показать только критичные">
                     <StackPanel>
                         <TextBlock Text="{Binding CriticalCount}" Style="{StaticResource StatValue}" Foreground="{Binding Source=bad, Converter={StaticResource ToneToBrush}}"/>
@@ -33,30 +54,8 @@
                     </StackPanel>
                 </ToggleButton>
             </UniformGrid>
-            <TextBlock Text="{Binding Summary}" Style="{StaticResource Caption}" Margin="0,8,0,0"/>
 
-            <Border Style="{StaticResource Card}" Margin="0,20,0,0" Padding="20,18">
-                <StackPanel>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Исправить" Margin="16,0,0,0"
-                                Command="{Binding AutoFixCommand}" IsEnabled="{Binding CanAutoFix}" VerticalAlignment="Center"/>
-                        <Border Style="{StaticResource IconTile}" Margin="0,0,16,0" VerticalAlignment="Center">
-                            <TextBlock Text="&#xE90F;" Style="{StaticResource IconTileGlyph}"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Исправить автоматически" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
-                            <TextBlock Text="{Binding AutoFixText}" Style="{StaticResource Caption}"/>
-                        </StackPanel>
-                    </DockPanel>
-                    <WrapPanel Margin="56,12,0,0">
-                        <Button Style="{StaticResource LinkButton}" Content="Выбрать исправления вручную" Command="{Binding MeasureBeforeCommand}" Margin="0,0,20,0"/>
-                        <Button Style="{StaticResource LinkButton}" Content="Без замера" Command="{Binding SkipToStrategyCommand}" Margin="0,0,20,0"/>
-                        <Button Style="{StaticResource LinkButton}" Content="Отчёт в HTML" Command="{Binding ExportReportCommand}"/>
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
-
-            <DockPanel Margin="0,28,0,10">
+            <DockPanel Margin="0,24,0,10">
                 <Button DockPanel.Dock="Right" Margin="16,0,0,0" Style="{StaticResource LinkButton}" Content="Показать всё" Command="{Binding ClearFilterCommand}" VerticalAlignment="Bottom"
                         Visibility="{Binding IsFiltered, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="Что найдено" Style="{StaticResource SectionTitle}" Margin="0"/>

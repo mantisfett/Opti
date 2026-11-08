@@ -9,7 +9,7 @@
         </Style>
     </UserControl.Resources>
     <ScrollViewer>
-        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="Настройки" Style="{StaticResource PageTitle}"/>
 
             <TextBlock Text="Режим по умолчанию" Style="{StaticResource SectionTitle}"/>
@@ -32,7 +32,7 @@
             <TextBlock Text="Язык интерфейса" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <ComboBox DockPanel.Dock="Right" Width="220" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" DisplayMemberPath="Title"
+                    <ComboBox DockPanel.Dock="Right" Width="270" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" DisplayMemberPath="Title"
                               VerticalAlignment="Center" AutomationProperties.Name="Язык интерфейса"/>
                     <StackPanel>
                         <TextBlock Text="Язык интерфейса" Style="{StaticResource Strong}"/>

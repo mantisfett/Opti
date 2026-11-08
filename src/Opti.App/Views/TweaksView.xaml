@@ -11,10 +11,10 @@
             </DockPanel>
         </Border>
         <ScrollViewer>
-            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
+            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock Text="Твики" Style="{StaticResource PageTitle}"/>
                 <TextBlock Style="{StaticResource Secondary}" MaxWidth="680" HorizontalAlignment="Left"
-                           Text="Изменения, которые видно сразу: полное контекстное меню, быстрые подменю, поиск без Bing, «Завершить задачу» на панели задач. На FPS не влияют — это про удобство и отзывчивость."/>
+                           Text="Мелкие настройки удобства. На FPS не влияют; каждую можно выключить."/>
 
                 <!-- Что нужно, чтобы изменения вступили в силу -->
                 <Border Style="{StaticResource Callout}" Margin="0,16,0,0" Background="{Binding Source=accent, Converter={StaticResource ToneToSoft}}"
