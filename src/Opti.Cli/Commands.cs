@@ -47,7 +47,7 @@ internal static partial class Commands
                                                                              --force возвращает исходное значение
               history                                                        Сессии и журнал изменений
               latency  [--seconds 60]                                        Задержка системы: DPC/ISR + точность таймера
-              net      [--target 1.1.1.1] [--no-load]                        Пинг, джиттер, bufferbloat
+              net      [--target 1.1.1.1] [--no-load] [--regions] [--dns]   Пинг, джиттер, bufferbloat; --regions — задержка до регионов, --dns — скорость DNS
               version                                                        Версия и проверка обновлений
               doctor                                                         Проверка окружения (права, ETW, утилиты, PresentMon)
               verify   [--reapply] [--all]                                   На месте ли изменения Opti (обновления Windows и драйверов

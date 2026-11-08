@@ -85,10 +85,13 @@ internal static class Screenshots
         services.SimulateWindowsRevert();
         await vm.History.VerifyCommand.ExecuteAsync(null);
 
+        await vm.Network.RunRegionsCommand.ExecuteAsync(null);
+        await vm.Network.RunDnsCommand.ExecuteAsync(null);
+
         foreach (var (page, title) in new (PageViewModel, string)[]
                  {
                      (vm.Drivers, "drivers"), (vm.Tweaks, "tweaks"), (vm.Cleanup, "cleanup"),
-                     (vm.Software, "software"), (vm.History, "history"), (vm.SettingsPage, "settings"),
+                     (vm.Network, "network"), (vm.Software, "software"), (vm.History, "history"), (vm.SettingsPage, "settings"),
                  })
         {
             vm.Navigate(page);

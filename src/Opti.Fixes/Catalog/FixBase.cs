@@ -59,6 +59,8 @@ public static class FixCatalog
         new MouseAccelOffFix(),
         new AccessibilityHotkeysOffFix(),
         new PageFileAutoFix(),
+        new DeliveryOptimizationLanFix(),
+        new DnsSetFix(),
         new RegistryPerfDefaultsFix(),
         new RegistrySecurityDefaultsFix(),
     };

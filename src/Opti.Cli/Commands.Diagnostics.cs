@@ -46,12 +46,41 @@ internal static partial class Commands
 
     public static async Task<int> Net(Args a)
     {
+        if (a.Has("regions") || a.Has("dns")) return await NetReport(a);
         var target = a.Get("target") ?? OptiSettings.Load().NetworkTarget;
         Console.WriteLine(Loc.T($"Пинг до {target} в простое{(a.Has("no-load") ? "" : " и под нагрузкой (скачивание ~200 МБ)")}…"));
         var q = await NetworkTest.RunAsync(target, a.Has("no-load") ? null : NetworkTest.DefaultLoadUrl);
         Console.WriteLine(Loc.T($"  В простое: {q.IdlePingMs:0.#} мс, джиттер {q.IdleJitterMs:0.#} мс, потери {q.PacketLossPercent:0.#} %"));
         if (q.LoadedPingMs is { } l) Console.WriteLine(Loc.T($"  Под нагрузкой: {l:0.#} мс (+{l - q.IdlePingMs:0.#} мс)"));
         Output.PrintFindings(DetectorCatalog.RunAll(new SystemProfile { NetQuality = q }, new[] { new BufferbloatDetector() }));
+        return 0;
+    }
+
+    /// <summary>net --regions: задержка, разброс и потери до облачных регионов; net --dns: скорость DNS.</summary>
+    private static async Task<int> NetReport(Args a)
+    {
+        if (a.Has("regions"))
+        {
+            Output.Header(Loc.T("Задержка до регионов (время TCP-соединения)"));
+            var all = await ConnectionProbe.ProbeAllAsync(ConnectionProbe.Regions, null);
+            var ok = all.Where(r => r.Reachable).OrderBy(r => r.MedianMs).ToList();
+            foreach (var r in ok)
+            {
+                var color = r.LossPercent >= 2 || r.JitterMs >= 15 ? ConsoleColor.Yellow : r.MedianMs < 40 ? ConsoleColor.Green : ConsoleColor.Gray;
+                Output.Color(color, $"  {Loc.T(r.Target.Name),-30} {r.MedianMs,6:0} {Loc.T("мс")}   {Loc.T("разброс")} {r.JitterMs:0.#}   {Loc.T("потери")} {r.LossPercent:0} %\n");
+            }
+            foreach (var r in all.Where(r => !r.Reachable)) Output.Color(ConsoleColor.Red, $"  {Loc.T(r.Target.Name),-30} {Loc.T("нет ответа")}\n");
+            Console.WriteLine("\n" + ConnectionAdvice.Describe(ok));
+        }
+        if (a.Has("dns"))
+        {
+            Output.Header(Loc.T("Скорость DNS"));
+            var rows = new List<DnsResult>();
+            foreach (var r in DnsBenchmark.Current().Concat(DnsBenchmark.Public)) rows.Add(await DnsBenchmark.RunAsync(r));
+            foreach (var r in rows.Where(r => r.Works).OrderBy(r => r.MedianMs))
+                Console.WriteLine($"  {Loc.T(r.Resolver.Name),-34} {r.MedianMs,6:0} {Loc.T("мс")}");
+            foreach (var r in rows.Where(r => !r.Works)) Output.Color(ConsoleColor.Red, $"  {Loc.T(r.Resolver.Name),-34} {Loc.T("нет ответа")}\n");
+        }
         return 0;
     }
 

@@ -168,3 +168,85 @@ public sealed class BufferbloatDetector : DetectorBase
         };
     }
 }
+
+/// <summary>
+/// «Оптимизация доставки» в режиме «интернет»: Windows раздаёт обновления и приложения другим ПК и забивает исходящий канал.
+/// У домашнего интернета исходящий канал узкий, поэтому под раздачей растёт пинг и появляются скачки задержки.
+/// </summary>
+public sealed class DeliveryOptimizationDetector : DetectorBase
+{
+    public override string Id => "NET_DELIVERY_OPTIMIZATION";
+
+    protected override IEnumerable<Finding> Run(SystemProfile p, DetectionContext ctx)
+    {
+        if (p.DeliveryOptimizationMode != 3) yield break;
+        yield return new Finding
+        {
+            Id = Id,
+            Title = Loc.T("Windows раздаёт обновления другим компьютерам через интернет"),
+            Severity = Severity.Important,
+            Explanation = Loc.T("Включена «Оптимизация доставки» в режиме «локальная сеть и интернет»: Windows отдаёт части обновлений и приложений чужим компьютерам. " +
+                          "Исходящий канал дома узкий, и когда он занят, пинг в играх растёт скачками. Режим «только локальная сеть» оставляет обмен между вашими устройствами и ничего не отдаёт в интернет."),
+            Evidence = { Loc.T($"DODownloadMode = {p.DeliveryOptimizationMode} (локальная сеть и интернет)") },
+            FixIds = { FixIds.DeliveryOptimizationLan },
+            Links = { Sources.DeliveryOptimization },
+        };
+    }
+}
+
+/// <summary>Проводное подключение работает на 100 Мбит/с или меньше: плохой кабель, разъём или порт роутера.</summary>
+public sealed class EthernetSlowLinkDetector : DetectorBase
+{
+    public override string Id => "NET_ETHERNET_SLOW_LINK";
+
+    protected override IEnumerable<Finding> Run(SystemProfile p, DetectionContext ctx)
+    {
+        var slow = p.Network.Where(n => n.Kind == NetAdapterKind.Ethernet && n.IsUp && n.LinkSpeedMbps is > 0 and <= 100).ToList();
+        if (slow.Count == 0) yield break;
+        yield return new Finding
+        {
+            Id = Id,
+            Title = Loc.T("Проводное подключение работает на скорости 100 Мбит/с или ниже"),
+            Severity = Severity.Important,
+            Explanation = Loc.T("Современные сетевые карты и роутеры работают на 1 Гбит/с и выше. Скорость 100 Мбит/с или меньше обычно значит плохой или повреждённый кабель, " +
+                          "негодный разъём либо старый порт. Для самой игры этого хватает, но под нагрузкой канал забивается быстрее, и растёт пинг."),
+            Evidence = slow.Select(n => Loc.T($"{n.Description ?? n.Name}: {n.LinkSpeedMbps} Мбит/с")).ToList(),
+            ManualSteps =
+            {
+                Loc.T("Замените патч-корд на кабель категории 5e/6 и проверьте разъёмы."),
+                Loc.T("Попробуйте другой порт роутера или коммутатора."),
+                Loc.T("Если скорость не растёт — в свойствах адаптера «Скорость и дуплекс» выберите «Автосогласование»."),
+            },
+            Links = { Sources.EthernetSpeed },
+        };
+    }
+}
+
+/// <summary>Слабый сигнал Wi-Fi: потери пакетов и скачки пинга.</summary>
+public sealed class WifiWeakSignalDetector : DetectorBase
+{
+    public override string Id => "NET_WIFI_WEAK_SIGNAL";
+    public const int ThresholdPercent = 60;
+
+    protected override IEnumerable<Finding> Run(SystemProfile p, DetectionContext ctx)
+    {
+        var weak = p.Network.FirstOrDefault(n => n.Kind == NetAdapterKind.WiFi && n.IsUp && n.WifiSignalPercent is > 0 and < ThresholdPercent);
+        if (weak is null) yield break;
+        yield return new Finding
+        {
+            Id = Id,
+            Title = Loc.T("Слабый сигнал Wi-Fi"),
+            Severity = Severity.Important,
+            Explanation = Loc.T("При слабом сигнале адаптер понижает скорость и повторяет потерянные пакеты — отсюда скачки пинга и «резиновая» картинка в онлайн-играх. " +
+                          "Поможет приблизить ПК к роутеру или поставить роутер на виду, перейти на диапазон 5/6 ГГц, а лучше — кабель."),
+            Evidence = { Loc.T($"{weak.Description ?? weak.Name}: сигнал {weak.WifiSignalPercent} %") },
+            ManualSteps =
+            {
+                Loc.T("Поставьте роутер ближе и выше, без стен и металла на пути."),
+                Loc.T("Подключитесь к сети 5 ГГц или 6 ГГц, если роутер её раздаёт."),
+                Loc.T("Для игр надёжнее всего кабель Ethernet."),
+            },
+            Links = { Sources.WifiSignal },
+        };
+    }
+}

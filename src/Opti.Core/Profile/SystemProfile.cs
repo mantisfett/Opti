@@ -30,6 +30,11 @@ public sealed class SystemProfile
     public ObsInfo? Obs { get; set; }
     public List<NetAdapterInfo> Network { get; set; } = new();
     public NetworkQuality? NetQuality { get; set; }
+    /// <summary>
+    /// Режим «Оптимизации доставки» Windows (DODownloadMode): 0 — выкл., 1 — только локальная сеть, 2 — группа,
+    /// 3 — локальная сеть и интернет (раздаёт обновления другим ПК и занимает исходящий канал). null — не задан.
+    /// </summary>
+    public int? DeliveryOptimizationMode { get; set; }
     public DpcLatencyInfo? Dpc { get; set; }
     public List<GameInfo> Games { get; set; } = new();
     /// <summary>Устройства с ошибками (нет драйвера, отключены, конфликт).</summary>
@@ -308,6 +313,8 @@ public sealed class NetAdapterInfo
     public bool? AllowComputerToTurnOff { get; set; }
     /// <summary>Для Wi-Fi: диапазон, ГГц (2.4/5/6).</summary>
     public double? WifiBandGhz { get; set; }
+    /// <summary>Для Wi-Fi: уровень сигнала, % (netsh wlan show interfaces).</summary>
+    public int? WifiSignalPercent { get; set; }
 }
 
 public sealed class NetworkQuality

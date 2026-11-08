@@ -43,6 +43,7 @@ public static class ProfileSeeder
         };
         if (overlay is not null) pw.Seed(Targets.PowerOverlay, StateValue.Str(overlay));
 
+        if (p.DeliveryOptimizationMode is { } dom) r.Seed(Targets.Reg(DeliveryOptimizationLanFix.Key, "DODownloadMode"), StateValue.DWord((uint)dom));
         if (p.Graphics.OverlayTestMode is { } otm) r.Seed(Targets.Reg(MpoResetFix.Key, "OverlayTestMode"), StateValue.DWord((uint)otm));
         if (p.Graphics.HagsEnabled is { } hags) r.Seed(Targets.Reg(HagsAbFix.Key, "HwSchMode"), StateValue.DWord(hags ? 2u : 1u));
         if (p.Graphics.GameModeEnabled == false) r.Seed(Targets.Reg(@"HKCU\Software\Microsoft\GameBar", "AutoGameModeEnabled"), StateValue.DWord(0));

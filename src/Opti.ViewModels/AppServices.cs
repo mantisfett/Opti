@@ -43,6 +43,30 @@ public interface IAppServices
     void Exit() { }
     /// <summary>Демо-режим: данные примерные, система не меняется.</summary>
     bool IsDemo => false;
+
+    /// <summary>Задержка, разброс и потери до облачных регионов (TCP-рукопожатие).</summary>
+    Task<IReadOnlyList<Opti.Measure.Capture.ProbeResult>> ProbeRegionsAsync(IProgress<Opti.Measure.Capture.ProbeResult> progress, CancellationToken ct) =>
+        Task.Run<IReadOnlyList<Opti.Measure.Capture.ProbeResult>>(async () => await Opti.Measure.Capture.ConnectionProbe.ProbeAllAsync(Opti.Measure.Capture.ConnectionProbe.Regions, progress, ct), ct);
+
+    /// <summary>Скорость DNS: текущие серверы и популярные публичные.</summary>
+    Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct) =>
+        Task.Run<IReadOnlyList<Opti.Measure.Capture.DnsResult>>(async () =>
+        {
+            var list = new List<Opti.Measure.Capture.DnsResult>();
+            foreach (var r in Opti.Measure.Capture.DnsBenchmark.Current().Concat(Opti.Measure.Capture.DnsBenchmark.Public))
+            {
+                var res = await Opti.Measure.Capture.DnsBenchmark.RunAsync(r, ct: ct);
+                list.Add(res);
+                progress.Report(res);
+            }
+            return list;
+        }, ct);
+
+    /// <summary>Применить DNS-серверы (через журнал: откат в «Истории»). null — недоступно (демо).</summary>
+    Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.Run<Opti.Fixes.Services.ApplyReport?>(() =>
+        new Opti.Fixes.Services.ApplyService(Workflow.BackendsForRollback, Journal, null).Apply(new Opti.Core.Profile.SystemProfile(),
+            new Opti.Core.Fixes.IFix[] { new Opti.Fixes.Catalog.DnsSetFix() }, Opti.Core.Strategy.UserGoal.Balanced,
+            new Dictionary<string, IReadOnlyDictionary<string, string>> { [Opti.Core.Fixes.FixIds.DnsSet] = new Dictionary<string, string> { ["servers"] = servers } }, "network-" + DateTime.Now.ToString("yyyyMMdd-HHmmss")));
 }
 
 /// <summary>

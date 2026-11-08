@@ -1,6 +1,6 @@
 namespace Opti.Core.Fixes;
 
-public enum ChangeType { Registry, Bcd, Service, PowerSetting, NetAdapter, File, Display }
+public enum ChangeType { Registry, Bcd, Service, PowerSetting, NetAdapter, File, Display, Dns }
 
 /// <summary>
 /// Значение настройки. Exists=false — значения/ключа не было (откат = удаление).

@@ -62,3 +62,44 @@ public sealed class WindowsNetAdapterBackend : IStateBackend
         return (name, prop);
     }
 }
+
+/// <summary>
+/// DNS-серверы адаптера. Читает именно заданные вручную серверы из реестра (NameServer): у адаптера с DHCP значения нет —
+/// это «автоматически», и откат возвращает автоматический режим, а не адреса роутера, записанные как статические.
+/// </summary>
+[SupportedOSPlatform("windows")]
+public sealed class WindowsDnsBackend : IStateBackend
+{
+    private readonly ProcessRunner _runner;
+    public WindowsDnsBackend(ProcessRunner? runner = null) => _runner = runner ?? ProcessRunner.Instance;
+    public ChangeType Type => ChangeType.Dns;
+
+    public StateValue Read(string target)
+    {
+        var (name, _) = Targets.Split2(target);
+        var script = $"$g = (Get-NetAdapter -Name {ProcessRunner.PsQuote(name)}).InterfaceGuid;" +
+                     "(Get-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces\\$g\" -Name NameServer -ErrorAction SilentlyContinue).NameServer";
+        var r = _runner.RunPowerShell(script);
+        if (!r.Ok) throw new IOException(r.StdErr.Trim());
+        var v = r.StdOut.Trim().Replace(' ', ',');
+        return v.Length == 0 ? StateValue.Missing : StateValue.Str(v);
+    }
+
+    public void Write(string target, StateValue value)
+    {
+        var (name, _) = Targets.Split2(target);
+        string cmd;
+        if (!value.Exists || string.IsNullOrWhiteSpace(value.Value))
+            cmd = $"Set-DnsClientServerAddress -InterfaceAlias {ProcessRunner.PsQuote(name)} -ResetServerAddresses";
+        else
+        {
+            var addrs = value.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            // Только IPv4-адреса: произвольный текст в команду не попадёт
+            if (addrs.Length is 0 or > 4 || addrs.Any(a => !System.Net.IPAddress.TryParse(a, out var ip) || ip.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork))
+                throw new ArgumentException(Loc.T($"Недопустимый адрес DNS: {value.Value}"));
+            cmd = $"Set-DnsClientServerAddress -InterfaceAlias {ProcessRunner.PsQuote(name)} -ServerAddresses ({string.Join(",", addrs.Select(ProcessRunner.PsQuote))})";
+        }
+        var r = _runner.RunPowerShell(cmd + "; Clear-DnsClientCache");
+        if (!r.Ok) throw new IOException(r.StdErr.Trim());
+    }
+}

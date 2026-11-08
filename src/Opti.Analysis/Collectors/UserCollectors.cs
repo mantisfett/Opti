@@ -256,8 +256,33 @@ public sealed partial class NetworkCollector : ICollector
         {
             var w = ProcessRunner.Instance.RunConsoleUtf8("netsh wlan show interfaces");
             wifi.WifiBandGhz = ParseWifiBand(w.StdOut);
+            wifi.WifiSignalPercent = ParseWifiSignal(w.StdOut);
         }
+        p.DeliveryOptimizationMode = ReadDeliveryOptimizationMode();
     }
+
+    /// <summary>Политика (приоритетнее) или пользовательская настройка «Разрешить загрузки с других компьютеров».</summary>
+    private static int? ReadDeliveryOptimizationMode()
+    {
+        try
+        {
+            foreach (var path in new[] { @"SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization", @"SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" })
+            {
+                using var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(path);
+                if (k?.GetValue("DODownloadMode") is int mode) return mode;
+            }
+        }
+        catch { /* нет доступа — не задан */ }
+        return null;
+    }
+
+    public static int? ParseWifiSignal(string netshOutput)
+    {
+        var m = SignalRegex().Match(netshOutput);
+        return m.Success && int.TryParse(m.Groups[1].Value, out var v) ? v : null;
+    }
+
+    [GeneratedRegex(@"^\s*(?:Signal|Сигнал)\s*:\s*(\d{1,3})\s*%", RegexOptions.Multiline | RegexOptions.IgnoreCase)] private static partial Regex SignalRegex();
 
     public static double? ParseWifiBand(string netshOutput)
     {

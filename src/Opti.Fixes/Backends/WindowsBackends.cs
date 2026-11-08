@@ -84,6 +84,7 @@ public static class WindowsBackends
         new WindowsPowerBackend(),
         new WindowsDisplayBackend(),
         new WindowsNetAdapterBackend(),
+        new WindowsDnsBackend(),
         new FileBackend(backupDir ?? OptiPaths.BackupDir),
     });
 }

@@ -28,6 +28,7 @@ public sealed class DemoAppServices : IAppServices
         Directory.CreateDirectory(dataDir);
         Profile = profile ?? LoadEmbeddedProfile("desktop-rtx");
         if (Profile.Drivers.Count == 0) Profile.Drivers.AddRange(DemoDrivers);
+        Profile.DeliveryOptimizationMode ??= 3;
         var backends = ProfileSeeder.CreateEmulation(Profile, out _emulation);
         Journal = new InMemoryChangeJournal();
         Settings = new OptiSettings { MeasureRuns = 3, CheckForUpdates = false };
@@ -93,6 +94,38 @@ public sealed class DemoAppServices : IAppServices
     public void RestartComputer() => Opened.Add("restart");
     public void OpenPath(string pathOrUrl) => Opened.Add(pathOrUrl);
     public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(true);
+    public Task<IReadOnlyList<Opti.Measure.Capture.ProbeResult>> ProbeRegionsAsync(IProgress<Opti.Measure.Capture.ProbeResult> progress, CancellationToken ct)
+    {
+        // Примерные значения для ПК в Центральной Европе
+        var data = new (string Id, double Ms, double Jitter, double Loss)[]
+        {
+            ("eu-central-1", 18, 1.4, 0), ("eu-north-1", 34, 2.1, 0), ("eu-west-2", 41, 2.6, 0), ("eu-west-1", 46, 3.0, 0), ("eu-south-1", 52, 3.8, 0),
+            ("us-east-1", 112, 6.5, 0), ("me-south-1", 128, 9.5, 0), ("us-west-2", 168, 7.2, 0), ("sa-east-1", 214, 11.0, 0), ("ap-south-1", 142, 8.4, 0),
+            ("ap-southeast-1", 176, 8.8, 0), ("ap-northeast-1", 232, 10.2, 0), ("ap-southeast-2", 296, 12.0, 0),
+        };
+        IReadOnlyList<Opti.Measure.Capture.ProbeResult> list = data.Select(d => new Opti.Measure.Capture.ProbeResult(
+            Opti.Measure.Capture.ConnectionProbe.Regions.First(r => r.Id == d.Id), d.Ms, d.Jitter, d.Loss, 12)).ToList();
+        foreach (var r in list) progress.Report(r);
+        return Task.FromResult(list);
+    }
+
+    public Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct)
+    {
+        var cur = new Opti.Measure.Capture.DnsResolver("current:192.168.1.1", "Сейчас: 192.168.1.1", "192.168.1.1");
+        IReadOnlyList<Opti.Measure.Capture.DnsResult> list = new[]
+        {
+            new Opti.Measure.Capture.DnsResult(cur, 46, 0, 16),
+            new Opti.Measure.Capture.DnsResult(Opti.Measure.Capture.DnsBenchmark.Public[0], 9, 0, 16),
+            new Opti.Measure.Capture.DnsResult(Opti.Measure.Capture.DnsBenchmark.Public[1], 12, 0, 16),
+            new Opti.Measure.Capture.DnsResult(Opti.Measure.Capture.DnsBenchmark.Public[2], 15, 0, 16),
+            new Opti.Measure.Capture.DnsResult(Opti.Measure.Capture.DnsBenchmark.Public[3], 21, 0, 16),
+        };
+        foreach (var r in list) progress.Report(r);
+        return Task.FromResult(list);
+    }
+
+    public Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.FromResult<Opti.Fixes.Services.ApplyReport?>(null);
+
     public Task<UpdateInfo?> CheckForUpdatesAsync() => Task.FromResult<UpdateInfo?>(null);
     public IReadOnlyList<ICleanupTarget> CleanupTargets() => DemoCleanup.Targets;
 

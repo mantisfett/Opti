@@ -18,6 +18,8 @@ public static class Targets
     public static string PowerAc(string scheme, string subgroup, string setting) => string.Join(Sep, scheme, subgroup, setting, "AC");
     /// <summary>Параметр сетевого адаптера: «adapterName|AllowComputerToTurnOffDevice».</summary>
     public static string NetAdapter(string adapter, string property) => adapter + Sep + property;
+    /// <summary>DNS-серверы адаптера (IPv4): «Имя адаптера|dns». Значение — адреса через запятую; нет значения — автоматически (DHCP).</summary>
+    public static string Dns(string adapter) => adapter + Sep + "dns";
     /// <summary>Частота экрана: «\\.\DISPLAY1|refresh».</summary>
     public static string DisplayRefresh(string device) => device + Sep + "refresh";
 
