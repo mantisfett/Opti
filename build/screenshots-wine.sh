@@ -25,5 +25,5 @@ if [ ! -f "$WINEPREFIX/.opti-fonts" ]; then
   touch "$WINEPREFIX/.opti-fonts"
 fi
 
-xvfb-run -a -s "-screen 0 1600x1200x24" wine "$WORK/app/Opti.exe" --screenshots "Z:$OUT"
+xvfb-run -a -s "-screen 0 1600x1200x24" wine "$WORK/app/Opti.exe" --screenshots "Z:$OUT" ${OPTI_LANG:+--lang $OPTI_LANG}
 ls "$OUT"

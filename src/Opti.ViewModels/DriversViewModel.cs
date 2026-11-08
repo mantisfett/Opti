@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Opti.Core.Drivers;
 using Opti.Core.Findings;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -29,7 +30,7 @@ public sealed partial class DriversViewModel : PageViewModel
 {
     private List<DriverGroup> _all = new();
     public DriversViewModel(MainViewModel main) : base(main) { }
-    public override string Title => "Драйверы";
+    public override string Title => Loc.T("Драйверы");
 
     public ObservableCollection<DriverGroup> Groups { get; } = new();
     [ObservableProperty] private string? _summary;
@@ -51,10 +52,10 @@ public sealed partial class DriversViewModel : PageViewModel
         var groups = new List<DriverGroup>();
         var problems = p.ProblemDevices.Where(d => d.ErrorCode != 22).Select(d => new DriverRow
         {
-            Name = d.Name, Details = d.DeviceClass ?? "устройство", StatusText = d.ErrorText, Tone = Palette.Bad, NeedsAttention = true,
-            LinkTitle = "Необязательные обновления", Url = Sources.WindowsOptionalUpdates,
+            Name = d.Name, Details = d.DeviceClass ?? Loc.T("устройство"), StatusText = d.ErrorText, Tone = Palette.Bad, NeedsAttention = true,
+            LinkTitle = Loc.T("Необязательные обновления"), Url = Sources.WindowsOptionalUpdates,
         }).ToList();
-        if (problems.Count > 0) groups.Add(new DriverGroup { Title = "Устройства без драйвера или с ошибкой", Rows = problems });
+        if (problems.Count > 0) groups.Add(new DriverGroup { Title = Loc.T("Устройства без драйвера или с ошибкой"), Rows = problems });
 
         foreach (var cat in DriverAdvisor.KeyCategories)
         {
@@ -65,13 +66,13 @@ public sealed partial class DriversViewModel : PageViewModel
                 return new DriverRow
                 {
                     Name = d.DeviceName,
-                    Details = string.Join(" · ", new[] { d.Provider, d.Version is null ? null : "версия " + d.Version, d.Date?.ToString("dd.MM.yyyy") }.Where(x => !string.IsNullOrEmpty(x))),
+                    Details = string.Join(" · ", new[] { d.Provider, d.Version is null ? null : Loc.T("версия ") + d.Version, d.Date?.ToString("dd.MM.yyyy") }.Where(x => !string.IsNullOrEmpty(x))),
                     StatusText = st switch
                     {
-                        DriverStatus.Missing => "драйвер не установлен",
-                        DriverStatus.Old => "старый — обновите",
-                        DriverStatus.Generic => "стандартный Microsoft",
-                        _ => "в порядке",
+                        DriverStatus.Missing => Loc.T("драйвер не установлен"),
+                        DriverStatus.Old => Loc.T("старый — обновите"),
+                        DriverStatus.Generic => Loc.T("стандартный Microsoft"),
+                        _ => Loc.T("в порядке"),
                     },
                     Tone = st switch { DriverStatus.Missing => Palette.Bad, DriverStatus.Ok => Palette.Good, _ => Palette.Warn },
                     NeedsAttention = st != DriverStatus.Ok,
@@ -86,13 +87,13 @@ public sealed partial class DriversViewModel : PageViewModel
         OemTitle = oem?.Title;
         OemUrl = oem?.Url;
         var board = p.Device.IsLaptop ? $"{p.Device.Manufacturer} {p.Device.Model}" : $"{p.Device.BoardManufacturer} {p.Device.BoardProduct}";
-        BoardText = string.IsNullOrWhiteSpace(board) ? null : (p.Device.IsLaptop ? "Ноутбук: " : "Материнская плата: ") + board.Trim();
+        BoardText = string.IsNullOrWhiteSpace(board) ? null : (p.Device.IsLaptop ? Loc.T("Ноутбук: ") : Loc.T("Материнская плата: ")) + board.Trim();
 
         int attention = groups.Sum(g => g.Rows.Count(r => r.NeedsAttention));
         int total = groups.Sum(g => g.Rows.Count);
-        Summary = total == 0 ? "Список драйверов недоступен — повторите анализ с правами администратора."
-            : attention == 0 ? $"Проверено {total}: всё в порядке."
-            : $"Проверено {total}, требуют внимания {attention}.";
+        Summary = total == 0 ? Loc.T("Список драйверов недоступен — повторите анализ с правами администратора.")
+            : attention == 0 ? Loc.T($"Проверено {total}: всё в порядке.")
+            : Loc.T($"Проверено {total}, требуют внимания {attention}.");
         Filter();
     }
 

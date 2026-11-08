@@ -11,6 +11,7 @@ using Opti.Workflow;
 using Opti.Workflow.Cleanup;
 using Opti.Workflow.Measuring;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels.Demo;
 
@@ -50,7 +51,7 @@ public sealed class DemoAppServices : IAppServices
     public OptiSettings Settings { get; }
     public IChangeJournal Journal { get; }
     public TweakService Tweaks { get; }
-    public string AppVersion => AppInfo.Version + " (демо)";
+    public string AppVersion => AppInfo.Version + Loc.T(" (демо)");
     public string ReportsDir => Path.Combine(DataDir, "reports");
     public string DataDir { get; }
     public string ResumeExePath => "Opti.exe";
@@ -76,14 +77,14 @@ public sealed class DemoAppServices : IAppServices
     {
         var asm = typeof(DemoAppServices).Assembly;
         using var s = asm.GetManifestResourceStream($"Opti.Demo.{name}.json")
-                      ?? throw new FileNotFoundException("Нет демо-профиля " + name);
+                      ?? throw new FileNotFoundException(Loc.T("Нет демо-профиля ") + name);
         using var rd = new StreamReader(s);
         return OptiJson.Deserialize<SystemProfile>(rd.ReadToEnd());
     }
 
     public Task<AnalysisResult> AnalyzeAsync(IProgress<string> progress, CancellationToken ct)
     {
-        progress.Report("демо-профиль");
+        progress.Report(Loc.T("демо-профиль"));
         return Task.FromResult(SystemAnalyzer.FromProfile(Profile));
     }
 
@@ -106,7 +107,7 @@ public sealed class DemoAppServices : IAppServices
         return new MeasurementRun
         {
             Label = label, FrameTimesMs = ft,
-            Conditions = new RunConditions { ProcessName = "Opti Bench", Scenario = "синтетический тест", Width = 2560, Height = 1440, RefreshHz = 165, OnAcPower = true },
+            Conditions = new RunConditions { ProcessName = "Opti Bench", Scenario = Loc.T("синтетический тест"), Width = 2560, Height = 1440, RefreshHz = 165, OnAcPower = true },
         };
     }
 
@@ -114,7 +115,7 @@ public sealed class DemoAppServices : IAppServices
     {
         private readonly DemoAppServices _svc;
         public DemoRunner(DemoAppServices svc) => _svc = svc;
-        public string Name => "демо";
+        public string Name => Loc.T("демо");
 
         public Task<MeasurementRun> RunAsync(MeasureRequest r, IProgress<MeasureProgress>? progress = null, CancellationToken ct = default)
         {
@@ -131,15 +132,15 @@ internal static class DemoCleanup
 {
     public static readonly IReadOnlyList<ICleanupTarget> Targets = new ICleanupTarget[]
     {
-        new Fake("recycle", "Корзина", "Файлы, удалённые в корзину", 1_840_000_000, 312, true),
-        new Fake("temp", "Временные файлы", "Файлы старше 7 дней из TEMP Windows и пользователя", 2_650_000_000, 18_204, true),
-        new Fake("wu", "Загруженные обновления Windows", "Уже установленные пакеты обновлений", 3_100_000_000, 96, true),
-        new Fake("shader", "Кеш шейдеров", "Пересоздаётся при запуске игр — первый запуск будет дольше", 1_200_000_000, 2_410, false,
-            caution: "Первый запуск игр после очистки будет дольше."),
-        new Fake("downloads", "Загрузки", "Установщики и архивы, которые давно не нужны", 14_700_000_000, 420, false,
-            manualUri: "demo:downloads", warnAbove: 5L << 30, warnText: "Больше 5 ГБ — стоит разобрать: обычно это старые установщики.", action: "Открыть папку"),
-        new Fake("restore", "Точки восстановления", "Windows хранит их сама; объём можно ограничить", 6_400_000_000, 3, false,
-            manualUri: "demo:restore", action: "Открыть «Защиту системы»"),
+        new Fake("recycle", Loc.T("Корзина"), Loc.T("Файлы, удалённые в корзину"), 1_840_000_000, 312, true),
+        new Fake("temp", Loc.T("Временные файлы"), Loc.T("Файлы старше 7 дней из TEMP Windows и пользователя"), 2_650_000_000, 18_204, true),
+        new Fake("wu", Loc.T("Загруженные обновления Windows"), Loc.T("Уже установленные пакеты обновлений"), 3_100_000_000, 96, true),
+        new Fake("shader", Loc.T("Кеш шейдеров"), Loc.T("Пересоздаётся при запуске игр — первый запуск будет дольше"), 1_200_000_000, 2_410, false,
+            caution: Loc.T("Первый запуск игр после очистки будет дольше.")),
+        new Fake("downloads", Loc.T("Загрузки"), Loc.T("Установщики и архивы, которые давно не нужны"), 14_700_000_000, 420, false,
+            manualUri: "demo:downloads", warnAbove: 5L << 30, warnText: Loc.T("Больше 5 ГБ — стоит разобрать: обычно это старые установщики."), action: Loc.T("Открыть папку")),
+        new Fake("restore", Loc.T("Точки восстановления"), Loc.T("Windows хранит их сама; объём можно ограничить"), 6_400_000_000, 3, false,
+            manualUri: "demo:restore", action: Loc.T("Открыть «Защиту системы»")),
     };
 
     private sealed class Fake : ICleanupTarget
@@ -147,10 +148,10 @@ internal static class DemoCleanup
         private readonly long _bytes;
         private readonly int _files;
         public Fake(string id, string title, string desc, long bytes, int files, bool selected, string? caution = null,
-            string? manualUri = null, long? warnAbove = null, string? warnText = null, string action = "Открыть параметры")
+            string? manualUri = null, long? warnAbove = null, string? warnText = null, string? action = null)
         {
             Id = id; Title = title; Description = desc; _bytes = bytes; _files = files; DefaultSelected = selected; Caution = caution;
-            ManualUri = manualUri; WarnAboveBytes = warnAbove; WarnText = warnText; ManualActionText = action;
+            ManualUri = manualUri; WarnAboveBytes = warnAbove; WarnText = warnText; ManualActionText = action ?? Loc.T("Открыть параметры");
         }
         public long? WarnAboveBytes { get; }
         public string? WarnText { get; }

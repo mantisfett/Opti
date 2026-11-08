@@ -29,6 +29,18 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
+            <TextBlock Text="Язык интерфейса" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <ComboBox DockPanel.Dock="Right" Width="220" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" DisplayMemberPath="Title"
+                              VerticalAlignment="Center" AutomationProperties.Name="Язык интерфейса"/>
+                    <StackPanel>
+                        <TextBlock Text="Язык интерфейса" Style="{StaticResource Strong}"/>
+                        <TextBlock Text="Вступит в силу после перезапуска Opti" Style="{StaticResource Caption}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <TextBlock Text="Замеры" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>

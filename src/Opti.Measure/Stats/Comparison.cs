@@ -1,3 +1,4 @@
+using Opti.Core.Localization;
 namespace Opti.Measure.Stats;
 
 public enum Verdict { Better, NoChange, Worse, Insufficient }
@@ -28,10 +29,10 @@ public sealed class MetricComparison
     {
         string v = Verdict switch
         {
-            Verdict.Better => "лучше, достоверно",
-            Verdict.Worse => "хуже, достоверно",
-            Verdict.NoChange => "в пределах шума",
-            _ => "мало данных",
+            Verdict.Better => Loc.T("лучше, достоверно"),
+            Verdict.Worse => Loc.T("хуже, достоверно"),
+            Verdict.NoChange => Loc.T("в пределах шума"),
+            _ => Loc.T("мало данных"),
         };
         return $"{Metric.Name}: {Before:0.#} → {After:0.#} {Metric.Unit} ({DeltaPercent:+0.#;-0.#;0} %, {v})";
     }
@@ -83,8 +84,8 @@ public sealed class Comparer
         var result = new ComparisonResult();
         result.Warnings.AddRange(CheckConditions(before, after));
 
-        var b = SelectRuns(before, "до", result);
-        var a = SelectRuns(after, "после", result);
+        var b = SelectRuns(before, Loc.T("до"), result);
+        var a = SelectRuns(after, Loc.T("после"), result);
         if (result.Warnings.Count > 0) result.Reliable = false;
 
         var bPerRun = b.Select(r => Metrics.ComputeAll(r.FrameTimesMs)).ToList();
@@ -132,9 +133,9 @@ public sealed class Comparer
     {
         var reliable = runs.Where(r => r.IsReliable).ToList();
         foreach (var r in runs.Where(r => !r.IsReliable))
-            result.Warnings.Add($"Прогон «{r.Label}» ненадёжен: " + (r.ThermalThrottled ? "был троттлинг" : "слишком мало кадров") +
-                                (reliable.Count > 0 ? " — исключён из расчёта." : "."));
-        if (runs.Count < 2) result.Warnings.Add($"Для «{label}» меньше двух прогонов — разброс между прогонами не оценить.");
+            result.Warnings.Add(Loc.T($"Прогон «{r.Label}» ненадёжен: ") + (r.ThermalThrottled ? Loc.T("был троттлинг") : Loc.T("слишком мало кадров")) +
+                                (reliable.Count > 0 ? Loc.T(" — исключён из расчёта.") : "."));
+        if (runs.Count < 2) result.Warnings.Add(Loc.T($"Для «{label}» меньше двух прогонов — разброс между прогонами не оценить."));
         return reliable.Count > 0 ? reliable : runs.ToList();
     }
 
@@ -145,18 +146,18 @@ public sealed class Comparer
         string? Diff<T>(string name, Func<RunConditions, T?> sel)
         {
             var vals = all.Select(sel).Where(v => v is not null).Distinct().ToList();
-            return vals.Count > 1 ? $"Разные условия замера: {name} ({string.Join(" / ", vals)})" : null;
+            return vals.Count > 1 ? Loc.T($"Разные условия замера: {name} ({string.Join(" / ", vals)})") : null;
         }
         var checks = new[]
         {
-            Diff("процесс", c => c.ProcessName),
-            Diff("сценарий", c => c.Scenario),
-            Diff("разрешение", c => c.Width is null ? null : $"{c.Width}×{c.Height}"),
-            Diff("экран", c => c.DisplayDevice),
-            Diff("питание", c => c.OnAcPower is null ? null : c.OnAcPower.Value ? "от сети" : "от батареи"),
+            Diff(Loc.T("процесс"), c => c.ProcessName),
+            Diff(Loc.T("сценарий"), c => c.Scenario),
+            Diff(Loc.T("разрешение"), c => c.Width is null ? null : $"{c.Width}×{c.Height}"),
+            Diff(Loc.T("экран"), c => c.DisplayDevice),
+            Diff(Loc.T("питание"), c => c.OnAcPower is null ? null : c.OnAcPower.Value ? Loc.T("от сети") : Loc.T("от батареи")),
         };
         foreach (var c in checks) if (c is not null) yield return c;
-        if (all.Any(c => c.OnAcPower == false)) yield return "Замер шёл от батареи — результаты могут быть занижены и нестабильны.";
+        if (all.Any(c => c.OnAcPower == false)) yield return Loc.T("Замер шёл от батареи — результаты могут быть занижены и нестабильны.");
     }
 
     public ConfidenceInterval BootstrapCi(MetricId id, IReadOnlyList<MeasurementRun> runs) => BootstrapAll(runs)[id];

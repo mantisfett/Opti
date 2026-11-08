@@ -1,5 +1,6 @@
 using Opti.Core.Findings;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Detectors;
 
@@ -13,7 +14,7 @@ public abstract class DetectorBase : IDetector
         try { return Run(ctx.Profile, ctx).ToList(); }
         catch (Exception ex)
         {
-            ctx.Profile.CollectorErrors.Add($"Детектор {Id}: {ex.Message}");
+            ctx.Profile.CollectorErrors.Add(Loc.T($"Детектор {Id}: {ex.Message}"));
             return Array.Empty<Finding>();
         }
     }

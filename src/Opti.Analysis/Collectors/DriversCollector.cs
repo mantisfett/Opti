@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using Opti.Core.Drivers;
 using Opti.Core.Profile;
 using Opti.Core.Registry;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
@@ -9,7 +10,7 @@ namespace Opti.Analysis.Collectors;
 [SupportedOSPlatform("windows")]
 public sealed class DriversCollector : ICollector
 {
-    public string Name => "Драйверы и реестр";
+    public string Name => Loc.T("Драйверы и реестр");
 
     private static readonly string[] Classes = { "DISPLAY", "NET", "MEDIA", "BLUETOOTH", "SYSTEM", "SCSIADAPTER", "HDC" };
 
@@ -21,7 +22,7 @@ public sealed class DriversCollector : ICollector
             p.Device.BoardManufacturer = board?.Str("Manufacturer");
             p.Device.BoardProduct = board?.Str("Product");
         }
-        catch (Exception ex) { p.CollectorErrors.Add("Материнская плата: " + ex.Message); }
+        catch (Exception ex) { p.CollectorErrors.Add(Loc.T("Материнская плата: ") + ex.Message); }
 
         try
         {
@@ -43,12 +44,12 @@ public sealed class DriversCollector : ICollector
                 });
             }
         }
-        catch (Exception ex) { p.CollectorErrors.Add("Драйверы: " + ex.Message); }
+        catch (Exception ex) { p.CollectorErrors.Add(Loc.T("Драйверы: ") + ex.Message); }
 
         foreach (var rule in RegistryAuditCatalog.All)
         {
             try { p.RegistryAudit[rule.Id] = Format(Reg.Get(rule.Key, rule.ValueName)); }
-            catch (Exception ex) { p.CollectorErrors.Add($"Реестр {rule.Id}: {ex.Message}"); }
+            catch (Exception ex) { p.CollectorErrors.Add(Loc.T($"Реестр {rule.Id}: {ex.Message}")); }
         }
     }
 

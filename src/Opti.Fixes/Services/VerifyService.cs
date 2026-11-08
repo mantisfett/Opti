@@ -1,6 +1,7 @@
 using Opti.Core.Diagnostics;
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Services;
 
@@ -30,13 +31,13 @@ public sealed class VerifyReport
 
     public string Summary()
     {
-        if (Items.Count == 0) return "Действующих изменений Opti нет — проверять нечего.";
-        if (AllInPlace) return $"Все изменения Opti на месте ({InPlace}).";
-        var parts = new List<string> { $"на месте {InPlace}" };
-        if (Reverted.Any()) parts.Add($"Windows или драйвер вернули {Reverted.Count()}");
-        if (Changed.Any()) parts.Add($"изменено после Opti {Changed.Count()}");
-        if (Unreadable.Any()) parts.Add($"не удалось проверить {Unreadable.Count()}");
-        return "Проверка изменений: " + string.Join(", ", parts) + ".";
+        if (Items.Count == 0) return Loc.T("Действующих изменений Opti нет — проверять нечего.");
+        if (AllInPlace) return Loc.T($"Все изменения Opti на месте ({InPlace}).");
+        var parts = new List<string> { Loc.T($"на месте {InPlace}") };
+        if (Reverted.Any()) parts.Add(Loc.T($"Windows или драйвер вернули {Reverted.Count()}"));
+        if (Changed.Any()) parts.Add(Loc.T($"изменено после Opti {Changed.Count()}"));
+        if (Unreadable.Any()) parts.Add(Loc.T($"не удалось проверить {Unreadable.Count()}"));
+        return Loc.T("Проверка изменений: ") + string.Join(", ", parts) + ".";
     }
 }
 

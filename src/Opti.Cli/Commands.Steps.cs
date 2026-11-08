@@ -15,6 +15,7 @@ using Opti.Workflow;
 using Opti.Workflow.Measuring;
 using Opti.Workflow.Reports;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.Cli;
 
@@ -25,29 +26,29 @@ internal static partial class Commands
 
     public static async Task<int> Measure(Args a)
     {
-        RequireWindows("Замер");
+        RequireWindows(Loc.T("Замер"));
         var settings = OptiSettings.Load();
         var mode = ParseMode(a.Get("mode"), MeasureMode.Game);
         if (a.Get("out") is { } outPath)
         {
             var runs = await MeasureSeries(settings, mode, Path.GetFileNameWithoutExtension(outPath), a, null);
             File.WriteAllText(outPath, OptiJson.Serialize(runs));
-            Console.WriteLine($"\nЗамер сохранён: {outPath}");
+            Console.WriteLine(Loc.T($"\nЗамер сохранён: {outPath}"));
             return 0;
         }
         using var host = new CliHost();
         var s = SessionForWork(host, a);
         if (a.Has("mode")) s.MeasureMode = mode;
         bool after = a.Get("phase") is { } ph ? ph.Equals("after", StringComparison.OrdinalIgnoreCase) : s.Stage >= SessionStage.Applied;
-        var series = await MeasureSeries(settings, s.MeasureMode, after ? "после" : "до", a, s.GameProcess);
+        var series = await MeasureSeries(settings, s.MeasureMode, after ? Loc.T("после") : Loc.T("до"), a, s.GameProcess);
         if (after) host.Workflow.RecordAfter(s, series); else host.Workflow.RecordBefore(s, series);
-        Console.WriteLine($"\nЗаписано в сессию {s.Id} как «{(after ? "после" : "до")}».");
+        Console.WriteLine(Loc.T($"\nЗаписано в сессию {s.Id} как «{(after ? "после" : "до")}»."));
         return 0;
     }
 
     public static int Apply(Args a)
     {
-        RequireWindows("Применение исправлений");
+        RequireWindows(Loc.T("Применение исправлений"));
         using var host = new CliHost();
         var wf = host.Workflow;
         var s = SessionForWork(host, a);
@@ -59,24 +60,24 @@ internal static partial class Commands
         var chosen = plan.Fixes.Where(p => requested is null ? p.Selected : requested.Contains(p.Fix.Id)).ToList();
         if (requested is not null)
             foreach (var id in requested.Where(id => chosen.All(c => !c.Fix.Id.Equals(id, StringComparison.OrdinalIgnoreCase))))
-                Output.Color(ConsoleColor.Yellow, $"{id}: не входит в план для этого ПК и цели — пропущено.\n");
+                Output.Color(ConsoleColor.Yellow, Loc.T($"{id}: не входит в план для этого ПК и цели — пропущено.\n"));
         var separate = chosen.Where(c => c.ApplySeparately).ToList();
         if (separate.Count > 0 && chosen.Count > 1)
         {
-            Output.Color(ConsoleColor.Yellow, "Спорные настройки проверяются отдельно: " + string.Join(", ", separate.Select(x => $"opti-cli ab --fix {x.Fix.Id}")) + "\n");
+            Output.Color(ConsoleColor.Yellow, Loc.T("Спорные настройки проверяются отдельно: ") + string.Join(", ", separate.Select(x => $"opti-cli ab --fix {x.Fix.Id}")) + "\n");
             chosen = chosen.Except(separate).ToList();
         }
-        if (chosen.Count == 0) { Console.WriteLine("Нечего применять."); return 0; }
+        if (chosen.Count == 0) { Console.WriteLine(Loc.T("Нечего применять.")); return 0; }
 
         foreach (var (fix, opts) in ParseOptions(a)) s.FixOptions[fix] = opts;
-        Console.WriteLine("\nБудут применены: " + string.Join(", ", chosen.Select(c => c.Fix.Id)));
-        if (!a.Has("yes") && !Output.Confirm("Продолжить? Перед изменениями будет создана точка восстановления.")) return 1;
+        Console.WriteLine(Loc.T("\nБудут применены: ") + string.Join(", ", chosen.Select(c => c.Fix.Id)));
+        if (!a.Has("yes") && !Output.Confirm(Loc.T("Продолжить? Перед изменениями будет создана точка восстановления."))) return 1;
 
         var report = wf.Apply(s, chosen.Select(c => c.Fix).ToList(), CliHost.ExePath, "resume");
         PrintApplyReport(report);
-        Console.WriteLine($"Откат этой сессии: opti-cli rollback --session {s.Id}");
+        Console.WriteLine(Loc.T($"Откат этой сессии: opti-cli rollback --session {s.Id}"));
         if (report.RebootRequired) OfferReboot(a);
-        else Console.WriteLine("Дальше: «opti-cli measure» (замер «после»), затем «opti-cli compare».");
+        else Console.WriteLine(Loc.T("Дальше: «opti-cli measure» (замер «после»), затем «opti-cli compare»."));
         return report.Results.Any(x => x.Outcome == FixOutcome.Failed) ? 3 : 0;
     }
 
@@ -86,7 +87,7 @@ internal static partial class Commands
         foreach (var o in a.GetAll("option"))
         {
             int c = o.IndexOf(':'), e = o.IndexOf('=');
-            if (c <= 0 || e <= c) throw new ArgumentException($"Неверная опция «{o}». Формат: FIX_ID:ключ=значение");
+            if (c <= 0 || e <= c) throw new ArgumentException(Loc.T($"Неверная опция «{o}». Формат: FIX_ID:ключ=значение"));
             var fix = o[..c];
             if (!map.TryGetValue(fix, out var d)) map[fix] = d = new(StringComparer.OrdinalIgnoreCase);
             d[o[(c + 1)..e]] = o[(e + 1)..].Replace(';', '\n');
@@ -101,29 +102,29 @@ internal static partial class Commands
             var before = OptiJson.Deserialize<List<MeasurementRun>>(File.ReadAllText(a.Positional[0]));
             var after = OptiJson.Deserialize<List<MeasurementRun>>(File.ReadAllText(a.Positional[1]));
             var result = new Comparer().Compare(before, after);
-            Output.Header("Сравнение «до / после»");
+            Output.Header(Loc.T("Сравнение «до / после»"));
             PrintComparison(result);
-            Console.WriteLine($"\nИтог: {result.Overall switch { Verdict.Better => "стало лучше", Verdict.Worse => "стало хуже", Verdict.NoChange => "без изменений (в пределах шума)", _ => "недостаточно данных" }}");
+            Console.WriteLine(Loc.T($"\nИтог: {result.Overall switch { Verdict.Better => "стало лучше", Verdict.Worse => "стало хуже", Verdict.NoChange => "без изменений (в пределах шума)", _ => "недостаточно данных" }}"));
             if (a.Get("csv") is { } csv) WriteCsv(csv, before, after);
             if (a.Get("html") is { } html)
             {
                 var s = new TuneSession { Before = before, After = after };
                 File.WriteAllText(html, HtmlReport.Build(new ReportData { Session = s, Comparison = result, AppVersion = AppInfo.Version }));
-                Console.WriteLine($"HTML-отчёт: {html}");
+                Console.WriteLine(Loc.T($"HTML-отчёт: {html}"));
             }
             return 0;
         }
-        RequireWindows("Сравнение сессии");
+        RequireWindows(Loc.T("Сравнение сессии"));
         using var host = new CliHost();
         var session = SessionForWork(host, a, needAnalysis: false);
         var cmp = host.Workflow.Compare(session);
-        Output.Header("Сравнение «до / после»");
+        Output.Header(Loc.T("Сравнение «до / после»"));
         PrintComparison(cmp.Result);
         Console.WriteLine("\n" + cmp.Message);
         var path = WriteReport(host, session, cmp, a.Get("html"));
-        Console.WriteLine($"Отчёт: {path}");
+        Console.WriteLine(Loc.T($"Отчёт: {path}"));
         if (a.Get("csv") is { } csv2) WriteCsv(csv2, session.Before, session.After);
-        if (cmp.Recommendation == Recommendation.SuggestRollback && Output.Confirm("Откатить изменения этой сессии?"))
+        if (cmp.Recommendation == Recommendation.SuggestRollback && Output.Confirm(Loc.T("Откатить изменения этой сессии?")))
             PrintRollback(host.Workflow.RollbackSession(session));
         return 0;
     }
@@ -136,6 +137,6 @@ internal static partial class Commands
             for (int r = 0; r < runs.Count; r++)
                 for (int f = 0; f < runs[r].FrameTimesMs.Count; f++)
                     w.WriteLine(FormattableString.Invariant($"{set},{r + 1},{f},{runs[r].FrameTimesMs[f]:0.###}"));
-        Console.WriteLine($"Сырые фреймтаймы: {path}");
+        Console.WriteLine(Loc.T($"Сырые фреймтаймы: {path}"));
     }
 }

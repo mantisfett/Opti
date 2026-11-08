@@ -5,6 +5,7 @@ using Opti.Measure.Stats;
 using Opti.Workflow;
 using Opti.Workflow.Reports;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -14,7 +15,7 @@ public sealed partial class AppliedFixItem : ObservableObject
     public required string Title { get; init; }
     public required string Changes { get; init; }
     [ObservableProperty] private bool _rolledBack;
-    public string StatusText => RolledBack ? "откачено" : "действует";
+    public string StatusText => RolledBack ? Loc.T("откачено") : Loc.T("действует");
     partial void OnRolledBackChanged(bool value) => OnPropertyChanged(nameof(StatusText));
 }
 
@@ -39,8 +40,8 @@ public sealed partial class CompareViewModel : PageViewModel
         var after = ab is null ? s.After : ab.RunsB;
         BeforeFrames = HtmlReport.Representative(before)?.FrameTimesMs ?? new List<double>();
         AfterFrames = HtmlReport.Representative(after)?.FrameTimesMs ?? new List<double>();
-        BeforeLabel = ab is null ? "До" : "A: " + ab.VariantA;
-        AfterLabel = ab is null ? "После" : "B: " + ab.VariantB;
+        BeforeLabel = ab is null ? Loc.T("До") : "A: " + ab.VariantA;
+        AfterLabel = ab is null ? Loc.T("После") : "B: " + ab.VariantB;
         double? Flip(IEnumerable<MeasurementRun> runs) { var v = runs.Where(r => r.IndependentFlipShare is not null).Select(r => r.IndependentFlipShare!.Value).ToList(); return v.Count > 0 ? v.Average() : null; }
         if (Flip(before) is { } fb && Flip(after) is { } fa) FlipText = $"Independent Flip: {fb * 100:0} % → {fa * 100:0} %";
         LoadFixes();
@@ -50,13 +51,13 @@ public sealed partial class CompareViewModel : PageViewModel
     {
         outcome ??= s.Before.Count > 0 && s.After.Count > 0 ? m.Services.Workflow.Compare(s) : null;
         var result = outcome?.Result ?? new ComparisonResult();
-        return new CompareViewModel(m, s, result, outcome?.Message ?? "Нет данных для сравнения.", outcome?.Recommendation ?? Recommendation.NeedMoreData, null, outcome);
+        return new CompareViewModel(m, s, result, outcome?.Message ?? Loc.T("Нет данных для сравнения."), outcome?.Recommendation ?? Recommendation.NeedMoreData, null, outcome);
     }
 
     public static CompareViewModel ForAb(MainViewModel m, TuneSession s, AbTestRecord ab, ComparisonResult result) =>
         new(m, s, result, ab.Summary ?? "", ab.KeptB ? Recommendation.Keep : Recommendation.MarkNoEffect, ab, null);
 
-    public override string Title => _ab is null ? "Сравнение «до / после»" : $"A/B: {_ab.VariantB}";
+    public override string Title => _ab is null ? Loc.T("Сравнение «до / после»") : $"A/B: {_ab.VariantB}";
     public ComparisonResult Result { get; }
     public ObservableCollection<MetricCard> Cards { get; } = new();
     public ObservableCollection<string> Warnings { get; } = new();
@@ -91,22 +92,22 @@ public sealed partial class CompareViewModel : PageViewModel
     [RelayCommand]
     private async Task RollbackFixAsync(AppliedFixItem item)
     {
-        if (!await Main.Services.ConfirmAsync("Откатить исправление?", item.Title)) return;
+        if (!await Main.Services.ConfirmAsync(Loc.T("Откатить исправление?"), item.Title)) return;
         var r = await Task.Run(() => Main.Services.Workflow.RollbackFix(_session, item.FixId));
         item.RolledBack = true;
         Main.ShowMessage(r.Errors.Count == 0
-            ? $"«{item.Title}» откачено." + (r.ChangedSinceOpti.Count > 0 ? $" Настройки, изменённые после Opti ({r.ChangedSinceOpti.Count}), оставлены как есть." : "")
-            : "Ошибки отката: " + string.Join("; ", r.Errors), r.Errors.Count > 0);
+            ? Loc.T($"«{item.Title}» откачено.") + (r.ChangedSinceOpti.Count > 0 ? Loc.T($" Настройки, изменённые после Opti ({r.ChangedSinceOpti.Count}), оставлены как есть.") : "")
+            : Loc.T("Ошибки отката: ") + string.Join("; ", r.Errors), r.Errors.Count > 0);
     }
 
     [RelayCommand]
     private async Task RollbackSessionAsync()
     {
-        if (!await Main.Services.ConfirmAsync("Откат сессии", "Вернуть все изменения этой сессии к исходным значениям?")) return;
+        if (!await Main.Services.ConfirmAsync(Loc.T("Откат сессии"), Loc.T("Вернуть все изменения этой сессии к исходным значениям?"))) return;
         var r = await Task.Run(() => Main.Services.Workflow.RollbackSession(_session));
         LoadFixes();
         OnPropertyChanged(nameof(SuggestRollback));
-        Main.ShowMessage(r.Summary() + " Некоторые настройки вернутся после перезагрузки.", r.Errors.Count > 0);
+        Main.ShowMessage(r.Summary() + Loc.T(" Некоторые настройки вернутся после перезагрузки."), r.Errors.Count > 0);
     }
 
     [RelayCommand]
@@ -140,7 +141,7 @@ public sealed partial class CompareViewModel : PageViewModel
                     for (int f = 0; f < runs[r].FrameTimesMs.Count; f++)
                         w.WriteLine(FormattableString.Invariant($"{set},{r + 1},{f},{runs[r].FrameTimesMs[f]:0.###}"));
         }
-        Main.ShowMessage("CSV сохранён: " + path);
+        Main.ShowMessage(Loc.T("CSV сохранён: ") + path);
     }
 
     [RelayCommand]

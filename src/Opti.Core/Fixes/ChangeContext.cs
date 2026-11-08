@@ -1,4 +1,5 @@
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Core.Fixes;
 
@@ -42,7 +43,7 @@ public sealed class ChangeContext
         var backend = _backends.Get(type);
         StateValue current;
         try { current = backend.Read(target); }
-        catch (Exception ex) { throw new ChangeAbortedException($"Не удалось прочитать исходное значение {type} {target}: {ex.Message}", ex); }
+        catch (Exception ex) { throw new ChangeAbortedException(Loc.T($"Не удалось прочитать исходное значение {type} {target}: {ex.Message}"), ex); }
 
         if (current == value) return null;
 
@@ -53,14 +54,14 @@ public sealed class ChangeContext
             Before = original, After = value, SessionId = SessionId,
         };
         try { record.Id = _journal.Append(record); }
-        catch (Exception ex) { throw new ChangeAbortedException($"Не удалось сохранить исходное значение в журнал: {ex.Message}", ex); }
+        catch (Exception ex) { throw new ChangeAbortedException(Loc.T($"Не удалось сохранить исходное значение в журнал: {ex.Message}"), ex); }
 
         try { backend.Write(target, value); }
         catch (Exception ex)
         {
             // изменение не произошло — запись в журнале не нужна
             _journal.Remove(record.Id);
-            throw new ChangeAbortedException($"Не удалось изменить {type} {target}: {ex.Message}", ex);
+            throw new ChangeAbortedException(Loc.T($"Не удалось изменить {type} {target}: {ex.Message}"), ex);
         }
         // Настройка уже изменена: если подтверждение не запишется, запись останется «неподтверждённой»,
         // но исходное значение в ней есть — откат всё равно возможен.

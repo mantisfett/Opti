@@ -1,4 +1,5 @@
 using Opti.Bench;
+using Opti.Core.Localization;
 
 namespace Opti.App;
 
@@ -11,6 +12,10 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Язык: --lang ru|en (для снимков и демо), иначе из настроек (auto — по языку Windows)
+        int li = Array.IndexOf(args, "--lang");
+        Opti.Core.Localization.Loc.SetLanguage(li >= 0 && li + 1 < args.Length ? args[li + 1] : SafeLanguage(args));
+        Localizer.Install();
         if (BenchProgram.IsBenchInvocation(args)) return BenchProgram.Run(args);
         // Снимки интерфейса на демо-данных (CI): система не трогается, блокировка экземпляра не нужна
         int shots = Array.IndexOf(args, "--screenshots");
@@ -35,7 +40,7 @@ public static class Program
         using var instance = Opti.Workflow.SingleInstance.TryAcquire(TimeSpan.FromSeconds(3));
         if (instance is null)
         {
-            System.Windows.MessageBox.Show("Opti уже запущен (окно или командная строка). Закройте его и попробуйте снова.", "Opti",
+            System.Windows.MessageBox.Show(Loc.T("Opti уже запущен (окно или командная строка). Закройте его и попробуйте снова."), "Opti",
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             return 3;
         }
@@ -45,5 +50,13 @@ public static class Program
         // Задаётся после загрузки ресурсов приложения, чтобы словарь темы не был перезаписан.
         app.ThemeMode = System.Windows.ThemeMode.System;
         return app.Run();
+    }
+
+    /// <summary>Язык из settings.json — до создания сервисов; в демо и снимках настройки не читаются.</summary>
+    private static string SafeLanguage(string[] args)
+    {
+        if (args.Contains("--demo", StringComparer.OrdinalIgnoreCase) || args.Contains("--screenshots", StringComparer.OrdinalIgnoreCase)) return "auto";
+        try { return Opti.Workflow.OptiSettings.Load().Language; }
+        catch { return "auto"; }
     }
 }

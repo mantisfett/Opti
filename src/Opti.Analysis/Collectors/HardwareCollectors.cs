@@ -3,13 +3,14 @@ using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Opti.Core.Profile;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
 [SupportedOSPlatform("windows")]
 public sealed class DeviceCollector : ICollector
 {
-    public string Name => "Устройство";
+    public string Name => Loc.T("Устройство");
     private static readonly int[] LaptopChassis = { 8, 9, 10, 11, 12, 14, 18, 21, 30, 31, 32 };
 
     public void Collect(SystemProfile p)
@@ -89,7 +90,7 @@ public sealed class OsCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed class CpuCollector : ICollector
 {
-    public string Name => "Процессор";
+    public string Name => Loc.T("Процессор");
 
     public void Collect(SystemProfile p)
     {
@@ -112,7 +113,7 @@ public sealed class CpuCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed class GpuDisplayCollector : ICollector
 {
-    public string Name => "Видеокарты и экраны";
+    public string Name => Loc.T("Видеокарты и экраны");
 
     public void Collect(SystemProfile p)
     {
@@ -155,8 +156,8 @@ public sealed class GpuDisplayCollector : ICollector
             var pnp = w.Str("PNPDeviceID") ?? "";
             var name = w.Str("Name") ?? "";
             var compat = w.Str("AdapterCompatibility") ?? "";
-            bool basic = name.Contains("Basic Display", StringComparison.OrdinalIgnoreCase) || name.Contains("Базовый видеоадаптер", StringComparison.OrdinalIgnoreCase)
-                         || compat.Contains("Standard display types", StringComparison.OrdinalIgnoreCase) || compat.Contains("Стандартные видеоадаптеры", StringComparison.OrdinalIgnoreCase);
+            bool basic = name.Contains("Basic Display", StringComparison.OrdinalIgnoreCase) || name.Contains(Loc.T("Базовый видеоадаптер"), StringComparison.OrdinalIgnoreCase)
+                         || compat.Contains("Standard display types", StringComparison.OrdinalIgnoreCase) || compat.Contains(Loc.T("Стандартные видеоадаптеры"), StringComparison.OrdinalIgnoreCase);
             if (!basic || !pnp.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase)) continue;
             var vendor = GpuClassifier.VendorFromPnp(pnp);
             p.Gpus.Add(new GpuInfo
@@ -212,7 +213,7 @@ public sealed class GpuDisplayCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed partial class MemoryCollector : ICollector
 {
-    public string Name => "Память";
+    public string Name => Loc.T("Память");
 
     public void Collect(SystemProfile p)
     {

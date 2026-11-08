@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
+using Opti.Core.Localization;
 
 namespace Opti.Measure.Capture;
 
@@ -34,7 +35,7 @@ public sealed class EtwPresentCapture : IDisposable
     public void Start()
     {
         if (!(TraceEventSession.IsElevated() ?? false))
-            throw new UnauthorizedAccessException("Для замера кадров через ETW нужны права администратора.");
+            throw new UnauthorizedAccessException(Loc.T("Для замера кадров через ETW нужны права администратора."));
         _session = new TraceEventSession(SessionName) { StopOnDispose = true };
         _session.EnableProvider(DxgiProvider, TraceEventLevel.Informational);
         _session.EnableProvider(D3D9Provider, TraceEventLevel.Informational);

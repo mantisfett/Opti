@@ -3,6 +3,7 @@ using Opti.Core.Profile;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
+using Opti.Core.Localization;
 
 namespace Opti.Measure.Capture;
 
@@ -20,7 +21,7 @@ public static class EtwDpcCapture
     public static DpcLatencyInfo Run(TimeSpan duration, CancellationToken ct = default)
     {
         if (!(TraceEventSession.IsElevated() ?? false))
-            throw new UnauthorizedAccessException("Для теста DPC/ISR нужны права администратора.");
+            throw new UnauthorizedAccessException(Loc.T("Для теста DPC/ISR нужны права администратора."));
 
         var images = new List<Image>();
         var byRoutine = new Dictionary<ulong, Acc>();
@@ -67,7 +68,7 @@ public static class EtwDpcCapture
             foreach (var (routine, acc) in byRoutine)
             {
                 var img = images.FirstOrDefault(i => routine >= i.Base && routine < i.Base + i.Size);
-                var name = img?.Name ?? "неизвестный драйвер";
+                var name = img?.Name ?? Loc.T("неизвестный драйвер");
                 if (!drivers.TryGetValue(name, out var dl)) drivers[name] = dl = new DriverLatency { Driver = name };
                 dl.MaxDpcUs = Math.Max(dl.MaxDpcUs, acc.MaxDpcUs);
                 dl.MaxIsrUs = Math.Max(dl.MaxIsrUs, acc.MaxIsrUs);

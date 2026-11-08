@@ -2,6 +2,7 @@ using Opti.Core.Fixes;
 using Opti.Core.Profile;
 using Opti.Core.Registry;
 using Opti.Fixes.Backends;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Catalog;
 
@@ -41,16 +42,16 @@ public sealed class RegistryPerfDefaultsFix : RegistryDefaultsFixBase
 {
     protected override RegistryRuleGroup Group => RegistryRuleGroup.Performance;
     public override string Id => FixIds.RegistryPerfDefaults;
-    public override string Title => "Вернуть стандартные значения реестра (вредные «твики»)";
-    public override string Explanation => "Убирает значения, оставленные «оптимизаторами»: большой системный кеш, отключённое восстановление видеодрайвера, " +
-                                          "отключённые SysMain и Prefetch и т. п. Ставит значения, как в чистой Windows. Вступает в силу после перезагрузки.";
+    public override string Title => Loc.T("Вернуть стандартные значения реестра (вредные «твики»)");
+    public override string Explanation => Loc.T("Убирает значения, оставленные «оптимизаторами»: большой системный кеш, отключённое восстановление видеодрайвера, ") +
+                                          Loc.T("отключённые SysMain и Prefetch и т. п. Ставит значения, как в чистой Windows. Вступает в силу после перезагрузки.");
 }
 
 public sealed class RegistrySecurityDefaultsFix : RegistryDefaultsFixBase
 {
     protected override RegistryRuleGroup Group => RegistryRuleGroup.UpdatesAndSecurity;
     public override string Id => FixIds.RegistrySecurityDefaults;
-    public override string Title => "Включить обратно обновления и защиту Windows";
-    public override string Explanation => "Снимает запреты на Центр обновления, драйверы из него, службы BITS и звука, Microsoft Defender и защиту процессора — " +
-                                          "если их отключили через реестр. Вступает в силу после перезагрузки.";
+    public override string Title => Loc.T("Включить обратно обновления и защиту Windows");
+    public override string Explanation => Loc.T("Снимает запреты на Центр обновления, драйверы из него, службы BITS и звука, Microsoft Defender и защиту процессора — ") +
+                                          Loc.T("если их отключили через реестр. Вступает в силу после перезагрузки.");
 }

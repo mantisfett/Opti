@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -34,12 +35,12 @@ public sealed partial class AutoSetupViewModel : PageViewModel
         var st = main.Services.Settings;
         Levels = new[]
         {
-            new TestLevelOption { Level = TestLevel.Full, Icon = "", Title = "Полный тест",
-                Description = $"{st.MeasureRuns} прогона по {st.SyntheticDurationSec} с до и после. Самый точный результат." },
-            new TestLevelOption { Level = TestLevel.Quick, Icon = "", Title = "Быстрый тест",
-                Description = "2 прогона по 20 с. Быстрее, но мелкие изменения утонут в шуме." },
-            new TestLevelOption { Level = TestLevel.None, Icon = "", Title = "Без теста",
-                Description = "Только применить. Эффект не будет доказан замером." },
+            new TestLevelOption { Level = TestLevel.Full, Icon = "", Title = Loc.T("Полный тест"),
+                Description = Loc.T($"{st.MeasureRuns} прогона по {st.SyntheticDurationSec} с до и после. Самый точный результат.") },
+            new TestLevelOption { Level = TestLevel.Quick, Icon = "", Title = Loc.T("Быстрый тест"),
+                Description = Loc.T("2 прогона по 20 с. Быстрее, но мелкие изменения утонут в шуме.") },
+            new TestLevelOption { Level = TestLevel.None, Icon = "", Title = Loc.T("Без теста"),
+                Description = Loc.T("Только применить. Эффект не будет доказан замером.") },
         };
         _selectedLevel = Levels[0];
         _runs = st.MeasureRuns;
@@ -47,7 +48,7 @@ public sealed partial class AutoSetupViewModel : PageViewModel
         Refresh();
     }
 
-    public override string Title => "Исправить автоматически";
+    public override string Title => Loc.T("Исправить автоматически");
 
     /// <summary>Исправления, которые можно применить в автоцикле (без A/B и без ручного выбора пунктов).</summary>
     public static List<FixItem> Candidates(MainViewModel main, TuneSession s) =>
@@ -90,10 +91,10 @@ public sealed partial class AutoSetupViewModel : PageViewModel
         int min = Math.Max(1, (int)Math.Round(2 * Runs * perRun / 60.0));
         var steps = new List<string>();
         bool test = SelectedLevel.Level != TestLevel.None && !HasBefore;
-        if (test) steps.Add($"тест ≈ {min / 2.0:0.#} мин");
-        steps.Add($"{SelectedCount} {AnalysisViewModel.Plural(SelectedCount, "исправление", "исправления", "исправлений")} с точкой восстановления");
-        if (reboot) steps.Add("перезагрузка (Opti продолжит сам)");
-        if (SelectedLevel.Level != TestLevel.None) steps.Add("повторный тест и результат");
+        if (test) steps.Add(Loc.T($"тест ≈ {min / 2.0:0.#} мин"));
+        steps.Add(Loc.T($"{SelectedCount} {AnalysisViewModel.Plural(SelectedCount, "исправление", "исправления", "исправлений")} с точкой восстановления"));
+        if (reboot) steps.Add(Loc.T("перезагрузка (Opti продолжит сам)"));
+        if (SelectedLevel.Level != TestLevel.None) steps.Add(Loc.T("повторный тест и результат"));
         PlanText = string.Join(" → ", steps);
     }
 

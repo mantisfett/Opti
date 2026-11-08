@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Sessions;
 
@@ -22,11 +23,11 @@ public sealed class WindowsResumeScheduler : IResumeScheduler
     {
         // Задача запускается без UAC — только из защищённой копии, а не из «Загрузок».
         exePath = ResumeBinary.Protect(exePath, Opti.Fixes.Backends.OptiPaths.BinDir);
-        if (exePath.Contains('"')) throw new ArgumentException("Недопустимый путь к программе");
+        if (exePath.Contains('"')) throw new ArgumentException(Loc.T("Недопустимый путь к программе"));
         var user = Environment.UserDomainName + "\\" + Environment.UserName;
         var tr = $"\\\"{exePath}\\\" {arguments}";
         var r = _runner.Run("schtasks.exe", $"/Create /F /TN \"{TaskName}\" /SC ONLOGON /RU \"{user}\" /IT /RL HIGHEST /TR \"{tr}\"");
-        if (!r.Ok) throw new IOException("Не удалось создать задачу продолжения: " + (r.StdErr + r.StdOut).Trim());
+        if (!r.Ok) throw new IOException(Loc.T("Не удалось создать задачу продолжения: ") + (r.StdErr + r.StdOut).Trim());
     }
 
     public void Cancel() => _runner.Run("schtasks.exe", $"/Delete /F /TN \"{TaskName}\"");
@@ -96,5 +97,5 @@ public static class RebootHelper
 
     [SupportedOSPlatform("windows")]
     public static void RestartNow(int delaySec = 10) =>
-        ProcessRunner.Instance.Run("shutdown.exe", $"/r /t {delaySec} /c \"Opti: перезагрузка для применения настроек. Программа продолжит работу после входа.\"");
+        ProcessRunner.Instance.Run("shutdown.exe", Loc.T($"/r /t {delaySec} /c \"Opti: перезагрузка для применения настроек. Программа продолжит работу после входа.\""));
 }

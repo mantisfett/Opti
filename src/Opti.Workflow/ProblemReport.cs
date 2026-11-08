@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using Opti.Core.Fixes;
 using Opti.Core.Json;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow;
 
@@ -19,7 +20,7 @@ public static class ProblemReport
         using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
 
         AddText(zip, "about.txt",
-            $"Opti {appVersion}\nWindows {Environment.OSVersion.Version}\n64-бит: {Environment.Is64BitOperatingSystem}\nСоздан: {DateTimeOffset.Now:O}\n");
+            Loc.T($"Opti {appVersion}\nWindows {Environment.OSVersion.Version}\n64-бит: {Environment.Is64BitOperatingSystem}\nСоздан: {DateTimeOffset.Now:O}\n"));
         AddText(zip, "journal.json", OptiJson.Serialize(new { sessions = journal.GetSessions(), changes = journal.GetAll() }));
 
         foreach (var (sub, pattern, max) in new[] { ("logs", "*.log", 14), ("sessions", "*.json", 20) })

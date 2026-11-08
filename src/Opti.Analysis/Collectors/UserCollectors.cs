@@ -4,13 +4,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Opti.Core.Profile;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
 [SupportedOSPlatform("windows")]
 public sealed class BackgroundCollector : ICollector
 {
-    public string Name => "Фоновые программы";
+    public string Name => Loc.T("Фоновые программы");
 
     private const string Explorer = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved";
     private static readonly (string RunKey, string ApprovedKey)[] RunKeys =
@@ -220,7 +221,7 @@ public static class ObsConfig
 [SupportedOSPlatform("windows")]
 public sealed partial class NetworkCollector : ICollector
 {
-    public string Name => "Сеть";
+    public string Name => Loc.T("Сеть");
 
     public void Collect(SystemProfile p)
     {

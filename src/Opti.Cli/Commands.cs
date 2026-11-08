@@ -15,6 +15,7 @@ using Opti.Workflow;
 using Opti.Workflow.Measuring;
 using Opti.Workflow.Reports;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.Cli;
 
@@ -23,8 +24,8 @@ internal static partial class Commands
 {
     public static int Help()
     {
-        Console.WriteLine($"""
-            Opti {AppInfo.Version} — диагностика лагов, точечные исправления и честный замер «до / после».
+        Console.WriteLine($"Opti {AppInfo.Version} — " + Loc.T("диагностика лагов, точечные исправления и честный замер «до / после»."));
+        Console.WriteLine(Loc.T("""
 
             Пошагово (рекомендуется):
               run      [--goal <режим>] [--mode game|synthetic|presentmon]   Мастер: анализ → замер «до» → план → применение →
@@ -61,8 +62,8 @@ internal static partial class Commands
               max       Максимальная — всё, что даёт прирост: питание без ограничений, мышь, таймеры (с A/B-замером)
               balanced  Баланс — исправления ошибок + питание, сеть и игровые параметры Windows (по умолчанию)
               min       Минимальная — только исправление ошибок и возврат стандартных значений Windows
-            Данные: {OptiPaths.DataDir}
-            """);
+            """));
+        Console.WriteLine(Loc.T("Данные: ") + OptiPaths.DataDir);
         return 0;
     }
 
@@ -78,7 +79,7 @@ internal static partial class Commands
         "latency" or "fps" => UserGoal.Maximum,
         "smooth" or "stream" => UserGoal.Balanced,
         "quiet" => UserGoal.Minimal,
-        var x => GoalNames.FromLegacy(x) ?? throw new ArgumentException($"Неизвестный режим «{x}». Варианты: max, balanced, min."),
+        var x => GoalNames.FromLegacy(x) ?? throw new ArgumentException(Loc.T($"Неизвестный режим «{x}». Варианты: max, balanced, min.")),
     };
 
     internal static MeasureMode ParseMode(string? s, MeasureMode def) => (s ?? "").ToLowerInvariant() switch
@@ -87,22 +88,22 @@ internal static partial class Commands
         "game" => MeasureMode.Game,
         "synthetic" or "bench" => MeasureMode.Synthetic,
         "presentmon" or "pm" => MeasureMode.PresentMon,
-        var x => throw new ArgumentException($"Неизвестный режим замера «{x}». Варианты: game, synthetic, presentmon."),
+        var x => throw new ArgumentException(Loc.T($"Неизвестный режим замера «{x}». Варианты: game, synthetic, presentmon.")),
     };
 
     private static void RequireWindows(string what)
     {
-        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException(what + " возможно только в Windows.");
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException(what + Loc.T(" возможно только в Windows."));
     }
 
     private static UserGoal AskGoal(Args a, OptiSettings settings)
     {
         if (a.Get("goal") is { } g) return ParseGoal(g);
-        Console.WriteLine("\nРежим:");
+        Console.WriteLine(Loc.T("\nРежим:"));
         int n = 0;
         foreach (var i in new[] { UserGoal.Maximum, UserGoal.Balanced, UserGoal.Minimal }.Select(GoalInfo.Of))
             Console.WriteLine($"  {++n} — {i.Title}: {i.Summary}");
-        Console.Write($"Выберите [1–3, Enter — {settings.DefaultGoal.Ru()}]: ");
+        Console.Write(Loc.T($"Выберите [1–3, Enter — {settings.DefaultGoal.Ru()}]: "));
         return ParseGoal(Console.ReadLine()?.Trim(), settings.DefaultGoal);
     }
 
@@ -110,54 +111,54 @@ internal static partial class Commands
     {
         if (a.Get("mode") is { } m) return ParseMode(m, MeasureMode.Game);
         bool bench = OperatingSystem.IsWindows() && SyntheticRunner.Locate() is not null;
-        Console.WriteLine("\nКак замерять:\n  1 — в реальной игре (вы запускаете игру, программа пишет кадры)" +
-                          (bench ? "\n  2 — синтетический тест Opti (полностью воспроизводимо, без игры)" : "") +
-                          "\n  3 — через PresentMon (если установлен: + режим вывода и задержка)");
-        Console.Write("Выберите [1–3, Enter — 1]: ");
+        Console.WriteLine(Loc.T("\nКак замерять:\n  1 — в реальной игре (вы запускаете игру, программа пишет кадры)") +
+                          (bench ? Loc.T("\n  2 — синтетический тест Opti (полностью воспроизводимо, без игры)") : "") +
+                          Loc.T("\n  3 — через PresentMon (если установлен: + режим вывода и задержка)"));
+        Console.Write(Loc.T("Выберите [1–3, Enter — 1]: "));
         return Console.ReadLine()?.Trim() switch { "2" when bench => MeasureMode.Synthetic, "3" => MeasureMode.PresentMon, _ => MeasureMode.Game };
     }
 
     /// <summary>Серия прогонов с подсказками. Для игры — пауза перед каждым прогоном.</summary>
     internal static async Task<List<MeasurementRun>> MeasureSeries(OptiSettings settings, MeasureMode mode, string labelPrefix, Args a, string? process)
     {
-        RequireWindows("Замер");
+        RequireWindows(Loc.T("Замер"));
         var runner = MeasureRunnerFactory.Create(mode, settings);
         int runs = a.GetInt("runs", settings.MeasureRuns), duration = a.GetInt("duration", settings.MeasureDurationSec),
             warmup = a.GetInt("warmup", mode == MeasureMode.Synthetic ? 5 : settings.MeasureWarmupSec);
         var list = new List<MeasurementRun>();
-        Console.WriteLine($"\n{runner.Name}: {runs} прогона по {duration} с (+{warmup} с прогрева не учитываются).");
+        Console.WriteLine(Loc.T($"\n{runner.Name}: {runs} прогона по {duration} с (+{warmup} с прогрева не учитываются)."));
         if (mode != MeasureMode.Synthetic)
-            Console.WriteLine("Совет: подключите зарядку, закройте лишнее, в игре стойте на одном месте или повторяйте один и тот же отрезок.");
+            Console.WriteLine(Loc.T("Совет: подключите зарядку, закройте лишнее, в игре стойте на одном месте или повторяйте один и тот же отрезок."));
         for (int i = 1; i <= runs; i++)
         {
             if (mode != MeasureMode.Synthetic)
             {
-                Console.Write($"\nПрогон {i}/{runs}: переключитесь в игру и нажмите Enter здесь (замер начнётся через 5 с)… ");
+                Console.Write(Loc.T($"\nПрогон {i}/{runs}: переключитесь в игру и нажмите Enter здесь (замер начнётся через 5 с)… "));
                 Console.ReadLine();
                 await Task.Delay(5000);
             }
             var progress = new Progress<MeasureProgress>(pr =>
             {
                 var fps = pr.RecentFrameTimesMs.Count > 10 ? $" · {1000.0 / pr.RecentFrameTimesMs.Average():0} FPS" : "";
-                Console.Write($"\r  {(pr.Warmup ? "прогрев" : "запись ")} {pr.ElapsedSec,5:0}/{pr.TotalSec:0} с{(pr.Process is null ? "" : " · " + pr.Process)}{fps}      ");
+                Console.Write(Loc.T($"\r  {(pr.Warmup ? "прогрев" : "запись ")} {pr.ElapsedSec,5:0}/{pr.TotalSec:0} с{(pr.Process is null ? "" : " · " + pr.Process)}{fps}      "));
             });
             try
             {
                 var run = await runner.RunAsync(new MeasureRequest($"{labelPrefix} #{i}", duration, warmup, process ?? a.Get("process"),
-                    mode == MeasureMode.Synthetic ? "синтетика" : a.Get("scenario") ?? "игра"), progress);
+                    mode == MeasureMode.Synthetic ? Loc.T("синтетика") : a.Get("scenario") ?? Loc.T("игра")), progress);
                 Console.WriteLine();
                 list.Add(run);
                 var m = Metrics.ComputeAll(run.FrameTimesMs);
-                Console.WriteLine($"  {run.Conditions.ProcessName}: {run.FrameTimesMs.Count} кадров · средний FPS {m[MetricId.AvgFps]:0.#} · 1 % low {m[MetricId.Low1Fps]:0.#} · p99 {m[MetricId.FrameTimeP99]:0.##} мс" +
+                Console.WriteLine(Loc.T($"  {run.Conditions.ProcessName}: {run.FrameTimesMs.Count} кадров · средний FPS {m[MetricId.AvgFps]:0.#} · 1 % low {m[MetricId.Low1Fps]:0.#} · p99 {m[MetricId.FrameTimeP99]:0.##} мс") +
                                   (run.IndependentFlipShare is { } f ? $" · Independent Flip {f * 100:0} %" : "") +
-                                  (run.ThermalThrottled ? "  [троттлинг — прогон ненадёжен]" : ""));
+                                  (run.ThermalThrottled ? Loc.T("  [троттлинг — прогон ненадёжен]") : ""));
                 foreach (var w in run.Warnings) Output.Color(ConsoleColor.DarkYellow, "  ! " + w + "\n");
             }
             catch (InvalidOperationException ex)
             {
                 Console.WriteLine();
                 Output.Color(ConsoleColor.Red, "  " + ex.Message + "\n");
-                if (!Output.Confirm("  Повторить прогон?")) break;
+                if (!Output.Confirm(Loc.T("  Повторить прогон?"))) break;
                 i--;
             }
         }
@@ -166,23 +167,23 @@ internal static partial class Commands
 
     private static TuneSession SessionForWork(CliHost host, Args a, bool needAnalysis = true)
     {
-        if (a.Get("session") is { } id) return host.Workflow.Store.Load(id) ?? throw new ArgumentException($"Сессия {id} не найдена");
+        if (a.Get("session") is { } id) return host.Workflow.Store.Load(id) ?? throw new ArgumentException(Loc.T($"Сессия {id} не найдена"));
         var open = host.Workflow.Store.LatestOpen();
         if (open is not null && open.Stage < SessionStage.Compared) return open;
-        if (!needAnalysis) throw new InvalidOperationException("Нет открытой сессии. Начните с «opti-cli run».");
+        if (!needAnalysis) throw new InvalidOperationException(Loc.T("Нет открытой сессии. Начните с «opti-cli run»."));
         var analysis = AnalysisLoader.LoadOrCollect(a);
         return host.Workflow.StartSession(analysis, ParseGoal(a.Get("goal"), host.Settings.DefaultGoal));
     }
 
     private static void PrintApplyReport(ApplyReport report)
     {
-        Output.Header($"Применено (сессия {report.SessionId})");
-        if (report.RestorePoint is not null) Console.WriteLine($"Точка восстановления: {report.RestorePoint}");
+        Output.Header(Loc.T($"Применено (сессия {report.SessionId})"));
+        if (report.RestorePoint is not null) Console.WriteLine(Loc.T($"Точка восстановления: {report.RestorePoint}"));
         if (report.RestorePointWarning is not null) Output.Color(ConsoleColor.Yellow, report.RestorePointWarning + "\n");
         foreach (var res in report.Results)
         {
             var color = res.Outcome switch { FixOutcome.Applied => ConsoleColor.Green, FixOutcome.Failed => ConsoleColor.Red, _ => ConsoleColor.Gray };
-            var word = res.Outcome switch { FixOutcome.Applied => "применено", FixOutcome.Failed => "ошибка", FixOutcome.NothingToChange => "уже в нужном состоянии", _ => "пропущено" };
+            var word = res.Outcome switch { FixOutcome.Applied => Loc.T("применено"), FixOutcome.Failed => Loc.T("ошибка"), FixOutcome.NothingToChange => Loc.T("уже в нужном состоянии"), _ => Loc.T("пропущено") };
             Output.Color(color, $"  {res.FixId}: {word}");
             Console.WriteLine(res.Error is null ? "" : " — " + res.Error);
             foreach (var c in res.Changes) Output.Color(ConsoleColor.DarkGray, $"     {c.Type} {c.Target}: {c.Before} → {c.After}\n");
@@ -213,14 +214,14 @@ internal static partial class Commands
 
     private static bool OfferReboot(Args a)
     {
-        Output.Color(ConsoleColor.Yellow, "\nДля части изменений нужна перезагрузка. После входа в систему Opti продолжит автоматически.\n");
-        if (a.Has("reboot") || Output.Confirm("Перезагрузить сейчас?"))
+        Output.Color(ConsoleColor.Yellow, Loc.T("\nДля части изменений нужна перезагрузка. После входа в систему Opti продолжит автоматически.\n"));
+        if (a.Has("reboot") || Output.Confirm(Loc.T("Перезагрузить сейчас?")))
         {
             if (OperatingSystem.IsWindows()) RebootHelper.RestartNow();
-            Console.WriteLine("Перезагрузка через 10 секунд…");
+            Console.WriteLine(Loc.T("Перезагрузка через 10 секунд…"));
             return true;
         }
-        Console.WriteLine("Перезагрузитесь, когда будет удобно. Продолжение — «opti-cli resume» (запустится само при входе).");
+        Console.WriteLine(Loc.T("Перезагрузитесь, когда будет удобно. Продолжение — «opti-cli resume» (запустится само при входе)."));
         return false;
     }
 }

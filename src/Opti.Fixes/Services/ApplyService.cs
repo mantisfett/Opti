@@ -1,6 +1,7 @@
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
 using Opti.Core.Strategy;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Services;
 
@@ -65,7 +66,7 @@ public sealed class ApplyService
                 // откат частично применённого исправления
                 var rollback = new RollbackService(_backends, _journal);
                 var partial = rollback.RollbackRecords(ctx.Records, force: true);
-                var msg = ex.Message + (partial.Errors.Count > 0 ? " | ошибки отката: " + string.Join("; ", partial.Errors) : "");
+                var msg = ex.Message + (partial.Errors.Count > 0 ? Loc.T(" | ошибки отката: ") + string.Join("; ", partial.Errors) : "");
                 report.Results.Add(new FixApplyResult(fix.Id, FixOutcome.Failed, Array.Empty<ChangeRecord>(), msg));
                 Opti.Core.Diagnostics.OptiLog.Warn($"{report.SessionId}: {fix.Id} не применено: {msg}", ex);
             }

@@ -5,6 +5,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Opti.ViewModels;
 using Opti.ViewModels.Demo;
+using Opti.Core.Localization;
 
 namespace Opti.App;
 
@@ -73,10 +74,10 @@ internal static class Screenshots
 
         // Полный цикл на эмуляции: замер «до» → исправления → замер «после» → сравнение
         var wf = services.Workflow;
-        wf.RecordBefore(s, Enumerable.Range(0, 3).Select(i => DemoAppServices.SyntheticRun($"до {i + 1}", after: false, seed: 10 + i)));
+        wf.RecordBefore(s, Enumerable.Range(0, 3).Select(i => DemoAppServices.SyntheticRun(Loc.T($"до {i + 1}"), after: false, seed: 10 + i)));
         var fixes = wf.BuildPlan(s).Fixes.Where(f => f.Selected && !f.ApplySeparately).Select(f => f.Fix).ToList();
         wf.Apply(s, fixes);
-        wf.RecordAfter(s, Enumerable.Range(0, 3).Select(i => DemoAppServices.SyntheticRun($"после {i + 1}", after: true, seed: 20 + i)));
+        wf.RecordAfter(s, Enumerable.Range(0, 3).Select(i => DemoAppServices.SyntheticRun(Loc.T($"после {i + 1}"), after: true, seed: 20 + i)));
         vm.ShowCompare(CompareViewModel.ForSession(vm, s));
         await Shot("compare");
 

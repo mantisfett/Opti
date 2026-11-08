@@ -4,6 +4,7 @@ using Opti.Core.Profile;
 using Opti.Core.Strategy;
 using Opti.Fixes.Backends;
 using Opti.Measure.Stats;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Sessions;
 
@@ -67,8 +68,8 @@ public sealed class TuneSession
 public sealed class AbTestRecord
 {
     public required string FixId { get; set; }
-    public string VariantA { get; set; } = "исходно";
-    public string VariantB { get; set; } = "изменено";
+    public string VariantA { get; set; } = Loc.T("исходно");
+    public string VariantB { get; set; } = Loc.T("изменено");
     public AbPhase Phase { get; set; } = AbPhase.MeasureA;
     public List<MeasurementRun> RunsA { get; set; } = new();
     public List<MeasurementRun> RunsB { get; set; } = new();

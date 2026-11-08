@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using Opti.Core.Fixes;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -14,7 +15,7 @@ public sealed class WindowsDisplayBackend : IStateBackend
     {
         var (device, prop) = Targets.Split2(target);
         if (prop != "refresh") throw new NotSupportedException(prop);
-        var mode = DisplayNative.GetCurrentMode(device) ?? throw new IOException($"Экран {device} не найден");
+        var mode = DisplayNative.GetCurrentMode(device) ?? throw new IOException(Loc.T($"Экран {device} не найден"));
         return StateValue.Str(mode.Hz.ToString());
     }
 
@@ -57,7 +58,7 @@ public sealed class WindowsNetAdapterBackend : IStateBackend
     private static (string, string) Split(string target)
     {
         var (name, prop) = Targets.Split2(target);
-        if (!Allowed.Contains(prop)) throw new NotSupportedException($"Свойство адаптера {prop} не поддерживается");
+        if (!Allowed.Contains(prop)) throw new NotSupportedException(Loc.T($"Свойство адаптера {prop} не поддерживается"));
         return (name, prop);
     }
 }

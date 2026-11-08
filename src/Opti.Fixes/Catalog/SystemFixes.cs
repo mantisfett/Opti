@@ -1,6 +1,7 @@
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
 using Opti.Fixes.Backends;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Catalog;
 
@@ -31,8 +32,8 @@ public sealed class PowerSchemePerfFix : FixBase
 {
     public override string Id => FixIds.PowerSchemePerf;
     public override FixIntent Intent => FixIntent.Tuning;
-    public override string Title => "Схема питания «Высокая производительность»";
-    public override string Explanation => "Процессор быстрее выходит на высокие частоты и не паркует ядра. Только для настольных ПК; на ноутбуке меняются лишь параметры от сети.";
+    public override string Title => Loc.T("Схема питания «Высокая производительность»");
+    public override string Explanation => Loc.T("Процессор быстрее выходит на высокие частоты и не паркует ядра. Только для настольных ПК; на ноутбуке меняются лишь параметры от сети.");
     public override FixCategory Category => FixCategory.Power;
     public override int Priority => -10; // раньше POWER_AC_TUNING, чтобы тонкая настройка применялась к новой схеме
 
@@ -46,7 +47,7 @@ public sealed class PowerSchemePerfFix : FixBase
 
     protected override void Execute(ChangeContext ctx)
     {
-        var scheme = PickScheme(ctx.Profile) ?? throw new ChangeAbortedException("Схема высокой производительности не найдена");
+        var scheme = PickScheme(ctx.Profile) ?? throw new ChangeAbortedException(Loc.T("Схема высокой производительности не найдена"));
         ctx.Set(ChangeType.PowerSetting, Targets.ActiveScheme, StateValue.Str(scheme.Trim('{', '}').ToLowerInvariant()));
     }
 
@@ -58,10 +59,10 @@ public sealed class PowerAcTuningFix : FixBase
 {
     public override string Id => FixIds.PowerAcTuning;
     public override FixIntent Intent => FixIntent.Tuning;
-    public override string Title => "Питание от сети: без энергосберегающих ограничений";
-    public override string Explanation => "Для режима «от сети»: режим питания Windows «Максимальная производительность» (если стоит «Экономия заряда»), " +
-                                          "максимальное состояние процессора 100 %, без парковки ядер (только ПК), выключено выборочное отключение USB, " +
-                                          "энергосбережение PCIe (ASPM) и Wi-Fi. Параметры батареи не меняются.";
+    public override string Title => Loc.T("Питание от сети: без энергосберегающих ограничений");
+    public override string Explanation => Loc.T("Для режима «от сети»: режим питания Windows «Максимальная производительность» (если стоит «Экономия заряда»), ") +
+                                          Loc.T("максимальное состояние процессора 100 %, без парковки ядер (только ПК), выключено выборочное отключение USB, ") +
+                                          Loc.T("энергосбережение PCIe (ASPM) и Wi-Fi. Параметры батареи не меняются.");
     public override FixCategory Category => FixCategory.Power;
 
     public override bool IsApplicable(SystemProfile p) => p.Power.OnAcPower != false;
@@ -75,7 +76,7 @@ public sealed class PowerAcTuningFix : FixBase
             ctx.Set(ChangeType.PowerSetting, Targets.PowerOverlay, StateValue.Str(PowerGuids.OverlayBestPerformance));
 
         var scheme = ctx.Read(ChangeType.PowerSetting, Targets.ActiveScheme).Value
-                     ?? throw new ChangeAbortedException("Не удалось определить активную схему питания");
+                     ?? throw new ChangeAbortedException(Loc.T("Не удалось определить активную схему питания"));
         void Set(string sub, string setting, uint v) =>
             ctx.Set(ChangeType.PowerSetting, Targets.PowerAc(scheme, sub, setting), StateValue.Str(v.ToString()));
 
@@ -93,9 +94,9 @@ public sealed class PowerThrottlingOffFix : FixBase
     public const string Key = @"HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling";
     public override string Id => FixIds.PowerThrottlingOff;
     public override FixIntent Intent => FixIntent.Tuning;
-    public override string Title => "Отключить Power Throttling";
-    public override string Explanation => "Power Throttling переводит «фоновые» процессы на энергоэффективные режимы. Иногда под него попадают лаунчеры, OBS и сама игра в окне. " +
-                                          "Отключение глобальное — точечное отключение по процессу Windows не поддерживает постоянно.";
+    public override string Title => Loc.T("Отключить Power Throttling");
+    public override string Explanation => Loc.T("Power Throttling переводит «фоновые» процессы на энергоэффективные режимы. Иногда под него попадают лаунчеры, OBS и сама игра в окне. ") +
+                                          Loc.T("Отключение глобальное — точечное отключение по процессу Windows не поддерживает постоянно.");
     public override RiskLevel Risk => RiskLevel.Moderate;
     public override bool RequiresReboot => true;
     public override FixCategory Category => FixCategory.Power;
@@ -106,8 +107,8 @@ public sealed class PowerThrottlingOffFix : FixBase
 public sealed class BcdTimersResetFix : FixBase
 {
     public override string Id => FixIds.BcdTimersReset;
-    public override string Title => "Вернуть стандартные настройки системного таймера (BCD)";
-    public override string Explanation => "Удаляет useplatformclock и useplatformtick из конфигурации загрузки — Windows сама выберет оптимальный таймер. Результат проверяется замером.";
+    public override string Title => Loc.T("Вернуть стандартные настройки системного таймера (BCD)");
+    public override string Explanation => Loc.T("Удаляет useplatformclock и useplatformtick из конфигурации загрузки — Windows сама выберет оптимальный таймер. Результат проверяется замером.");
     public override RiskLevel Risk => RiskLevel.Moderate;
     public override bool RequiresReboot => true;
     public override bool TouchesBcd => true;
@@ -118,7 +119,7 @@ public sealed class BcdTimersResetFix : FixBase
     protected override void Execute(ChangeContext ctx)
     {
         if (ctx.Profile.Security.BitLockerOnSystemDrive == true && !ctx.Options.ContainsKey("bitlockerAcknowledged"))
-            throw new ChangeAbortedException("Включён BitLocker: подтвердите, что ключ восстановления под рукой (опция bitlockerAcknowledged).");
+            throw new ChangeAbortedException(Loc.T("Включён BitLocker: подтвердите, что ключ восстановления под рукой (опция bitlockerAcknowledged)."));
         foreach (var el in new[] { "useplatformclock", "useplatformtick" })
         {
             var t = Targets.Bcd(el);
@@ -132,8 +133,8 @@ public sealed class TimerResolutionGlobalFix : FixBase
     public const string Key = @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel";
     public override string Id => FixIds.TimerResGlobal;
     public override FixIntent Intent => FixIntent.Tuning;
-    public override string Title => "Глобальные запросы разрешения таймера (Windows 11)";
-    public override string Explanation => "Возвращает поведение Windows 10: запрос точного таймера от игры действует, даже когда её окно не на переднем плане. Оставляется только при улучшении по замеру.";
+    public override string Title => Loc.T("Глобальные запросы разрешения таймера (Windows 11)");
+    public override string Explanation => Loc.T("Возвращает поведение Windows 10: запрос точного таймера от игры действует, даже когда её окно не на переднем плане. Оставляется только при улучшении по замеру.");
     public override RiskLevel Risk => RiskLevel.Moderate;
     public override bool RequiresReboot => true;
     public override bool RequiresAbTest => true;
@@ -147,8 +148,8 @@ public sealed class StartupDisableFix : FixBase
 {
     public override string Id => FixIds.StartupDisable;
     public override FixIntent Intent => FixIntent.Preference;
-    public override string Title => "Отключить выбранные программы в автозагрузке";
-    public override string Explanation => "Отключает только отмеченные вами пункты тем же способом, что и «Диспетчер задач». Программы не удаляются; включить обратно можно в любой момент.";
+    public override string Title => Loc.T("Отключить выбранные программы в автозагрузке");
+    public override string Explanation => Loc.T("Отключает только отмеченные вами пункты тем же способом, что и «Диспетчер задач». Программы не удаляются; включить обратно можно в любой момент.");
     public override FixCategory Category => FixCategory.Background;
     public override bool NeedsUserChoice => true;
 
@@ -171,8 +172,8 @@ public sealed class NetAdapterPowerOffFix : FixBase
 {
     public override string Id => FixIds.NetAdapterPowerOff;
     public override FixIntent Intent => FixIntent.Tuning;
-    public override string Title => "Запретить отключение сетевого адаптера для экономии энергии";
-    public override string Explanation => "Снимает «Разрешить отключение этого устройства для экономии энергии» у активных сетевых адаптеров.";
+    public override string Title => Loc.T("Запретить отключение сетевого адаптера для экономии энергии");
+    public override string Explanation => Loc.T("Снимает «Разрешить отключение этого устройства для экономии энергии» у активных сетевых адаптеров.");
     public override FixCategory Category => FixCategory.Network;
     public override bool IsAlreadyApplied(SystemProfile p) => !p.Network.Any(n => n.IsUp && n.AllowComputerToTurnOff == true);
     protected override void Execute(ChangeContext ctx)

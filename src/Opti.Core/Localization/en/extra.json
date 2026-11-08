@@ -1,0 +1,21 @@
+{
+"исправление": "fix",
+"исправления": "fixes",
+"исправлений": "fixes",
+"слот": "slot",
+"Встроенный экран": "Built-in display",
+"включено": "on",
+"выключено": "off",
+"не задано": "not set",
+"Экономия энергии": "Power saver",
+"Сбалансированная": "Balanced",
+"Высокая производительность": "High performance",
+"Максимальная производительность": "Ultimate performance",
+"Экономия заряда": "Battery saver",
+"Эффективность": "Efficiency",
+"Лучшая производительность": "Best performance",
+"{} {} · тест до и после · всё откатывается": "{0} {1} · before/after test · everything can be rolled back",
+"выкл": "off",
+"вкл": "on",
+"по умолчанию": "default"
+}

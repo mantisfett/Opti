@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Opti.Core.Findings;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Core.Drivers;
 
@@ -26,7 +27,7 @@ public static partial class DriverAdvisor
     public static DriverStatus Evaluate(DriverInfo d, DateTimeOffset now)
     {
         if (d.Category == DriverCategory.Display && (d.DeviceName.Contains("Basic Display", StringComparison.OrdinalIgnoreCase)
-            || d.DeviceName.Contains("Базовый видеоадаптер", StringComparison.OrdinalIgnoreCase))) return DriverStatus.Missing;
+            || d.DeviceName.Contains(Loc.T("Базовый видеоадаптер"), StringComparison.OrdinalIgnoreCase))) return DriverStatus.Missing;
         // Стандартный драйвер Microsoft для сети/звука/Bluetooth работает, но без функций и исправлений производителя
         if (d.IsGenericMicrosoft && d.Category is DriverCategory.Network or DriverCategory.Audio or DriverCategory.Bluetooth && VendorOf(d) != ChipVendor.Unknown)
             return DriverStatus.Generic;
@@ -77,17 +78,17 @@ public static partial class DriverAdvisor
     {
         // Для ноутбука важен производитель ноутбука, для настольного — материнской платы
         var name = ((dev.IsLaptop ? dev.Manufacturer : dev.BoardManufacturer ?? dev.Manufacturer) ?? "").ToLowerInvariant();
-        if (name.Contains("asus")) return new("Поддержка ASUS", "https://www.asus.com/support/download-center/");
-        if (name.Contains("micro-star") || name.Contains("msi")) return new("Поддержка MSI", "https://www.msi.com/support/download");
-        if (name.Contains("gigabyte") || name.Contains("aorus")) return new("Поддержка GIGABYTE", "https://www.gigabyte.com/Support");
-        if (name.Contains("asrock")) return new("Поддержка ASRock", "https://www.asrock.com/support/index.asp");
-        if (name.Contains("acer")) return new("Поддержка Acer", "https://www.acer.com/us-en/support/drivers-and-manuals");
-        if (name.Contains("lenovo")) return new("Поддержка Lenovo", "https://pcsupport.lenovo.com/");
-        if (name.Contains("hewlett") || name.StartsWith("hp", StringComparison.Ordinal)) return new("Поддержка HP", "https://support.hp.com/drivers");
-        if (name.Contains("dell") || name.Contains("alienware")) return new("Поддержка Dell", "https://www.dell.com/support/home/");
-        if (name.Contains("huawei")) return new("Поддержка Huawei", "https://consumer.huawei.com/en/support/");
-        if (name.Contains("samsung")) return new("Поддержка Samsung", "https://www.samsung.com/us/support/");
-        if (name.Contains("microsoft")) return new("Поддержка Surface", "https://support.microsoft.com/surface");
+        if (name.Contains("asus")) return new(Loc.T("Поддержка ASUS"), "https://www.asus.com/support/download-center/");
+        if (name.Contains("micro-star") || name.Contains("msi")) return new(Loc.T("Поддержка MSI"), "https://www.msi.com/support/download");
+        if (name.Contains("gigabyte") || name.Contains("aorus")) return new(Loc.T("Поддержка GIGABYTE"), "https://www.gigabyte.com/Support");
+        if (name.Contains("asrock")) return new(Loc.T("Поддержка ASRock"), "https://www.asrock.com/support/index.asp");
+        if (name.Contains("acer")) return new(Loc.T("Поддержка Acer"), "https://www.acer.com/us-en/support/drivers-and-manuals");
+        if (name.Contains("lenovo")) return new(Loc.T("Поддержка Lenovo"), "https://pcsupport.lenovo.com/");
+        if (name.Contains("hewlett") || name.StartsWith("hp", StringComparison.Ordinal)) return new(Loc.T("Поддержка HP"), "https://support.hp.com/drivers");
+        if (name.Contains("dell") || name.Contains("alienware")) return new(Loc.T("Поддержка Dell"), "https://www.dell.com/support/home/");
+        if (name.Contains("huawei")) return new(Loc.T("Поддержка Huawei"), "https://consumer.huawei.com/en/support/");
+        if (name.Contains("samsung")) return new(Loc.T("Поддержка Samsung"), "https://www.samsung.com/us/support/");
+        if (name.Contains("microsoft")) return new(Loc.T("Поддержка Surface"), "https://support.microsoft.com/surface");
         return null;
     }
 
@@ -100,32 +101,32 @@ public static partial class DriverAdvisor
         // Звук, LAN/Wi-Fi Realtek/MediaTek/Broadcom и чипсет ноутбуков — у производителя ПК: драйвер адаптирован под плату.
         return (d.Category, vendor) switch
         {
-            (DriverCategory.Display, ChipVendor.Nvidia) => new("Драйверы NVIDIA", Sources.NvidiaDrivers),
-            (DriverCategory.Display, ChipVendor.Amd) => new("Драйверы AMD", Sources.AmdDrivers),
+            (DriverCategory.Display, ChipVendor.Nvidia) => new(Loc.T("Драйверы NVIDIA"), Sources.NvidiaDrivers),
+            (DriverCategory.Display, ChipVendor.Amd) => new(Loc.T("Драйверы AMD"), Sources.AmdDrivers),
             (DriverCategory.Display, ChipVendor.Intel) => new("Intel Driver & Support Assistant", Sources.IntelDsa),
-            (DriverCategory.Chipset, ChipVendor.Amd) when !dev.IsLaptop => new("Драйвер чипсета AMD", Sources.AmdDrivers),
+            (DriverCategory.Chipset, ChipVendor.Amd) when !dev.IsLaptop => new(Loc.T("Драйвер чипсета AMD"), Sources.AmdDrivers),
             (DriverCategory.Chipset, ChipVendor.Intel) when !dev.IsLaptop => new("Intel Driver & Support Assistant", Sources.IntelDsa),
             (_, ChipVendor.Intel) => new("Intel Driver & Support Assistant", Sources.IntelDsa),
             (_, ChipVendor.Qualcomm) when oem is null => new("Intel Driver & Support Assistant (Killer)", Sources.IntelDsa),
-            (DriverCategory.Storage, ChipVendor.Samsung) => new("Samsung Magician и NVMe-драйвер", "https://semiconductor.samsung.com/consumer-storage/support/tools/"),
+            (DriverCategory.Storage, ChipVendor.Samsung) => new(Loc.T("Samsung Magician и NVMe-драйвер"), "https://semiconductor.samsung.com/consumer-storage/support/tools/"),
             _ when oem is not null => oem,
-            (_, ChipVendor.Amd) => new("Драйверы AMD", Sources.AmdDrivers),
-            (_, ChipVendor.Nvidia) => new("Драйверы NVIDIA", Sources.NvidiaDrivers),
-            _ => new("Необязательные обновления Windows", Sources.WindowsOptionalUpdates),
+            (_, ChipVendor.Amd) => new(Loc.T("Драйверы AMD"), Sources.AmdDrivers),
+            (_, ChipVendor.Nvidia) => new(Loc.T("Драйверы NVIDIA"), Sources.NvidiaDrivers),
+            _ => new(Loc.T("Необязательные обновления Windows"), Sources.WindowsOptionalUpdates),
         };
     }
 
     public static string CategoryName(DriverCategory c) => c switch
     {
-        DriverCategory.Display => "Видео",
-        DriverCategory.Network => "Сеть",
-        DriverCategory.Audio => "Звук",
-        DriverCategory.Chipset => "Чипсет",
-        DriverCategory.Storage => "Накопители",
+        DriverCategory.Display => Loc.T("Видео"),
+        DriverCategory.Network => Loc.T("Сеть"),
+        DriverCategory.Audio => Loc.T("Звук"),
+        DriverCategory.Chipset => Loc.T("Чипсет"),
+        DriverCategory.Storage => Loc.T("Накопители"),
         DriverCategory.Bluetooth => "Bluetooth",
         DriverCategory.Usb => "USB",
-        DriverCategory.Input => "Ввод",
-        _ => "Прочее",
+        DriverCategory.Input => Loc.T("Ввод"),
+        _ => Loc.T("Прочее"),
     };
 
     /// <summary>Категория по классу устройства Windows (DeviceClass в Win32_PnPSignedDriver).</summary>

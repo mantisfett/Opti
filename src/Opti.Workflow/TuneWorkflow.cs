@@ -5,6 +5,7 @@ using Opti.Fixes.Catalog;
 using Opti.Fixes.Services;
 using Opti.Measure.Stats;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow;
 
@@ -72,7 +73,7 @@ public sealed class TuneWorkflow
         foreach (var p in plan.Fixes.Where(p => excluded.Contains(p.Fix.Id)).ToList())
         {
             plan.Fixes.Remove(p);
-            plan.Excluded.Add(new ExcludedFix(p.Fix.Id, "исключено в настройках", p.TriggeredBy));
+            plan.Excluded.Add(new ExcludedFix(p.Fix.Id, Loc.T("исключено в настройках"), p.TriggeredBy));
         }
         return plan;
     }
@@ -105,7 +106,7 @@ public sealed class TuneWorkflow
             try { _scheduler.ScheduleOnLogon(resumeExe, resumeArgs); }
             catch (Exception ex)
             {
-                s.Notes.Add("Задача продолжения не создана: " + ex.Message + ". После перезагрузки запустите Opti вручную.");
+                s.Notes.Add(Loc.T("Задача продолжения не создана: ") + ex.Message + Loc.T(". После перезагрузки запустите Opti вручную."));
                 Opti.Core.Diagnostics.OptiLog.Warn("Задача продолжения не создана", ex);
             }
         }
@@ -122,7 +123,7 @@ public sealed class TuneWorkflow
         var report = new PostRebootCheck(_backends, _journal, _crashes).Run(s.Id, s.AppliedAt.Value);
         s.PostReboot = report;
         s.Stage = SessionStage.VerifiedAfterReboot;
-        if (report.SuggestRollback) s.Notes.Add("После применения были сбои системы — рекомендуется откат.");
+        if (report.SuggestRollback) s.Notes.Add(Loc.T("После применения были сбои системы — рекомендуется откат."));
         Store.Save(s);
         return report;
     }
@@ -139,14 +140,14 @@ public sealed class TuneWorkflow
         var result = new Comparer().Compare(s.Before, s.After);
         var (rec, outcome, msg) = result.Overall switch
         {
-            Verdict.Better => (Recommendation.Keep, SessionOutcome.Improved, "Стало лучше: улучшение больше шума измерений. Изменения сохранены."),
-            Verdict.Worse => (Recommendation.SuggestRollback, SessionOutcome.Worse, "Стало хуже. Рекомендуется откатить изменения этой сессии."),
+            Verdict.Better => (Recommendation.Keep, SessionOutcome.Improved, Loc.T("Стало лучше: улучшение больше шума измерений. Изменения сохранены.")),
+            Verdict.Worse => (Recommendation.SuggestRollback, SessionOutcome.Worse, Loc.T("Стало хуже. Рекомендуется откатить изменения этой сессии.")),
             Verdict.NoChange => (Settings.RollbackWhenNoEffect ? Recommendation.SuggestRollback : Recommendation.MarkNoEffect, SessionOutcome.NoEffect,
-                                 "Без изменений: разница в пределах шума. Изменения помечены как «не дали эффекта»" +
-                                 (Settings.RollbackWhenNoEffect ? " — по настройке будут откачены." : ".")),
-            _ => (Recommendation.NeedMoreData, SessionOutcome.Unknown, "Недостаточно данных: нужно хотя бы по одному надёжному прогону «до» и «после»."),
+                                 Loc.T("Без изменений: разница в пределах шума. Изменения помечены как «не дали эффекта»") +
+                                 (Settings.RollbackWhenNoEffect ? Loc.T(" — по настройке будут откачены.") : ".")),
+            _ => (Recommendation.NeedMoreData, SessionOutcome.Unknown, Loc.T("Недостаточно данных: нужно хотя бы по одному надёжному прогону «до» и «после».")),
         };
-        if (!result.Reliable && rec == Recommendation.Keep) msg += " Внимание: сравнение помечено как ненадёжное.";
+        if (!result.Reliable && rec == Recommendation.Keep) msg += Loc.T(" Внимание: сравнение помечено как ненадёжное.");
         s.Outcome = outcome;
         s.Stage = SessionStage.Compared;
         Store.Save(s);
@@ -157,8 +158,8 @@ public sealed class TuneWorkflow
     {
         var r = new RollbackService(_backends, _journal).RollbackRecords(_journal.GetAll().Where(x => x.SessionId.StartsWith(s.Id, StringComparison.Ordinal)), force);
         s.Outcome = SessionOutcome.RolledBack;
-        s.Notes.Add($"Откат {DateTimeOffset.Now:yyyy-MM-dd HH:mm}: восстановлено {r.Restored.Count}, ошибок {r.Errors.Count}" +
-                    (r.ChangedSinceOpti.Count > 0 ? $", оставлено (изменено после Opti) {r.ChangedSinceOpti.Count}." : "."));
+        s.Notes.Add(Loc.T($"Откат {DateTimeOffset.Now:yyyy-MM-dd HH:mm}: восстановлено {r.Restored.Count}, ошибок {r.Errors.Count}") +
+                    (r.ChangedSinceOpti.Count > 0 ? Loc.T($", оставлено (изменено после Opti) {r.ChangedSinceOpti.Count}.") : "."));
         Store.Save(s);
         return r;
     }
@@ -167,7 +168,7 @@ public sealed class TuneWorkflow
     {
         var r = new RollbackService(_backends, _journal).RollbackRecords(
             _journal.GetAll().Where(x => x.SessionId.StartsWith(s.Id, StringComparison.Ordinal) && string.Equals(x.FixId, fixId, StringComparison.OrdinalIgnoreCase)), force);
-        s.Notes.Add($"Откачено {fixId}.");
+        s.Notes.Add(Loc.T($"Откачено {fixId}."));
         Store.Save(s);
         return r;
     }
@@ -185,9 +186,9 @@ public sealed class TuneWorkflow
     {
         var fix = FindFix(fixId);
         if (!fix.RequiresAbTest && fix.Risk == RiskLevel.Safe)
-            throw new ArgumentException($"{fixId} не требует A/B-проверки.");
+            throw new ArgumentException(Loc.T($"{fixId} не требует A/B-проверки."));
         s.AbTests.RemoveAll(a => a.FixId.Equals(fixId, StringComparison.OrdinalIgnoreCase) && a.Phase != AbPhase.Decided);
-        var ab = new AbTestRecord { FixId = fix.Id, VariantA = "как сейчас", VariantB = variantB ?? fix.Title };
+        var ab = new AbTestRecord { FixId = fix.Id, VariantA = Loc.T("как сейчас"), VariantB = variantB ?? fix.Title };
         if (variantB is not null)
         {
             if (!s.FixOptions.TryGetValue(fix.Id, out var o)) s.FixOptions[fix.Id] = o = new();
@@ -199,7 +200,7 @@ public sealed class TuneWorkflow
     }
 
     public AbTestRecord CurrentAb(TuneSession s) =>
-        s.AbTests.LastOrDefault(a => a.Phase != AbPhase.Decided) ?? throw new InvalidOperationException("Нет незавершённой A/B-проверки.");
+        s.AbTests.LastOrDefault(a => a.Phase != AbPhase.Decided) ?? throw new InvalidOperationException(Loc.T("Нет незавершённой A/B-проверки."));
 
     public void RecordAbA(TuneSession s, IEnumerable<MeasurementRun> runs)
     {
@@ -217,13 +218,13 @@ public sealed class TuneWorkflow
         var options = s.FixOptions.ToDictionary(kv => kv.Key, kv => (IReadOnlyDictionary<string, string>)kv.Value, StringComparer.OrdinalIgnoreCase);
         var report = new ApplyService(_backends, _journal, _restore).Apply(s.Profile!, new[] { fix }, s.Goal, options, AbSessionId(s, ab));
         var res = report.Results.Single();
-        if (res.Outcome == FixOutcome.Failed) throw new InvalidOperationException($"Не удалось применить {ab.FixId}: {res.Error}");
+        if (res.Outcome == FixOutcome.Failed) throw new InvalidOperationException(Loc.T($"Не удалось применить {ab.FixId}: {res.Error}"));
         s.AppliedAt = DateTimeOffset.Now;
         ab.Phase = report.RebootRequired ? AbPhase.AwaitRebootB : AbPhase.MeasureB;
         if (report.RebootRequired && _scheduler is not null && resumeExe is not null)
         {
             try { _scheduler.ScheduleOnLogon(resumeExe, "resume"); }
-            catch (Exception ex) { s.Notes.Add("Задача продолжения не создана: " + ex.Message); }
+            catch (Exception ex) { s.Notes.Add(Loc.T("Задача продолжения не создана: ") + ex.Message); }
         }
         Store.Save(s);
         return report;
@@ -251,7 +252,7 @@ public sealed class TuneWorkflow
         if (result.Overall == Verdict.Better)
         {
             ab.KeptB = true;
-            ab.Summary = $"«{ab.VariantB}» лучше — оставлено.";
+            ab.Summary = Loc.T($"«{ab.VariantB}» лучше — оставлено.");
             if (!s.AppliedFixIds.Contains(ab.FixId)) s.AppliedFixIds.Add(ab.FixId);
         }
         else
@@ -259,9 +260,9 @@ public sealed class TuneWorkflow
             ab.KeptB = false;
             rb = new RollbackService(_backends, _journal).RollbackSession(AbSessionId(s, ab), force: true);
             ab.Summary = (result.Overall == Verdict.Worse
-                ? $"«{ab.VariantB}» хуже — возвращено исходное состояние."
-                : $"«{ab.VariantB}» не дал достоверного эффекта — возвращено исходное состояние.")
-                + (FindFix(ab.FixId).RequiresReboot ? " Перезагрузите компьютер, чтобы возврат вступил в силу." : "");
+                ? Loc.T($"«{ab.VariantB}» хуже — возвращено исходное состояние.")
+                : Loc.T($"«{ab.VariantB}» не дал достоверного эффекта — возвращено исходное состояние."))
+                + (FindFix(ab.FixId).RequiresReboot ? Loc.T(" Перезагрузите компьютер, чтобы возврат вступил в силу.") : "");
         }
         ab.Phase = AbPhase.Decided;
         Store.Save(s);
@@ -271,5 +272,5 @@ public sealed class TuneWorkflow
     public static string AbSessionId(TuneSession s, AbTestRecord ab) => $"{s.Id}-ab-{ab.FixId}";
 
     private IFix FindFix(string id) =>
-        Catalog.FirstOrDefault(f => f.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException($"Неизвестное исправление {id}");
+        Catalog.FirstOrDefault(f => f.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) ?? throw new ArgumentException(Loc.T($"Неизвестное исправление {id}"));
 }

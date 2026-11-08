@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -10,18 +11,18 @@ public sealed partial class HomeViewModel : PageViewModel
 
     public HomeViewModel(MainViewModel main) : base(main)
     {
-        _selectedGoal = GoalOption.All.First(g => g.Goal == main.Services.Settings.DefaultGoal);
+        _selectedGoal = Goals.First(g => g.Goal == main.Services.Settings.DefaultGoal);
     }
 
-    public override string Title => "Главная";
-    public IReadOnlyList<GoalOption> Goals => GoalOption.All;
+    public override string Title => Loc.T("Главная");
+    public IReadOnlyList<GoalOption> Goals { get; } = GoalOption.All;
     /// <summary>Таблица «чем отличаются режимы».</summary>
-    public IReadOnlyList<ModeComparisonRow> Comparison => ModeComparisonRow.All;
+    public IReadOnlyList<ModeComparisonRow> Comparison { get; } = ModeComparisonRow.All;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(SelectedGoalHint))] private GoalOption? _selectedGoal;
 
     /// <summary>Строка у кнопки анализа: какой режим выбран.</summary>
-    public string SelectedGoalHint => SelectedGoal is { } g ? $"Режим «{g.Title}» · 30–60 секунд · при анализе ничего не меняется" : "30–60 секунд · при анализе ничего не меняется";
+    public string SelectedGoalHint => SelectedGoal is { } g ? Loc.T($"Режим «{g.Title}» · 30–60 секунд · при анализе ничего не меняется") : Loc.T("30–60 секунд · при анализе ничего не меняется");
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(AnalyzeCommand))] private bool _isAnalyzing;
     [ObservableProperty] private string? _progressText;
     [ObservableProperty] private string? _openSessionText;
@@ -39,7 +40,7 @@ public sealed partial class HomeViewModel : PageViewModel
                 var d = new DriveInfo(root);
                 if (!d.IsReady || d.TotalSize == 0) return null;
                 double free = d.AvailableFreeSpace / 1e9, total = d.TotalSize / 1e9;
-                return $"Диск {root.TrimEnd('\\', '/')} — свободно {free:0} ГБ из {total:0} ГБ";
+                return Loc.T($"Диск {root.TrimEnd('\\', '/')} — свободно {free:0} ГБ из {total:0} ГБ");
             }
             catch { return null; }
         }
@@ -74,12 +75,12 @@ public sealed partial class HomeViewModel : PageViewModel
         HasOpenSession = s is not null && s.Stage is not (SessionStage.Closed or SessionStage.Analyzed);
         OpenSessionText = s is null ? null : s.Stage switch
         {
-            SessionStage.MeasuredBefore => "Замер «до» сделан — следующий шаг: стратегия.",
-            SessionStage.Applied => "Исправления применены — сделайте замер «после».",
-            SessionStage.AwaitingReboot => "Ожидается перезагрузка. После неё Opti продолжит сам.",
-            SessionStage.VerifiedAfterReboot => "Перезагрузка выполнена и проверена — сделайте замер «после».",
-            SessionStage.MeasuredAfter => "Замеры готовы — откройте сравнение.",
-            SessionStage.Compared => "Сравнение готово.",
+            SessionStage.MeasuredBefore => Loc.T("Замер «до» сделан — следующий шаг: стратегия."),
+            SessionStage.Applied => Loc.T("Исправления применены — сделайте замер «после»."),
+            SessionStage.AwaitingReboot => Loc.T("Ожидается перезагрузка. После неё Opti продолжит сам."),
+            SessionStage.VerifiedAfterReboot => Loc.T("Перезагрузка выполнена и проверена — сделайте замер «после»."),
+            SessionStage.MeasuredAfter => Loc.T("Замеры готовы — откройте сравнение."),
+            SessionStage.Compared => Loc.T("Сравнение готово."),
             _ => null,
         };
     }
@@ -93,15 +94,15 @@ public sealed partial class HomeViewModel : PageViewModel
         _cts = new CancellationTokenSource();
         try
         {
-            var progress = new Progress<string>(s => ProgressText = "Собираю данные: " + s + "…");
+            var progress = new Progress<string>(s => ProgressText = Loc.T("Собираю данные: ") + s + "…");
             var result = await Main.Services.AnalyzeAsync(progress, _cts.Token);
             var session = Main.Services.Workflow.StartSession(result, SelectedGoal?.Goal ?? Main.Services.Settings.DefaultGoal);
             Main.Session = session;
             Main.Analysis.Load(session, result.Timings.Select(t => t.Error is null ? null : $"{t.Name}: {t.Error}").OfType<string>().ToList());
             Main.Navigate(Main.Analysis);
         }
-        catch (OperationCanceledException) { Main.ShowMessage("Анализ отменён."); }
-        catch (Exception ex) { Main.ShowMessage("Анализ не удался: " + ex.Message, error: true); }
+        catch (OperationCanceledException) { Main.ShowMessage(Loc.T("Анализ отменён.")); }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Анализ не удался: ") + ex.Message, error: true); }
         finally
         {
             IsAnalyzing = false;

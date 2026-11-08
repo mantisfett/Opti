@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Core.Tweaks;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -19,11 +20,11 @@ public sealed partial class TweakItem : ObservableObject
     }
 
     public Tweak Tweak { get; }
-    public string Title => Tweak.Title;
-    public string Description => Tweak.Description;
+    public string Title => Loc.T(Tweak.Title);
+    public string Description => Loc.T(Tweak.Description);
     public bool IsAvailable { get; }
     public bool Recommended => Tweak.Recommended;
-    public string ApplyText => IsAvailable ? "Вступает в силу: " + TweakCatalog.ApplyModeText(Tweak.ApplyMode) : "Нужна более новая Windows 11";
+    public string ApplyText => IsAvailable ? Loc.T("Вступает в силу: ") + Loc.T(TweakCatalog.ApplyModeText(Tweak.ApplyMode)) : Loc.T("Нужна более новая Windows 11");
     public string? Link => Tweak.Link;
 
     [ObservableProperty] private bool _isOn;
@@ -63,7 +64,7 @@ public sealed class TweakGroup
 public sealed partial class TweaksViewModel : PageViewModel
 {
     public TweaksViewModel(MainViewModel main) : base(main) { }
-    public override string Title => "Твики";
+    public override string Title => Loc.T("Твики");
 
     public ObservableCollection<TweakGroup> Groups { get; } = new();
     [ObservableProperty] private bool _needsExplorerRestart;
@@ -79,7 +80,7 @@ public sealed partial class TweaksViewModel : PageViewModel
         foreach (var g in TweakCatalog.All.GroupBy(t => t.Category))
             Groups.Add(new TweakGroup
             {
-                Title = TweakCatalog.CategoryTitle(g.Key), Icon = TweakCatalog.CategoryIcon(g.Key),
+                Title = Loc.T(TweakCatalog.CategoryTitle(g.Key)), Icon = TweakCatalog.CategoryIcon(g.Key),
                 Items = g.Select(t => new TweakItem(this, t, svc.IsOn(t), svc.IsAvailable(t, Main.Services.OsBuild))).ToList(),
             });
         UpdateSummary();
@@ -90,7 +91,7 @@ public sealed partial class TweaksViewModel : PageViewModel
     private void UpdateSummary()
     {
         int on = AllItems.Count(i => i.IsOn), total = AllItems.Count(i => i.IsAvailable);
-        Summary = $"Включено {on} из {total}";
+        Summary = Loc.T($"Включено {on} из {total}");
     }
 
     /// <summary>Возвращает текст ошибки или null.</summary>
@@ -101,7 +102,7 @@ public sealed partial class TweaksViewModel : PageViewModel
             if (on) Main.Services.Tweaks.Enable(item.Tweak);
             else Main.Services.Tweaks.Disable(item.Tweak);
         }
-        catch (Exception ex) { return "Не удалось: " + ex.Message; }
+        catch (Exception ex) { return Loc.T("Не удалось: ") + ex.Message; }
         Note(item.Tweak.ApplyMode);
         UpdateSummary();
         return null;
@@ -113,13 +114,13 @@ public sealed partial class TweaksViewModel : PageViewModel
         {
             case TweakApplyMode.RestartExplorer:
                 NeedsExplorerRestart = true;
-                PendingText ??= "Часть изменений вступит в силу после перезапуска Проводника (окна папок закроются, программы — нет).";
+                PendingText ??= Loc.T("Часть изменений вступит в силу после перезапуска Проводника (окна папок закроются, программы — нет).");
                 break;
             case TweakApplyMode.SignOut:
-                PendingText = "Часть изменений вступит в силу после выхода из системы и повторного входа.";
+                PendingText = Loc.T("Часть изменений вступит в силу после выхода из системы и повторного входа.");
                 break;
             case TweakApplyMode.Reboot:
-                PendingText = "Часть изменений вступит в силу после перезагрузки.";
+                PendingText = Loc.T("Часть изменений вступит в силу после перезагрузки.");
                 break;
         }
     }
@@ -133,7 +134,7 @@ public sealed partial class TweaksViewModel : PageViewModel
             i.IsOn = true;
             if (i.Error is not null) errors.Add($"{i.Title}: {i.Error}");
         }
-        Main.ShowMessage(errors.Count == 0 ? "Рекомендуемые твики включены." : string.Join(" ", errors), errors.Count > 0);
+        Main.ShowMessage(errors.Count == 0 ? Loc.T("Рекомендуемые твики включены.") : string.Join(" ", errors), errors.Count > 0);
     }
 
     [RelayCommand]

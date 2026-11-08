@@ -1,4 +1,5 @@
 using Opti.Core.Fixes;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Services;
 
@@ -15,11 +16,11 @@ public sealed class RollbackReport
     public List<string> Errors { get; } = new();
 
     /// <summary>Короткая сводка для уведомления.</summary>
-    public string Summary(string verb = "Откачено изменений")
+    public string Summary(string? verb = null)
     {
-        var text = $"{verb}: {Restored.Count}.";
-        if (ChangedSinceOpti.Count > 0) text += $" Оставлено как есть (изменено после Opti): {ChangedSinceOpti.Count}.";
-        if (Errors.Count > 0) text += $" Ошибок: {Errors.Count}.";
+        var text = $"{verb ?? Loc.T("Откачено изменений")}: {Restored.Count}.";
+        if (ChangedSinceOpti.Count > 0) text += Loc.T($" Оставлено как есть (изменено после Opti): {ChangedSinceOpti.Count}.");
+        if (Errors.Count > 0) text += Loc.T($" Ошибок: {Errors.Count}.");
         return text;
     }
 }

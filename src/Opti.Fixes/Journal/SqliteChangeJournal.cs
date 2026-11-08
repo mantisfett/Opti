@@ -2,6 +2,7 @@ using System.Globalization;
 using Opti.Core.Fixes;
 using Opti.Core.Json;
 using Microsoft.Data.Sqlite;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Journal;
 
@@ -42,8 +43,8 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
     {
         int version = Version;
         if (version > SchemaVersion)
-            throw new InvalidDataException($"Журнал отката создан более новой версией Opti (схема {version}, эта программа знает {SchemaVersion}). " +
-                                           "Обновите Opti, чтобы не повредить журнал.");
+            throw new InvalidDataException(Loc.T($"Журнал отката создан более новой версией Opti (схема {version}, эта программа знает {SchemaVersion}). ") +
+                                           Loc.T("Обновите Opti, чтобы не повредить журнал."));
         if (version == SchemaVersion) return;
 
         using var tx = _db.BeginTransaction();

@@ -4,13 +4,14 @@ using CommunityToolkit.Mvvm.Input;
 using Opti.Core.Fixes;
 using Opti.Core.Strategy;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
 public sealed partial class StrategyViewModel : PageViewModel
 {
     public StrategyViewModel(MainViewModel main) : base(main) { }
-    public override string Title => "Стратегия";
+    public override string Title => Loc.T("Стратегия");
 
     public ObservableCollection<FixItem> Fixes { get; } = new();
     public ObservableCollection<FixItem> AbFixes { get; } = new();
@@ -26,7 +27,7 @@ public sealed partial class StrategyViewModel : PageViewModel
     public StrategyPlan? Plan { get; private set; }
 
     /// <summary>Режим можно сменить прямо здесь: план пересобирается, отметки — по политике нового режима.</summary>
-    public IReadOnlyList<GoalOption> Goals => GoalOption.All;
+    public IReadOnlyList<GoalOption> Goals { get; } = GoalOption.All;
     [ObservableProperty] private GoalOption? _selectedGoal;
     [ObservableProperty] private string? _goalSummary;
     private bool _loading;
@@ -44,7 +45,7 @@ public sealed partial class StrategyViewModel : PageViewModel
         _loading = true;
         try
         {
-            SelectedGoal = GoalOption.All.First(g => g.Goal == s.Goal);
+            SelectedGoal = Goals.First(g => g.Goal == s.Goal);
             GoalSummary = SelectedGoal.Summary;
         }
         finally { _loading = false; }
@@ -84,10 +85,10 @@ public sealed partial class StrategyViewModel : PageViewModel
         var s = Main.Session!;
         var fixes = SelectedFixes();
         bool reboot = fixes.Any(f => f.RequiresReboot);
-        var msg = $"Будут применены исправления ({fixes.Count}):\n• " + string.Join("\n• ", fixes.Select(f => f.Title)) +
-                  "\n\nПеред изменениями создаётся точка восстановления, каждое изменение записывается в журнал и может быть откачено." +
-                  (reboot ? "\n\nПотребуется перезагрузка — Opti продолжит после неё сам." : "");
-        if (!await Main.Services.ConfirmAsync("Применить исправления?", msg)) return;
+        var msg = Loc.T($"Будут применены исправления ({fixes.Count}):\n• ") + string.Join("\n• ", fixes.Select(f => f.Title)) +
+                  Loc.T("\n\nПеред изменениями создаётся точка восстановления, каждое изменение записывается в журнал и может быть откачено.") +
+                  (reboot ? Loc.T("\n\nПотребуется перезагрузка — Opti продолжит после неё сам.") : "");
+        if (!await Main.Services.ConfirmAsync(Loc.T("Применить исправления?"), msg)) return;
 
         if (ShowStartupChoices)
         {
@@ -104,7 +105,7 @@ public sealed partial class StrategyViewModel : PageViewModel
             Main.Session = s;
             Main.Navigate(new ApplyViewModel(Main, report));
         }
-        catch (Exception ex) { Main.ShowMessage("Не удалось применить: " + ex.Message, error: true); }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Не удалось применить: ") + ex.Message, error: true); }
         finally { IsApplying = false; }
     }
 
@@ -113,7 +114,7 @@ public sealed partial class StrategyViewModel : PageViewModel
     {
         var s = Main.Session!;
         if (s.AppliedFixIds.Count == 0 && Fixes.Any(f => f.IsSelected) &&
-            !await Main.Services.ConfirmAsync("A/B-проверка", "Рекомендуется сначала применить основные исправления, а спорные настройки проверять потом — по одной. Начать A/B сейчас?"))
+            !await Main.Services.ConfirmAsync(Loc.T("A/B-проверка"), Loc.T("Рекомендуется сначала применить основные исправления, а спорные настройки проверять потом — по одной. Начать A/B сейчас?")))
             return;
         try
         {

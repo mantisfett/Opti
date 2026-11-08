@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Fixes.Services;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -14,7 +15,7 @@ public sealed partial class ApplyViewModel : PageViewModel
     {
         _abMode = abMode;
         if (report is null) return;
-        RestorePoint = report.RestorePoint is not null ? $"Точка восстановления создана: {report.RestorePoint}" : report.RestorePointWarning;
+        RestorePoint = report.RestorePoint is not null ? Loc.T($"Точка восстановления создана: {report.RestorePoint}") : report.RestorePointWarning;
         RebootRequired = report.RebootRequired;
         foreach (var r in report.Results)
         {
@@ -22,19 +23,19 @@ public sealed partial class ApplyViewModel : PageViewModel
             Log.Add(new LogItem
             {
                 Title = title,
-                Status = r.Outcome switch { FixOutcome.Applied => "применено", FixOutcome.Failed => "ошибка: " + r.Error, FixOutcome.NothingToChange => "уже в нужном состоянии", _ => "пропущено" },
+                Status = r.Outcome switch { FixOutcome.Applied => Loc.T("применено"), FixOutcome.Failed => Loc.T("ошибка: ") + r.Error, FixOutcome.NothingToChange => Loc.T("уже в нужном состоянии"), _ => Loc.T("пропущено") },
                 Color = r.Outcome switch { FixOutcome.Applied => Palette.Good, FixOutcome.Failed => Palette.Bad, _ => Palette.Neutral },
                 Details = r.Changes.Select(c => $"{c.Type} {c.Target}: {c.Before} → {c.After}").ToList(),
             });
         }
         Headline = report.Results.Any(r => r.Outcome == FixOutcome.Failed)
-            ? "Часть исправлений не применилась — они откачены, остальное действует."
-            : "Исправления применены.";
-        NextText = RebootRequired ? "Нужна перезагрузка. После входа в систему Opti откроется сам и продолжит."
-                                  : _abMode ? "Теперь замер варианта B в тех же условиях." : "Теперь замер «после» в тех же условиях.";
+            ? Loc.T("Часть исправлений не применилась — они откачены, остальное действует.")
+            : Loc.T("Исправления применены.");
+        NextText = RebootRequired ? Loc.T("Нужна перезагрузка. После входа в систему Opti откроется сам и продолжит.")
+                                  : _abMode ? Loc.T("Теперь замер варианта B в тех же условиях.") : Loc.T("Теперь замер «после» в тех же условиях.");
     }
 
-    public override string Title => _abMode ? "A/B: вариант B применён" : "Применение";
+    public override string Title => _abMode ? Loc.T("A/B: вариант B применён") : Loc.T("Применение");
     public ObservableCollection<LogItem> Log { get; } = new();
     public ObservableCollection<LogItem> PostRebootItems { get; } = new();
     [ObservableProperty] private string? _headline;
@@ -46,13 +47,13 @@ public sealed partial class ApplyViewModel : PageViewModel
 
     public void FillPostReboot(PostRebootReport check)
     {
-        Headline = "Перезагрузка выполнена. Самопроверка:";
+        Headline = Loc.T("Перезагрузка выполнена. Самопроверка:");
         RebootRequired = false;
-        PostRebootItems.Add(new LogItem { Title = $"Подтверждено изменений: {check.Verified}", Status = check.Healthy ? "всё в порядке" : "есть замечания", Color = check.Healthy ? Palette.Good : Palette.Warn });
-        foreach (var n in check.NotApplied) PostRebootItems.Add(new LogItem { Title = "Не применилось", Status = n, Color = Palette.Warn });
-        foreach (var c in check.Crashes) PostRebootItems.Add(new LogItem { Title = $"Сбой системы {c.Time.LocalDateTime:dd.MM HH:mm}", Status = $"событие {c.EventId} ({c.Source})", Color = Palette.Bad });
+        PostRebootItems.Add(new LogItem { Title = Loc.T($"Подтверждено изменений: {check.Verified}"), Status = check.Healthy ? Loc.T("всё в порядке") : Loc.T("есть замечания"), Color = check.Healthy ? Palette.Good : Palette.Warn });
+        foreach (var n in check.NotApplied) PostRebootItems.Add(new LogItem { Title = Loc.T("Не применилось"), Status = n, Color = Palette.Warn });
+        foreach (var c in check.Crashes) PostRebootItems.Add(new LogItem { Title = Loc.T($"Сбой системы {c.Time.LocalDateTime:dd.MM HH:mm}"), Status = Loc.T($"событие {c.EventId} ({c.Source})"), Color = Palette.Bad });
         SuggestRollback = check.SuggestRollback;
-        NextText = check.SuggestRollback ? "После изменений были сбои системы. Рекомендуется откатить." : "Теперь замер «после» в тех же условиях, что и «до».";
+        NextText = check.SuggestRollback ? Loc.T("После изменений были сбои системы. Рекомендуется откатить.") : Loc.T("Теперь замер «после» в тех же условиях, что и «до».");
     }
 
     [RelayCommand] private void RebootNow() => Main.Services.RestartComputer();
@@ -65,7 +66,7 @@ public sealed partial class ApplyViewModel : PageViewModel
         if (s.Before.Count == 0)
         {
             Main.Services.Workflow.Close(s);
-            Main.ShowMessage("Замера «до» не было — сравнивать не с чем. Отчёт можно открыть в «Истории».");
+            Main.ShowMessage(Loc.T("Замера «до» не было — сравнивать не с чем. Отчёт можно открыть в «Истории»."));
             Main.History.Refresh();
             Main.Navigate(Main.History);
             return;
@@ -77,10 +78,10 @@ public sealed partial class ApplyViewModel : PageViewModel
     private async Task RollbackAsync()
     {
         var s = Main.Session!;
-        if (!await Main.Services.ConfirmAsync("Откат", "Вернуть все изменения этой сессии?")) return;
+        if (!await Main.Services.ConfirmAsync(Loc.T("Откат"), Loc.T("Вернуть все изменения этой сессии?"))) return;
         var r = await Task.Run(() => Main.Services.Workflow.RollbackSession(s));
         Main.Services.Workflow.Close(s);
-        Main.ShowMessage(r.Summary() + " Для части настроек нужна перезагрузка.", r.Errors.Count > 0);
+        Main.ShowMessage(r.Summary() + Loc.T(" Для части настроек нужна перезагрузка."), r.Errors.Count > 0);
         Main.History.Refresh();
         Main.Navigate(Main.History);
     }

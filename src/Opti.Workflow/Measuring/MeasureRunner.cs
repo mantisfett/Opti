@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using Opti.Measure.Stats;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Measuring;
 
@@ -62,7 +63,7 @@ public sealed class ThrottleProbe
         {
             var r = ProcessRunner.Instance.Run("nvidia-smi",
                 "--query-gpu=clocks_throttle_reasons.hw_thermal_slowdown,clocks_throttle_reasons.sw_thermal_slowdown --format=csv,noheader", TimeSpan.FromSeconds(5));
-            if (r.Ok && ToolParsers.ParseNvidiaThrottleActive(r.StdOut)) { _seen = true; Reason = "тепловой троттлинг GPU (nvidia-smi)"; }
+            if (r.Ok && ToolParsers.ParseNvidiaThrottleActive(r.StdOut)) { _seen = true; Reason = Loc.T("тепловой троттлинг GPU (nvidia-smi)"); }
         }
         catch { /* nvidia-smi нет */ }
         try
@@ -76,7 +77,7 @@ public sealed class ThrottleProbe
                 // Падение частоты под нагрузкой должно повториться дважды подряд — одиночный замер счётчика шумный
                 if (util > 70 && perf > 0 && perf < 60)
                 {
-                    if (++_cpuLowStreak >= 2) { _seen = true; Reason = $"частота CPU {perf:0} % от номинала под нагрузкой"; }
+                    if (++_cpuLowStreak >= 2) { _seen = true; Reason = Loc.T($"частота CPU {perf:0} % от номинала под нагрузкой"); }
                 }
                 else _cpuLowStreak = 0;
             }

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Workflow.Cleanup;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -35,7 +36,7 @@ public sealed partial class CleanupViewModel : PageViewModel
 {
     private bool _estimated;
     public CleanupViewModel(MainViewModel main) : base(main) { }
-    public override string Title => "Очистка";
+    public override string Title => Loc.T("Очистка");
 
     public ObservableCollection<CleanupItem> Items { get; } = new();
     /// <summary>Очищается автоматически (с галочками).</summary>
@@ -74,11 +75,11 @@ public sealed partial class CleanupViewModel : PageViewModel
                 {
                     var e = await i.Target.EstimateAsync();
                     i.Bytes = e.Bytes;
-                    i.SizeText = e.Bytes == 0 ? (i.Target is LargeFilesTarget ? "не найдено" : "пусто") : SizeFormat.Bytes(e.Bytes);
+                    i.SizeText = e.Bytes == 0 ? (i.Target is LargeFilesTarget ? Loc.T("не найдено") : Loc.T("пусто")) : SizeFormat.Bytes(e.Bytes);
                     i.Details.Clear();
                     foreach (var d in i.Target.Details) i.Details.Add(d);
                 }
-                catch { i.Bytes = 0; i.SizeText = "нет доступа"; }
+                catch { i.Bytes = 0; i.SizeText = Loc.T("нет доступа"); }
                 i.Measured = true;
             }));
         }
@@ -89,7 +90,7 @@ public sealed partial class CleanupViewModel : PageViewModel
     private void UpdateTotal()
     {
         long sel = Items.Where(i => i.IsChecked && i.IsAutomatic).Sum(i => i.Bytes);
-        TotalText = sel > 0 ? $"Будет освобождено около {SizeFormat.Bytes(sel)}" : "Выберите, что очистить";
+        TotalText = sel > 0 ? Loc.T($"Будет освобождено около {SizeFormat.Bytes(sel)}") : Loc.T("Выберите, что очистить");
         CleanCommand.NotifyCanExecuteChanged();
     }
 
@@ -100,10 +101,10 @@ public sealed partial class CleanupViewModel : PageViewModel
     {
         var chosen = Items.Where(i => i.IsChecked && i.IsAutomatic && i.Bytes > 0).ToList();
         var cautions = chosen.Where(c => c.Caution is not null).Select(c => $"• {c.Title}: {c.Caution}").ToList();
-        var msg = "Очистить:\n" + string.Join("\n", chosen.Select(c => $"• {c.Title} — {c.SizeText}")) +
-                  (cautions.Count > 0 ? "\n\nОбратите внимание:\n" + string.Join("\n", cautions) : "") +
-                  "\n\nУдаление необратимо. Документы, игры и настройки не затрагиваются.";
-        if (!await Main.Services.ConfirmAsync("Очистка", msg)) return;
+        var msg = Loc.T("Очистить:\n") + string.Join("\n", chosen.Select(c => $"• {c.Title} — {c.SizeText}")) +
+                  (cautions.Count > 0 ? Loc.T("\n\nОбратите внимание:\n") + string.Join("\n", cautions) : "") +
+                  Loc.T("\n\nУдаление необратимо. Документы, игры и настройки не затрагиваются.");
+        if (!await Main.Services.ConfirmAsync(Loc.T("Очистка"), msg)) return;
 
         IsBusy = true;
         long freed = 0; int skipped = 0; var errors = new List<string>();
@@ -111,7 +112,7 @@ public sealed partial class CleanupViewModel : PageViewModel
         {
             foreach (var c in chosen)
             {
-                c.SizeText = "очищаю…";
+                c.SizeText = Loc.T("очищаю…");
                 try
                 {
                     var r = await c.Target.CleanAsync();
@@ -121,7 +122,7 @@ public sealed partial class CleanupViewModel : PageViewModel
             }
         }
         finally { IsBusy = false; }
-        ResultText = $"Освобождено {SizeFormat.Bytes(freed)}." + (skipped > 0 ? $" Пропущено занятых файлов: {skipped}." : "") +
+        ResultText = Loc.T($"Освобождено {SizeFormat.Bytes(freed)}.") + (skipped > 0 ? Loc.T($" Пропущено занятых файлов: {skipped}.") : "") +
                      (errors.Count > 0 ? " " + string.Join(" ", errors) : "");
         Main.ShowMessage(ResultText, errors.Count > 0);
         await EstimateAsync();

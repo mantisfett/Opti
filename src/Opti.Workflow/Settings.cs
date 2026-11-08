@@ -26,6 +26,8 @@ public sealed class OptiSettings
     public bool CheckForUpdates { get; set; } = true;
     /// <summary>При запуске проверять, не вернули ли Windows или драйверы настройки, изменённые Opti.</summary>
     public bool VerifyOnStartup { get; set; } = true;
+    /// <summary>Язык интерфейса: "auto" (по Windows), "ru" или "en". Вступает в силу после перезапуска.</summary>
+    public string Language { get; set; } = "auto";
 
     public static OptiSettings Load(string? path = null)
     {

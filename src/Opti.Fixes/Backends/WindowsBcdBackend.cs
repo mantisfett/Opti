@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Opti.Core.Fixes;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -28,7 +29,7 @@ public sealed partial class WindowsBcdBackend : IStateBackend
     public void Write(string target, StateValue value)
     {
         var (entry, element) = Targets.Split2(target);
-        if (!ElementRegex().IsMatch(element)) throw new ArgumentException($"Недопустимое имя элемента BCD: {element}");
+        if (!ElementRegex().IsMatch(element)) throw new ArgumentException(Loc.T($"Недопустимое имя элемента BCD: {element}"));
         string cmd = value.Exists
             ? $"bcdedit /set {entry} {element} {SanitizeValue(value.Value)}"
             : $"bcdedit /deletevalue {entry} {element}";
@@ -41,7 +42,7 @@ public sealed partial class WindowsBcdBackend : IStateBackend
     private static string SanitizeValue(string? v)
     {
         v ??= "";
-        if (!ValueRegex().IsMatch(v)) throw new ArgumentException($"Недопустимое значение BCD: {v}");
+        if (!ValueRegex().IsMatch(v)) throw new ArgumentException(Loc.T($"Недопустимое значение BCD: {v}"));
         return v;
     }
 

@@ -1,3 +1,4 @@
+using Opti.Core.Localization;
 namespace Opti.Measure.Stats;
 
 public enum MetricId { AvgFps, Low1Fps, Low01Fps, FrameTimeMedian, FrameTimeP95, FrameTimeP99, FrameTimeStdDev }
@@ -8,13 +9,13 @@ public static class Metrics
 {
     public static readonly IReadOnlyList<MetricDef> All = new[]
     {
-        new MetricDef(MetricId.AvgFps, "Средний FPS", "fps", true),
+        new MetricDef(MetricId.AvgFps, Loc.T("Средний FPS"), "fps", true),
         new MetricDef(MetricId.Low1Fps, "1 % low", "fps", true),
         new MetricDef(MetricId.Low01Fps, "0,1 % low", "fps", true),
-        new MetricDef(MetricId.FrameTimeMedian, "Фреймтайм, медиана", "мс", false),
-        new MetricDef(MetricId.FrameTimeP95, "Фреймтайм p95", "мс", false),
-        new MetricDef(MetricId.FrameTimeP99, "Фреймтайм p99", "мс", false),
-        new MetricDef(MetricId.FrameTimeStdDev, "Фреймтайм, ст. отклонение", "мс", false),
+        new MetricDef(MetricId.FrameTimeMedian, Loc.T("Фреймтайм, медиана"), Loc.T("мс"), false),
+        new MetricDef(MetricId.FrameTimeP95, Loc.T("Фреймтайм p95"), Loc.T("мс"), false),
+        new MetricDef(MetricId.FrameTimeP99, Loc.T("Фреймтайм p99"), Loc.T("мс"), false),
+        new MetricDef(MetricId.FrameTimeStdDev, Loc.T("Фреймтайм, ст. отклонение"), Loc.T("мс"), false),
     };
 
     public static MetricDef Def(MetricId id) => All.First(m => m.Id == id);

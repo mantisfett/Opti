@@ -4,13 +4,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Opti.Core.Profile;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
 [SupportedOSPlatform("windows")]
 public sealed partial class DiskCollector : ICollector
 {
-    public string Name => "Диски";
+    public string Name => Loc.T("Диски");
     private const string StorageNs = @"root\Microsoft\Windows\Storage";
 
     public void Collect(SystemProfile p)
@@ -81,7 +82,7 @@ public sealed partial class DiskCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed class ThermalCollector : ICollector
 {
-    public string Name => "Температуры";
+    public string Name => Loc.T("Температуры");
 
     public void Collect(SystemProfile p)
     {
@@ -91,7 +92,7 @@ public sealed class ThermalCollector : ICollector
             var zones = Wmi.Query("SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature", @"root\WMI");
             var temps = zones.Select(z => z.Long("CurrentTemperature")).Where(t => t > 0).Select(t => t!.Value / 10.0 - 273.15)
                              .Where(c => c is > 10 and < 120).ToList();
-            if (temps.Count > 0) { p.Thermals.CpuTempC = temps.Max(); sources.Add("ACPI thermal zone (приблизительно)"); }
+            if (temps.Count > 0) { p.Thermals.CpuTempC = temps.Max(); sources.Add(Loc.T("ACPI thermal zone (приблизительно)")); }
         }
         catch { /* часто недоступно */ }
 
@@ -117,7 +118,7 @@ public sealed class ThermalCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed partial class PowerCollector : ICollector
 {
-    public string Name => "Питание";
+    public string Name => Loc.T("Питание");
     private const string SubProcessor = "54533251-82be-4824-96c1-47b60b740d00";
 
     public void Collect(SystemProfile p)
@@ -161,7 +162,7 @@ public sealed partial class PowerCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed class TimersAndSecurityCollector : ICollector
 {
-    public string Name => "Таймеры и безопасность";
+    public string Name => Loc.T("Таймеры и безопасность");
 
     public void Collect(SystemProfile p)
     {
@@ -176,7 +177,7 @@ public sealed class TimersAndSecurityCollector : ICollector
             p.Timers.TscSyncPolicy = map.GetValueOrDefault("tscsyncpolicy");
             p.Security.HypervisorLaunchType = map.GetValueOrDefault("hypervisorlaunchtype");
         }
-        else p.CollectorErrors.Add("bcdedit недоступен (нужны права администратора)");
+        else p.CollectorErrors.Add(Loc.T("bcdedit недоступен (нужны права администратора)"));
 
         p.Timers.GlobalTimerResolutionRequests =
             Reg.Int(@"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel", "GlobalTimerResolutionRequests") == 1;
@@ -207,7 +208,7 @@ public sealed class TimersAndSecurityCollector : ICollector
 [SupportedOSPlatform("windows")]
 public sealed class GraphicsSettingsCollector : ICollector
 {
-    public string Name => "Графические настройки Windows";
+    public string Name => Loc.T("Графические настройки Windows");
     private const string UserGpuPrefs = @"HKCU\Software\Microsoft\DirectX\UserGpuPreferences";
 
     public void Collect(SystemProfile p)

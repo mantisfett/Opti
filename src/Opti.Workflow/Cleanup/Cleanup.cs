@@ -1,3 +1,4 @@
+using Opti.Core.Localization;
 namespace Opti.Workflow.Cleanup;
 
 public sealed record CleanupEstimate(long Bytes, int Files);
@@ -33,7 +34,7 @@ public interface ICleanupTarget
     /// <summary>Найденные объекты после оценки (тяжёлые видео и т. п.).</summary>
     IReadOnlyList<CleanupDetail> Details => Array.Empty<CleanupDetail>();
     /// <summary>Подпись кнопки для ручной цели.</summary>
-    string ManualActionText => "Открыть параметры";
+    string ManualActionText => Loc.T("Открыть параметры");
 }
 
 /// <summary>
@@ -168,15 +169,15 @@ public sealed class ManualCleanupTarget : ICleanupTarget
     private readonly Func<IEnumerable<string>> _paths;
     private readonly Func<string>? _uri;
     public ManualCleanupTarget(string id, string title, string description, Func<IEnumerable<string>> paths, string uri,
-        long? warnAboveBytes = null, string? warnText = null, string actionText = "Открыть параметры")
+        long? warnAboveBytes = null, string? warnText = null, string? actionText = null)
     {
         Id = id; Title = title; Description = description; _paths = paths; _staticUri = uri;
-        WarnAboveBytes = warnAboveBytes; WarnText = warnText; ManualActionText = actionText;
+        WarnAboveBytes = warnAboveBytes; WarnText = warnText; ManualActionText = actionText ?? Loc.T("Открыть параметры");
     }
     /// <summary>Ручная цель, у которой адрес вычисляется при открытии (например, папка «Загрузки»).</summary>
     public ManualCleanupTarget(string id, string title, string description, Func<IEnumerable<string>> paths, Func<string> uri,
-        long? warnAboveBytes = null, string? warnText = null, string actionText = "Открыть папку")
-        : this(id, title, description, paths, "", warnAboveBytes, warnText, actionText) => _uri = uri;
+        long? warnAboveBytes = null, string? warnText = null, string? actionText = null)
+        : this(id, title, description, paths, "", warnAboveBytes, warnText, actionText ?? Loc.T("Открыть папку")) => _uri = uri;
     private readonly string _staticUri;
     public long? WarnAboveBytes { get; }
     public string? WarnText { get; }
@@ -226,7 +227,7 @@ public sealed class LargeFilesTarget : ICleanupTarget
     public bool DefaultSelected => false;
     public string? Caution => null;
     public string? ManualUri => _details.Count > 0 ? Path.GetDirectoryName(_details[0].Path) : _roots().FirstOrDefault(Directory.Exists);
-    public string ManualActionText => "Открыть папку";
+    public string ManualActionText => Loc.T("Открыть папку");
     public IReadOnlyList<CleanupDetail> Details => _details;
 
     public Task<CleanupEstimate> EstimateAsync(CancellationToken ct = default) => Task.Run(() =>
@@ -262,9 +263,9 @@ public static class SizeFormat
 {
     public static string Bytes(long b) => b switch
     {
-        >= 1L << 30 => $"{b / (double)(1L << 30):0.#} ГБ",
-        >= 1L << 20 => $"{b / (double)(1L << 20):0} МБ",
-        >= 1L << 10 => $"{b / (double)(1L << 10):0} КБ",
-        _ => $"{b} Б",
+        >= 1L << 30 => Loc.T($"{b / (double)(1L << 30):0.#} ГБ"),
+        >= 1L << 20 => Loc.T($"{b / (double)(1L << 20):0} МБ"),
+        >= 1L << 10 => Loc.T($"{b / (double)(1L << 10):0} КБ"),
+        _ => Loc.T($"{b} Б"),
     };
 }

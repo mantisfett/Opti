@@ -7,13 +7,14 @@ using Opti.Workflow.Sessions;
 using Opti.Measure.Stats;
 using Opti.Core.Fixes;
 using Opti.Core.Strategy;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
 public sealed class SessionItem
 {
     public required TuneSession Session { get; init; }
-    public string Title => $"{Session.CreatedAt.LocalDateTime:dd.MM.yyyy HH:mm} · режим «{Session.Goal.Ru()}»";
+    public string Title => Loc.T($"{Session.CreatedAt.LocalDateTime:dd.MM.yyyy HH:mm} · режим «{Session.Goal.Ru()}»");
     public required string OutcomeText { get; init; }
     public required string Color { get; init; }
     public required string Details { get; init; }
@@ -33,7 +34,7 @@ public sealed partial class VerifyRow : ObservableObject
 public sealed partial class HistoryViewModel : PageViewModel
 {
     public HistoryViewModel(MainViewModel main) : base(main) { }
-    public override string Title => "История";
+    public override string Title => Loc.T("История");
     public ObservableCollection<SessionItem> Sessions { get; } = new();
 
     // ---------------- «Страж»: на месте ли изменения ----------------
@@ -54,15 +55,15 @@ public sealed partial class HistoryViewModel : PageViewModel
             var (status, color) = i.Status switch
             {
                 VerifyStatus.Reverted when i.Record.Type == ChangeType.Bcd =>
-                    ("Windows вернула параметр загрузки. Если включён BitLocker, перед повторным применением подготовьте ключ восстановления", Palette.Warn),
-                VerifyStatus.Reverted => ("Windows или драйвер вернули исходное значение", Palette.Warn),
-                VerifyStatus.Changed => ("изменено после Opti — возможно, вами", Palette.Neutral),
-                _ => ("не удалось проверить: " + i.Error, Palette.Bad),
+                    (Loc.T("Windows вернула параметр загрузки. Если включён BitLocker, перед повторным применением подготовьте ключ восстановления"), Palette.Warn),
+                VerifyStatus.Reverted => (Loc.T("Windows или драйвер вернули исходное значение"), Palette.Warn),
+                VerifyStatus.Changed => (Loc.T("изменено после Opti — возможно, вами"), Palette.Neutral),
+                _ => (Loc.T("не удалось проверить: ") + i.Error, Palette.Bad),
             };
             var row = new VerifyRow
             {
                 Item = i, Title = wf.FixTitle(i.Record.FixId), StatusText = status, Color = color,
-                Detail = $"{ShortTarget(i.Record.Target)}: сейчас {Show(i.Current)}, Opti ставил {Show(i.Record.After)}",
+                Detail = Loc.T($"{ShortTarget(i.Record.Target)}: сейчас {Show(i.Current)}, Opti ставил {Show(i.Record.After)}"),
                 // Возврат Windows — почти всегда случайность; своё изменение человек отмечает сам
                 // Параметры загрузки (BCD) — только осознанно: при BitLocker их изменение может запросить ключ восстановления
                 IsChecked = i.Status == VerifyStatus.Reverted && i.Record.Type != ChangeType.Bcd,
@@ -76,7 +77,7 @@ public sealed partial class HistoryViewModel : PageViewModel
         ReapplyCommand.NotifyCanExecuteChanged();
     }
 
-    private static string Show(StateValue? v) => v is null ? "?" : v.Exists ? v.Value ?? "" : "нет значения";
+    private static string Show(StateValue? v) => v is null ? "?" : v.Exists ? v.Value ?? "" : Loc.T("нет значения");
 
     private static string ShortTarget(string target)
     {
@@ -91,7 +92,7 @@ public sealed partial class HistoryViewModel : PageViewModel
     {
         IsVerifying = true;
         try { ShowVerify(await Task.Run(() => Main.Services.Workflow.Verify())); }
-        catch (Exception ex) { Main.ShowMessage("Проверка не удалась: " + ex.Message, error: true); }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Проверка не удалась: ") + ex.Message, error: true); }
         finally { IsVerifying = false; }
     }
 
@@ -105,8 +106,8 @@ public sealed partial class HistoryViewModel : PageViewModel
         try
         {
             var (done, errors) = await Task.Run(() => Main.Services.Workflow.Reapply(chosen));
-            Main.ShowMessage($"Применено снова: {done}." + (errors.Count > 0 ? " Ошибки: " + string.Join("; ", errors) : "") +
-                             " Отменить можно, как обычно, откатом сессии.", errors.Count > 0);
+            Main.ShowMessage(Loc.T($"Применено снова: {done}.") + (errors.Count > 0 ? Loc.T(" Ошибки: ") + string.Join("; ", errors) : "") +
+                             Loc.T(" Отменить можно, как обычно, откатом сессии."), errors.Count > 0);
             ShowVerify(await Task.Run(() => Main.Services.Workflow.Verify()));
             Refresh();
         }
@@ -125,17 +126,17 @@ public sealed partial class HistoryViewModel : PageViewModel
             var recs = journal.Where(r => r.SessionId.StartsWith(s.Id, StringComparison.Ordinal)).ToList();
             var (text, color) = s.Outcome switch
             {
-                SessionOutcome.Improved => ("стало лучше", Palette.Good),
-                SessionOutcome.Worse => ("стало хуже", Palette.Bad),
-                SessionOutcome.NoEffect => ("без эффекта", Palette.Neutral),
-                SessionOutcome.RolledBack => ("откачено", Palette.Neutral),
-                _ => (s.Stage == SessionStage.Closed ? "без сравнения" : "в процессе", Palette.Accent),
+                SessionOutcome.Improved => (Loc.T("стало лучше"), Palette.Good),
+                SessionOutcome.Worse => (Loc.T("стало хуже"), Palette.Bad),
+                SessionOutcome.NoEffect => (Loc.T("без эффекта"), Palette.Neutral),
+                SessionOutcome.RolledBack => (Loc.T("откачено"), Palette.Neutral),
+                _ => (s.Stage == SessionStage.Closed ? Loc.T("без сравнения") : Loc.T("в процессе"), Palette.Accent),
             };
             Sessions.Add(new SessionItem
             {
                 Session = s, OutcomeText = text, Color = color,
-                Details = $"Изменений: {recs.Count(r => !r.RolledBack)} действует, {recs.Count(r => r.RolledBack)} откачено" +
-                          (recs.Any(r => !r.Committed && !r.RolledBack) ? $" · не подтверждено: {recs.Count(r => !r.Committed && !r.RolledBack)} (программа завершилась во время изменения — откат безопасен)" : "") +
+                Details = Loc.T($"Изменений: {recs.Count(r => !r.RolledBack)} действует, {recs.Count(r => r.RolledBack)} откачено") +
+                          (recs.Any(r => !r.Committed && !r.RolledBack) ? Loc.T($" · не подтверждено: {recs.Count(r => !r.Committed && !r.RolledBack)} (программа завершилась во время изменения — откат безопасен)") : "") +
                           (s.AbTests.Count > 0 ? $" · A/B: {string.Join(", ", s.AbTests.Select(a => a.FixId + (a.KeptB ? " ✓" : " ✗")))}" : ""),
             });
         }
@@ -161,7 +162,7 @@ public sealed partial class HistoryViewModel : PageViewModel
     [RelayCommand]
     private async Task RollbackSessionAsync(SessionItem item)
     {
-        if (!await Main.Services.ConfirmAsync("Откат сессии", $"Вернуть изменения сессии {item.Title}?")) return;
+        if (!await Main.Services.ConfirmAsync(Loc.T("Откат сессии"), Loc.T($"Вернуть изменения сессии {item.Title}?"))) return;
         var r = await Task.Run(() => Main.Services.Workflow.RollbackSession(item.Session));
         Main.ShowMessage(r.Summary(), r.Errors.Count > 0);
         Refresh();
@@ -170,11 +171,11 @@ public sealed partial class HistoryViewModel : PageViewModel
     [RelayCommand]
     private async Task RollbackAllAsync()
     {
-        if (!await Main.Services.ConfirmAsync("Полный откат", "Вернуть ВСЕ изменения, когда-либо сделанные Opti?")) return;
+        if (!await Main.Services.ConfirmAsync(Loc.T("Полный откат"), Loc.T("Вернуть ВСЕ изменения, когда-либо сделанные Opti?"))) return;
         var wf = Main.Services.Workflow;
         var r = await Task.Run(() => new RollbackService(wf.BackendsForRollback, Main.Services.Journal).RollbackAll());
         foreach (var s in wf.Store.All().Where(s => s.Outcome != SessionOutcome.RolledBack)) { s.Outcome = SessionOutcome.RolledBack; s.Stage = SessionStage.Closed; wf.Store.Save(s); }
-        Main.ShowMessage(r.Summary("Полный откат: восстановлено") + " Перезагрузите компьютер.", r.Errors.Count > 0);
+        Main.ShowMessage(r.Summary(Loc.T("Полный откат: восстановлено")) + Loc.T(" Перезагрузите компьютер."), r.Errors.Count > 0);
         Refresh();
     }
 }

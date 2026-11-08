@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using Opti.App.Services;
 using Opti.Fixes.Backends;
 using Opti.ViewModels;
+using Opti.Core.Localization;
 
 namespace Opti.App;
 
@@ -37,7 +38,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             Log(ex);
-            MessageBox.Show("Не удалось запустить Opti: " + ex.Message, "Opti", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(Loc.T("Не удалось запустить Opti: ") + ex.Message, "Opti", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
             return;
         }
@@ -48,7 +49,7 @@ public partial class App : Application
         MainWindow = window;
         window.Show();
         try { await vm.InitializeAsync(); }
-        catch (Exception ex) { Log(ex); vm.ShowMessage("Ошибка при запуске: " + ex.Message, error: true); }
+        catch (Exception ex) { Log(ex); vm.ShowMessage(Loc.T("Ошибка при запуске: ") + ex.Message, error: true); }
     }
 
     /// <summary>
@@ -83,7 +84,7 @@ public partial class App : Application
     private void OnUnhandled(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         Log(e.Exception);
-        MessageBox.Show("Непредвиденная ошибка: " + e.Exception.Message + "\n\nПодробности записаны в журнал: " + OptiPaths.LogsDir,
+        MessageBox.Show(Loc.T("Непредвиденная ошибка: ") + e.Exception.Message + Loc.T("\n\nПодробности записаны в журнал: ") + OptiPaths.LogsDir,
             "Opti", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
     }

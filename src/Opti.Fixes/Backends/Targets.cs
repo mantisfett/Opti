@@ -1,3 +1,4 @@
+using Opti.Core.Localization;
 namespace Opti.Fixes.Backends;
 
 /// <summary>Форматы адресов настроек (поле ChangeRecord.Target).</summary>
@@ -23,7 +24,7 @@ public static class Targets
     public static (string Left, string Right) Split2(string target)
     {
         int i = target.LastIndexOf(Sep);
-        if (i < 0) throw new FormatException($"Неверный адрес настройки: {target}");
+        if (i < 0) throw new FormatException(Loc.T($"Неверный адрес настройки: {target}"));
         return (target[..i], target[(i + 1)..]);
     }
 }

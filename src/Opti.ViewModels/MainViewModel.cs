@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Core.Strategy;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
 
@@ -49,16 +50,16 @@ public sealed partial class MainViewModel : ObservableObject
         Nav = new ObservableCollection<NavItem>
         {
             // Значки — глифы шрифта Segoe Fluent Icons / Segoe MDL2 Assets
-            new() { Title = "Главная", Icon = "\uE80F", Page = () => Home },
-            new() { Title = "Анализ", Icon = "\uE9D9", Page = () => Analysis, IsEnabled = false, Header = "ОПТИМИЗАЦИЯ", DisabledHint = "Появится после анализа" },
-            new() { Title = "Исправления", Icon = "\uE90F", Page = () => Strategy, IsEnabled = false, DisabledHint = "Появится после анализа" },
-            new() { Title = "Результат", Icon = "\uE9D2", Page = () => Compare, IsEnabled = false, DisabledHint = "Появится после замера «после»" },
-            new() { Title = "Драйверы", Icon = "\uE950", Page = () => Drivers, IsEnabled = false, Header = "ИНСТРУМЕНТЫ", DisabledHint = "Появится после анализа" },
-            new() { Title = "Твики", Icon = "\uE70F", Page = () => Tweaks },
-            new() { Title = "Очистка", Icon = "\uEA99", Page = () => Cleanup },
-            new() { Title = "Программы", Icon = "\uE71D", Page = () => Software },
-            new() { Title = "История", Icon = "\uE81C", Page = () => History, IsFooter = true },
-            new() { Title = "Настройки", Icon = "\uE713", Page = () => SettingsPage, IsFooter = true },
+            new() { Title = Loc.T("Главная"), Icon = "\uE80F", Page = () => Home },
+            new() { Title = Loc.T("Анализ"), Icon = "\uE9D9", Page = () => Analysis, IsEnabled = false, Header = Loc.T("ОПТИМИЗАЦИЯ"), DisabledHint = Loc.T("Появится после анализа") },
+            new() { Title = Loc.T("Исправления"), Icon = "\uE90F", Page = () => Strategy, IsEnabled = false, DisabledHint = Loc.T("Появится после анализа") },
+            new() { Title = Loc.T("Результат"), Icon = "\uE9D2", Page = () => Compare, IsEnabled = false, DisabledHint = Loc.T("Появится после замера «после»") },
+            new() { Title = Loc.T("Драйверы"), Icon = "\uE950", Page = () => Drivers, IsEnabled = false, Header = Loc.T("ИНСТРУМЕНТЫ"), DisabledHint = Loc.T("Появится после анализа") },
+            new() { Title = Loc.T("Твики"), Icon = "\uE70F", Page = () => Tweaks },
+            new() { Title = Loc.T("Очистка"), Icon = "\uEA99", Page = () => Cleanup },
+            new() { Title = Loc.T("Программы"), Icon = "\uE71D", Page = () => Software },
+            new() { Title = Loc.T("История"), Icon = "\uE81C", Page = () => History, IsFooter = true },
+            new() { Title = Loc.T("Настройки"), Icon = "\uE713", Page = () => SettingsPage, IsFooter = true },
         };
         _currentPage = Home;
         Nav[0].IsActive = true;
@@ -81,7 +82,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string WindowTitle => $"Opti {Services.AppVersion}";
     /// <summary>Плашка демо-режима над страницей.</summary>
     public string? DemoBanner => Services.IsDemo
-        ? "Демо-режим: пример настольного ПК с RTX 4070. Анализ, исправления, замеры и откат работают на эмуляции — система не меняется."
+        ? Loc.T("Демо-режим: пример настольного ПК с RTX 4070. Анализ, исправления, замеры и откат работают на эмуляции — система не меняется.")
         : null;
 
     [ObservableProperty] private PageViewModel _currentPage;
@@ -150,13 +151,13 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 if (await Task.Run(() => wf.ResumeAbIfRebooted(open)))
                 {
-                    ShowMessage("Перезагрузка выполнена. Продолжаем A/B-проверку: замер варианта B.");
+                    ShowMessage(Loc.T("Перезагрузка выполнена. Продолжаем A/B-проверку: замер варианта B."));
                     Navigate(MeasureViewModel.ForAbB(this));
                 }
             }
             else if (open.Stage == SessionStage.AwaitingReboot)
             {
-                ShowMessage("Проверяю, что изменения применились после перезагрузки…");
+                ShowMessage(Loc.T("Проверяю, что изменения применились после перезагрузки…"));
                 var check = await Task.Run(() => wf.ResumeIfRebooted(open));
                 Toast = null;
                 if (check is not null)
@@ -164,7 +165,7 @@ public sealed partial class MainViewModel : ObservableObject
                     Session = open;
                     if (open.AutoMode && check.Healthy && open.Before.Count > 0)
                     {
-                        ShowMessage($"Перезагрузка выполнена, все изменения на месте ({check.Verified}). Продолжаю: замер после изменений.");
+                        ShowMessage(Loc.T($"Перезагрузка выполнена, все изменения на месте ({check.Verified}). Продолжаю: замер после изменений."));
                         Navigate(MeasureViewModel.ForAfter(this, auto: true));
                     }
                     else
@@ -192,8 +193,8 @@ public sealed partial class MainViewModel : ObservableObject
                 var report = await Task.Run(() => Services.Workflow.Verify());
                 History.ShowVerify(report);
                 if (report.Reverted.Any())
-                    ShowMessage($"Windows или драйвер вернули настройки, изменённые Opti ({report.Reverted.Count()}). " +
-                                "Откройте «Историю», чтобы применить их снова.");
+                    ShowMessage(Loc.T($"Windows или драйвер вернули настройки, изменённые Opti ({report.Reverted.Count()}). ") +
+                                Loc.T("Откройте «Историю», чтобы применить их снова."));
             }
             catch (Exception ex) { Opti.Core.Diagnostics.OptiLog.Warn("Проверка изменений при запуске не удалась", ex); }
         }
@@ -203,7 +204,7 @@ public sealed partial class MainViewModel : ObservableObject
             var u = await Services.CheckForUpdatesAsync();
             if (u is { IsNewer: true })
             {
-                UpdateMessage = $"Доступна новая версия {u.LatestVersion}";
+                UpdateMessage = Loc.T($"Доступна новая версия {u.LatestVersion}");
                 UpdateUrl = u.Url;
             }
         }
@@ -220,10 +221,10 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>«Исправить автоматически»: сначала страница настройки (что исправлять, какой тест или без теста).</summary>
     public Task StartAutoFlowAsync()
     {
-        var s = Session ?? throw new InvalidOperationException("Сначала анализ.");
+        var s = Session ?? throw new InvalidOperationException(Loc.T("Сначала анализ."));
         if (RecommendedFixes(s).Count == 0 && AutoSetupViewModel.Candidates(this, s).Count == 0)
         {
-            ShowMessage("Автоматически исправлять нечего — посмотрите советы в отчёте.");
+            ShowMessage(Loc.T("Автоматически исправлять нечего — посмотрите советы в отчёте."));
             return Task.CompletedTask;
         }
         Navigate(new AutoSetupViewModel(this, s));
@@ -258,8 +259,8 @@ public sealed partial class MainViewModel : ObservableObject
         var vm = new ApplyViewModel(this, report);
         if (s.SkipMeasure)
             vm.NextText = report.RebootRequired
-                ? "Нужна перезагрузка. Замер пропущен — эффект не проверен; при желании сделайте замер позже."
-                : "Готово. Замер пропущен, поэтому эффект не доказан. Любое изменение можно откатить в «Истории».";
+                ? Loc.T("Нужна перезагрузка. Замер пропущен — эффект не проверен; при желании сделайте замер позже.")
+                : Loc.T("Готово. Замер пропущен, поэтому эффект не доказан. Любое изменение можно откатить в «Истории».");
         return vm;
     }
 }

@@ -1,5 +1,6 @@
 using System.Text;
 using Opti.Cli;
+using Opti.Core.Localization;
 
 // Синтетический тест встроен: opti-cli.exe --bench …
 if (Opti.Bench.BenchProgram.IsBenchInvocation(args)) return Opti.Bench.BenchProgram.Run(args);
@@ -7,7 +8,7 @@ Console.OutputEncoding = Encoding.UTF8;
 foreach (var note in Opti.Fixes.Backends.OptiPaths.PrepareDataDir())
     Output.Color(ConsoleColor.Yellow, note + "\n");
 if (OperatingSystem.IsWindows() && Opti.Native.SessionUser.MismatchWarning() is { } who)
-    Output.Color(ConsoleColor.Yellow, who + "\n");
+    Output.Color(ConsoleColor.Yellow, Opti.Core.Localization.Loc.T(who) + "\n");
 var a = new Args(args);
 Opti.Core.Diagnostics.OptiLog.Init(Opti.Fixes.Backends.OptiPaths.LogsDir);
 Opti.Core.Diagnostics.OptiLog.Info($"opti-cli {Opti.Workflow.AppInfo.Version}: {a.Command}");
@@ -17,7 +18,7 @@ try
     // Команды, которые меняют систему или сессию, — только в одном экземпляре (окно Opti тоже держит блокировку).
     using var instance = a.Command is "run" or "resume" or "measure" or "apply" or "ab" or "compare" or "rollback" or "verify" or "uninstall"
         ? Opti.Workflow.SingleInstance.TryAcquire(TimeSpan.FromSeconds(3))
-          ?? throw new InvalidOperationException("Opti уже работает (окно или другая команда). Закройте его и повторите.")
+          ?? throw new InvalidOperationException(Loc.T("Opti уже работает (окно или другая команда). Закройте его и повторите."))
         : null;
     return a.Command switch
     {
@@ -46,6 +47,6 @@ catch (Exception ex) when (ex is PlatformNotSupportedException or UnauthorizedAc
                                or ArgumentException or InvalidOperationException or OperationCanceledException or TimeoutException)
 {
     Opti.Core.Diagnostics.OptiLog.Warn("Команда завершилась с ошибкой", ex);
-    Output.Color(ConsoleColor.Red, "Ошибка: " + ex.Message + "\n");
+    Output.Color(ConsoleColor.Red, Loc.T("Ошибка: ") + ex.Message + "\n");
     return 2;
 }

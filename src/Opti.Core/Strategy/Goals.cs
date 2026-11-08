@@ -1,3 +1,4 @@
+using Opti.Core.Localization;
 using Opti.Core.Profile;
 
 namespace Opti.Core.Strategy;
@@ -46,14 +47,14 @@ public sealed record DeviceClassification(DeviceClass Class, bool IsWeak, bool I
     {
         var name = Class switch
         {
-            DeviceClass.HybridLaptop => "Ноутбук с гибридной графикой" + (HasMux == true ? " (есть MUX)" : HasMux == false ? " (без MUX)" : ""),
-            DeviceClass.IgpuLaptop => "Ноутбук только со встроенной графикой",
-            DeviceClass.DesktopDgpu => "Настольный ПК с дискретной видеокартой",
-            DeviceClass.DesktopIgpu => "Настольный ПК со встроенной графикой",
+            DeviceClass.HybridLaptop => Loc.T("Ноутбук с гибридной графикой") + (HasMux == true ? Loc.T(" (есть MUX)") : HasMux == false ? Loc.T(" (без MUX)") : ""),
+            DeviceClass.IgpuLaptop => Loc.T("Ноутбук только со встроенной графикой"),
+            DeviceClass.DesktopDgpu => Loc.T("Настольный ПК с дискретной видеокартой"),
+            DeviceClass.DesktopIgpu => Loc.T("Настольный ПК со встроенной графикой"),
             _ => Class.ToString(),
         };
-        if (IsWeak) name += ", слабая конфигурация";
-        if (IsModifiedOs) name += ", модифицированная сборка Windows";
+        if (IsWeak) name += Loc.T(", слабая конфигурация");
+        if (IsModifiedOs) name += Loc.T(", модифицированная сборка Windows");
         return name;
     }
 }

@@ -3,6 +3,7 @@ using Opti.Analysis.Collectors;
 using Opti.Analysis.Detectors;
 using Opti.Core.Findings;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis;
 
@@ -18,7 +19,7 @@ public static class SystemAnalyzer
 {
     public static IReadOnlyList<ICollector> DefaultCollectors(string? obsConfigDir = null)
     {
-        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Сбор профиля работает только в Windows. Для тестов используйте сохранённые профили (--profile).");
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException(Loc.T("Сбор профиля работает только в Windows. Для тестов используйте сохранённые профили (--profile)."));
         return new ICollector[]
         {
             new DeviceCollector(), new OsCollector(), new CpuCollector(), new GpuDisplayCollector(), new MemoryCollector(),

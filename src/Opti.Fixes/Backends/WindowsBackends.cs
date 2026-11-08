@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Opti.Core.Fixes;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -38,12 +39,12 @@ public static class OptiPaths
             var legacy = LegacyDataDir;
             if (!Directory.Exists(legacy) || Directory.Exists(DataDir)) return null;
             if (OperatingSystem.IsWindows() && DataDirSecurity.IsElevated() && !DataDirSecurity.IsTrustedDirectory(legacy))
-                return "Папка " + legacy + " создана не администратором — данные GameTune не перенесены.";
+                return Loc.T("Папка ") + legacy + Loc.T(" создана не администратором — данные GameTune не перенесены.");
             try { Directory.Move(legacy, DataDir); }
             catch (IOException) { CopyDirectory(legacy, DataDir); }
-            return "Данные GameTune (журнал отката и история) перенесены в " + DataDir + ".";
+            return Loc.T("Данные GameTune (журнал отката и история) перенесены в ") + DataDir + ".";
         }
-        catch (Exception ex) { return "Не удалось перенести данные GameTune: " + ex.Message; }
+        catch (Exception ex) { return Loc.T("Не удалось перенести данные GameTune: ") + ex.Message; }
     }
 
     /// <summary>
@@ -55,12 +56,12 @@ public static class OptiPaths
         var notes = new List<string>();
         // Лаунчер релиза уже защитил папку до распаковки приложения — его сообщения (карантин и т. п.) показываем здесь
         if (Environment.GetEnvironmentVariable("OPTI_LAUNCHER_NOTES") is { Length: > 0 } fromLauncher)
-            notes.AddRange(fromLauncher.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+            notes.AddRange(fromLauncher.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(Loc.T));
         if (MigrateLegacyData() is { } m) notes.Add(m);
         if (OperatingSystem.IsWindows())
         {
-            try { notes.AddRange(DataDirSecurity.Harden(DataDir)); }
-            catch (Exception ex) { notes.Add("Не удалось защитить папку данных " + DataDir + ": " + ex.Message); }
+            try { notes.AddRange(DataDirSecurity.Harden(DataDir).Select(Loc.T)); }
+            catch (Exception ex) { notes.Add(Loc.T("Не удалось защитить папку данных ") + DataDir + ": " + ex.Message); }
         }
         return notes;
     }

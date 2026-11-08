@@ -2,6 +2,7 @@ using Opti.Core.Fixes;
 using Opti.Core.Profile;
 using Opti.Core.Tweaks;
 using Opti.Fixes.Backends;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Services;
 
@@ -37,7 +38,7 @@ public sealed class TweakService
     public void Enable(Tweak t)
     {
         if (!_journal.GetSessions().Any(s => s.SessionId == SessionId))
-            _journal.SaveSession(new SessionInfo { SessionId = SessionId, Goal = "Твики", Notes = "Твики удобства" });
+            _journal.SaveSession(new SessionInfo { SessionId = SessionId, Goal = Loc.T("Твики"), Notes = Loc.T("Твики удобства") });
         var ctx = new ChangeContext(_backends, _journal, SessionId, t.FixId, new SystemProfile());
         var done = new List<ChangeRecord>();
         try
