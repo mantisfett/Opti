@@ -46,6 +46,18 @@ public sealed class TuneWorkflow
     /// <summary>Бэкенды настроек — для полного отката вне сессий.</summary>
     public IBackendRegistry BackendsForRollback => _backends;
 
+    /// <summary>«Страж»: на месте ли действующие изменения Opti (обновления Windows и драйверов их иногда возвращают).</summary>
+    public VerifyReport Verify() => new VerifyService(_backends, _journal).Verify();
+
+    /// <summary>Применить значения Opti снова для выбранных настроек.</summary>
+    public (int Reapplied, List<string> Errors) Reapply(IEnumerable<VerifyItem> items) => new VerifyService(_backends, _journal).Reapply(items);
+
+    /// <summary>Понятное название исправления или твика по его идентификатору.</summary>
+    public string FixTitle(string fixId) =>
+        Catalog.FirstOrDefault(f => string.Equals(f.Id, fixId, StringComparison.OrdinalIgnoreCase))?.Title
+        ?? Opti.Core.Tweaks.TweakCatalog.All.FirstOrDefault(t => string.Equals(t.FixId, fixId, StringComparison.OrdinalIgnoreCase))?.Title
+        ?? fixId;
+
     public TuneSession StartSession(AnalysisResult analysis, UserGoal goal)
     {
         var s = new TuneSession { Goal = goal, Profile = analysis.Profile, Findings = analysis.Findings };

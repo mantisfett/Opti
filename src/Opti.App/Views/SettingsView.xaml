@@ -61,6 +61,12 @@
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
+                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding VerifyOnStartup}" VerticalAlignment="Center" MinWidth="0"/>
+                    <StackPanel><TextBlock Text="Проверять при запуске, на месте ли изменения" Style="{StaticResource Strong}"/><TextBlock Text="Обновления Windows и драйверов иногда возвращают настройки — Opti подскажет и применит их снова по вашему выбору" Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
                     <CheckBox DockPanel.Dock="Right" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Сообщать о новых версиях" Style="{StaticResource Strong}"/><TextBlock Text="Только уведомление — ничего не скачивается" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>

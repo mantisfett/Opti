@@ -545,4 +545,27 @@ public sealed class ViewModelTests : IDisposable
         Assert.Contains(main.Strategy.Fixes, f => f.Id == FixIds.PowerSchemePerf && !f.IsSelected);
         Assert.All(main.Strategy.Fixes.Where(f => f.IsSelected), f => Assert.Equal(FixIntent.Repair, f.Fix.Intent));
     }
+
+    [Fact]
+    public async Task Startup_FindsSettingsRevertedByWindows_AndReappliesFromHistory()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        var s = main.Session!;
+        var wf = svc.Workflow;
+        wf.Apply(s, wf.BuildPlan(s).Fixes.Where(f => f.Selected && !f.ApplySeparately).Select(f => f.Fix).ToList());
+        var rec = svc.Journal.GetAll().First(r => r.Type == ChangeType.Registry && !r.RolledBack);
+        svc.Map[ChangeType.Registry].Write(rec.Target, rec.Before); // «обновление Windows»
+
+        var restarted = new MainViewModel(svc);
+        await restarted.InitializeAsync();
+        Assert.Contains("вернули", restarted.Toast);
+        var row = Assert.Single(restarted.History.VerifyRows, r => r.Item.Record.Target == rec.Target);
+        Assert.True(row.IsChecked);
+
+        await restarted.History.ReapplyCommand.ExecuteAsync(null);
+        Assert.Equal(rec.After, svc.Map[ChangeType.Registry].Read(rec.Target));
+        Assert.False(restarted.History.HasDrift);
+    }
 }

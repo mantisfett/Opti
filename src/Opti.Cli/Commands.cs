@@ -48,6 +48,9 @@ internal static class Commands
               net      [--target 1.1.1.1] [--no-load]                        Пинг, джиттер, bufferbloat
               version                                                        Версия и проверка обновлений
               doctor                                                         Проверка окружения (права, ETW, утилиты, PresentMon)
+              verify   [--reapply] [--all]                                   На месте ли изменения Opti (обновления Windows и драйверов
+                                                                             их иногда возвращают); --reapply — применить снова
+                                                                             возвращённое Windows, --all — и изменённое после Opti
               bugreport [--out папка]                                        Архив для обращения: журнал работы, сессии, журнал изменений
                                                                              (никуда не отправляется)
 
@@ -652,6 +655,35 @@ internal static class Commands
         else throw new ArgumentException("Укажите --fix ID, --session ID или --all");
         PrintRollback(rep);
         return rep.Errors.Count > 0 ? 3 : 0;
+    }
+
+    public static int Verify(Args a)
+    {
+        RequireWindows("Проверка изменений");
+        using var host = new CliHost();
+        var wf = host.Workflow;
+        var report = wf.Verify();
+        Output.Header(report.Summary());
+        foreach (var i in report.Items.Where(i => i.Status != VerifyStatus.InPlace))
+        {
+            var (text, color) = i.Status switch
+            {
+                VerifyStatus.Reverted => ("возвращено Windows/драйвером", ConsoleColor.Yellow),
+                VerifyStatus.Changed => ("изменено после Opti", ConsoleColor.Gray),
+                _ => ("не проверено: " + i.Error, ConsoleColor.Red),
+            };
+            Output.Color(color, $"  {wf.FixTitle(i.Record.FixId)} — {text}\n");
+            Output.Color(ConsoleColor.DarkGray, $"     {i.Record.Type} {i.Record.Target}: сейчас {i.Current}, Opti ставил {i.Record.After}\n");
+        }
+        if (a.Has("reapply"))
+        {
+            var items = report.Items.Where(i => i.Status == VerifyStatus.Reverted || (a.Has("all") && i.Status == VerifyStatus.Changed)).ToList();
+            var (done, errors) = wf.Reapply(items);
+            Output.Color(ConsoleColor.Green, $"Применено снова: {done}\n");
+            foreach (var e in errors) Output.Color(ConsoleColor.Red, "  ошибка: " + e + "\n");
+            return errors.Count > 0 ? 3 : 0;
+        }
+        return report.AllInPlace ? 0 : 1;
     }
 
     public static int BugReport(Args a)

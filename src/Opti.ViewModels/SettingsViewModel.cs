@@ -21,6 +21,7 @@ public sealed partial class SettingsViewModel : PageViewModel
     [ObservableProperty] private string? _networkTarget;
     [ObservableProperty] private bool _rollbackWhenNoEffect;
     [ObservableProperty] private bool _checkForUpdates;
+    [ObservableProperty] private bool _verifyOnStartup;
     [ObservableProperty] private string? _updateStatus;
     public string Version => Main.Services.AppVersion;
     public string DataDir => Main.Services.DataDir;
@@ -38,6 +39,7 @@ public sealed partial class SettingsViewModel : PageViewModel
         NetworkTarget = s.NetworkTarget;
         RollbackWhenNoEffect = s.RollbackWhenNoEffect;
         CheckForUpdates = s.CheckForUpdates;
+        VerifyOnStartup = s.VerifyOnStartup;
         ExcludedFixes.Clear();
         foreach (var f in Main.Services.Workflow.Catalog)
             ExcludedFixes.Add(new ChoiceItem { Name = f.Id, Detail = f.Title, IsChecked = s.ExcludedFixIds.Contains(f.Id, StringComparer.OrdinalIgnoreCase) });
@@ -57,6 +59,7 @@ public sealed partial class SettingsViewModel : PageViewModel
         s.NetworkTarget = string.IsNullOrWhiteSpace(NetworkTarget) ? "1.1.1.1" : NetworkTarget.Trim();
         s.RollbackWhenNoEffect = RollbackWhenNoEffect;
         s.CheckForUpdates = CheckForUpdates;
+        s.VerifyOnStartup = VerifyOnStartup;
         s.ExcludedFixIds = ExcludedFixes.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         try
         {

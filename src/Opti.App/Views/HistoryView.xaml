@@ -5,7 +5,47 @@
         <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Left">
             <TextBlock Text="История" Style="{StaticResource PageTitle}"/>
             <TextBlock Text="Все сессии. Любую можно открыть отчётом или откатить." Style="{StaticResource Secondary}"/>
-            <StackPanel Orientation="Horizontal" Margin="0,16,0,16">
+
+            <!-- «Страж»: на месте ли изменения -->
+            <Border Style="{StaticResource Card}" Margin="0,18,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Проверить" Command="{Binding VerifyCommand}" VerticalAlignment="Center"/>
+                        <Border Style="{StaticResource IconTile}" Margin="0,0,14,0" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE9F5;" Style="{StaticResource IconTileGlyph}"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="На месте ли изменения" Style="{StaticResource Strong}" FontSize="15"/>
+                            <TextBlock Style="{StaticResource Caption}"
+                                       Text="Обновления Windows и драйверов иногда возвращают частоту экрана, схему питания и ключи реестра. Opti сверит журнал с системой."/>
+                        </StackPanel>
+                    </DockPanel>
+                    <ProgressBar IsIndeterminate="True" Margin="0,12,0,0" Visibility="{Binding IsVerifying, Converter={StaticResource BoolToVis}}"/>
+                    <StackPanel Orientation="Horizontal" Margin="54,12,0,0" Visibility="{Binding VerifyText, Converter={StaticResource StrToVis}}">
+                        <Ellipse Style="{StaticResource Dot}" Fill="{Binding VerifyColor, Converter={StaticResource ToneToBrush}}"/>
+                        <TextBlock Text="{Binding VerifyText}" Style="{StaticResource Body}"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding VerifyRows}" Margin="54,8,0,0" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,4">
+                                    <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsChecked}" VerticalAlignment="Top" MinWidth="0" Margin="0,0,4,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Caption}" Foreground="{Binding Color, Converter={StaticResource ToneToBrush}}"/>
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Mono}" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Style="{StaticResource AccentButton}" Content="Применить отмеченное снова" Command="{Binding ReapplyCommand}"
+                            HorizontalAlignment="Left" Margin="54,12,0,0" Visibility="{Binding HasDrift, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Сессии" Style="{StaticResource SectionTitle}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                 <Button Content="Обновить" Command="{Binding RefreshCommand}" Margin="0,0,8,0"/>
                 <Button Content="Откатить все изменения Opti" Command="{Binding RollbackAllCommand}"/>
             </StackPanel>

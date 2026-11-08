@@ -180,6 +180,20 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (Services.StartupNotice is { } notice) ShowMessage(notice);
 
+        // «Страж»: обновления Windows и драйверов иногда возвращают настройки — проверяем тихо при запуске
+        if (Services.Settings.VerifyOnStartup && Services.Journal.GetAll().Any(r => !r.RolledBack))
+        {
+            try
+            {
+                var report = await Task.Run(() => Services.Workflow.Verify());
+                History.ShowVerify(report);
+                if (report.Reverted.Any())
+                    ShowMessage($"Windows или драйвер вернули настройки, изменённые Opti ({report.Reverted.Count()}). " +
+                                "Откройте «Историю», чтобы применить их снова.");
+            }
+            catch (Exception ex) { Opti.Core.Diagnostics.OptiLog.Warn("Проверка изменений при запуске не удалась", ex); }
+        }
+
         if (Services.Settings.CheckForUpdates)
         {
             var u = await Services.CheckForUpdatesAsync();

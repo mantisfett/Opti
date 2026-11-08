@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Opti.Fixes.Services;
 using Opti.Workflow.Reports;
 using Opti.Workflow.Sessions;
 using Opti.Measure.Stats;
+using Opti.Core.Fixes;
 using Opti.Core.Strategy;
 
 namespace Opti.ViewModels;
@@ -17,11 +19,96 @@ public sealed class SessionItem
     public required string Details { get; init; }
 }
 
+/// <summary>Строка «Стража»: настройка, которая сейчас не такая, как поставил Opti.</summary>
+public sealed partial class VerifyRow : ObservableObject
+{
+    public required VerifyItem Item { get; init; }
+    public required string Title { get; init; }
+    public required string Detail { get; init; }
+    public required string StatusText { get; init; }
+    public required string Color { get; init; }
+    [ObservableProperty] private bool _isChecked;
+}
+
 public sealed partial class HistoryViewModel : PageViewModel
 {
     public HistoryViewModel(MainViewModel main) : base(main) { }
     public override string Title => "История";
     public ObservableCollection<SessionItem> Sessions { get; } = new();
+
+    // ---------------- «Страж»: на месте ли изменения ----------------
+
+    public ObservableCollection<VerifyRow> VerifyRows { get; } = new();
+    [ObservableProperty] private string? _verifyText;
+    [ObservableProperty] private string _verifyColor = Palette.Neutral;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(VerifyCommand), nameof(ReapplyCommand))] private bool _isVerifying;
+    [ObservableProperty] private bool _hasDrift;
+
+    /// <summary>Показывает результат проверки (в том числе сделанной при запуске программы).</summary>
+    public void ShowVerify(VerifyReport report)
+    {
+        VerifyRows.Clear();
+        var wf = Main.Services.Workflow;
+        foreach (var i in report.Items.Where(i => i.Status != VerifyStatus.InPlace))
+        {
+            var (status, color) = i.Status switch
+            {
+                VerifyStatus.Reverted => ("Windows или драйвер вернули исходное значение", Palette.Warn),
+                VerifyStatus.Changed => ("изменено после Opti — возможно, вами", Palette.Neutral),
+                _ => ("не удалось проверить: " + i.Error, Palette.Bad),
+            };
+            var row = new VerifyRow
+            {
+                Item = i, Title = wf.FixTitle(i.Record.FixId), StatusText = status, Color = color,
+                Detail = $"{ShortTarget(i.Record.Target)}: сейчас {Show(i.Current)}, Opti ставил {Show(i.Record.After)}",
+                // Возврат Windows — почти всегда случайность; своё изменение человек отмечает сам
+                IsChecked = i.Status == VerifyStatus.Reverted,
+            };
+            row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(VerifyRow.IsChecked)) ReapplyCommand.NotifyCanExecuteChanged(); };
+            VerifyRows.Add(row);
+        }
+        HasDrift = VerifyRows.Any(r => r.Item.Status is VerifyStatus.Reverted or VerifyStatus.Changed);
+        VerifyText = report.Summary();
+        VerifyColor = report.AllInPlace ? Palette.Good : report.Reverted.Any() ? Palette.Warn : Palette.Neutral;
+        ReapplyCommand.NotifyCanExecuteChanged();
+    }
+
+    private static string Show(StateValue? v) => v is null ? "?" : v.Exists ? v.Value ?? "" : "нет значения";
+
+    private static string ShortTarget(string target)
+    {
+        var t = target.Replace("|", " → ", StringComparison.Ordinal);
+        return t.Length <= 70 ? t : "…" + t[^69..];
+    }
+
+    private bool CanVerify() => !IsVerifying;
+
+    [RelayCommand(CanExecute = nameof(CanVerify))]
+    private async Task VerifyAsync()
+    {
+        IsVerifying = true;
+        try { ShowVerify(await Task.Run(() => Main.Services.Workflow.Verify())); }
+        catch (Exception ex) { Main.ShowMessage("Проверка не удалась: " + ex.Message, error: true); }
+        finally { IsVerifying = false; }
+    }
+
+    private bool CanReapply() => !IsVerifying && VerifyRows.Any(r => r.IsChecked);
+
+    [RelayCommand(CanExecute = nameof(CanReapply))]
+    private async Task ReapplyAsync()
+    {
+        var chosen = VerifyRows.Where(r => r.IsChecked).Select(r => r.Item).ToList();
+        IsVerifying = true;
+        try
+        {
+            var (done, errors) = await Task.Run(() => Main.Services.Workflow.Reapply(chosen));
+            Main.ShowMessage($"Применено снова: {done}." + (errors.Count > 0 ? " Ошибки: " + string.Join("; ", errors) : "") +
+                             " Отменить можно, как обычно, откатом сессии.", errors.Count > 0);
+            ShowVerify(await Task.Run(() => Main.Services.Workflow.Verify()));
+            Refresh();
+        }
+        finally { IsVerifying = false; }
+    }
 
     public override void OnShown() => Refresh();
 

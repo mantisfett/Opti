@@ -24,6 +24,8 @@ public sealed class OptiSettings
     public bool RollbackWhenNoEffect { get; set; }
     /// <summary>Проверять наличие новой версии на GitHub (только уведомление, ничего не скачивается).</summary>
     public bool CheckForUpdates { get; set; } = true;
+    /// <summary>При запуске проверять, не вернули ли Windows или драйверы настройки, изменённые Opti.</summary>
+    public bool VerifyOnStartup { get; set; } = true;
 
     public static OptiSettings Load(string? path = null)
     {
