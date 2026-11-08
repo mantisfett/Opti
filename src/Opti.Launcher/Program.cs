@@ -49,7 +49,6 @@ public static class Program
             var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Environment.CurrentDirectory };
             foreach (var a in args) psi.ArgumentList.Add(a);
             if (notes.Count > 0) psi.Environment["OPTI_LAUNCHER_NOTES"] = string.Join("\n", notes);
-            psi.Environment["OPTI_LAUNCHER_PATH"] = Environment.ProcessPath ?? "";
 
             using var p = Process.Start(psi) ?? throw new InvalidOperationException("Не удалось запустить " + exe);
             if (!IsCli) return 0;
