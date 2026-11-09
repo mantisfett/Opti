@@ -40,6 +40,18 @@ jobs:
         run: |
           dotnet build src/Opti.App -c Release --nologo
           dotnet build src/Opti.Cli -c Release --nologo
+      # Скрипты сборки и подписи не запускаются в CI целиком (подпись нужен сертификат), но разбираются парсером PowerShell:
+      # синтаксическая ошибка в build/*.ps1 иначе вскрылась бы только при релизе.
+      - name: Синтаксис скриптов сборки
+        shell: pwsh
+        run: |
+          $bad = 0
+          foreach ($f in Get-ChildItem build -Filter *.ps1) {
+            $errs = $null; $tokens = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errs)
+            foreach ($e in $errs) { Write-Host "::error file=$($f.FullName),line=$($e.Extent.StartLineNumber)::$($e.Message)"; $bad++ }
+          }
+          if ($bad) { exit 1 }
       - name: Отчёт о покрытии
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
