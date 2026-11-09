@@ -35,7 +35,7 @@ public static class NetworkTest
         };
     }
 
-    private static async Task<(List<double> Ok, int Lost)> PingSeriesAsync(string target, int count, CancellationToken ct)
+    internal static async Task<(List<double> Ok, int Lost)> PingSeriesAsync(string target, int count, CancellationToken ct)
     {
         using var ping = new Ping();
         var ok = new List<double>();

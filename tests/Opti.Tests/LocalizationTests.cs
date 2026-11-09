@@ -153,6 +153,13 @@ public sealed class LocalizationTests : IDisposable
         NoCyrillic(main.Network.DnsSummary, "dns summary");
         foreach (var r in main.Network.Regions) { NoCyrillic(r.Name, "region"); NoCyrillic(r.MedianText, "region ms"); NoCyrillic(r.DetailText, "region detail"); }
         foreach (var r in main.Network.DnsRows) { NoCyrillic(r.Name, "dns"); NoCyrillic(r.MedianText, "dns ms"); }
+        await main.Network.RunBloatCommand.ExecuteAsync(null);
+        NoCyrillic(main.Network.BloatSummary, "bloat summary");
+        NoCyrillic(main.Network.BloatIdle, "bloat idle"); NoCyrillic(main.Network.BloatDown, "bloat down"); NoCyrillic(main.Network.BloatUp, "bloat up");
+        main.Network.AddSample(new Opti.Measure.Capture.PingSample(25));
+        main.Network.AddSample(new Opti.Measure.Capture.PingSample(double.NaN));
+        NoCyrillic(main.Network.MonitorLast, "monitor last"); NoCyrillic(main.Network.MonitorLoss, "monitor loss");
+        foreach (var b in main.Network.Bars) NoCyrillic(b.Tip, "bar tip");
         await main.Network.RunRouteCommand.ExecuteAsync(null);
         NoCyrillic(main.Network.RouteSummary, "route summary");
         foreach (var h in main.Network.Hops) { NoCyrillic(h.Address, "hop"); NoCyrillic(h.MedianText, "hop ms"); }

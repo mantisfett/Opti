@@ -14,6 +14,8 @@ public abstract partial class PageViewModel : ObservableObject
     public abstract string Title { get; }
     /// <summary>Вызывается при показе страницы.</summary>
     public virtual void OnShown() { }
+    /// <summary>Вызывается, когда пользователь ушёл со страницы (остановить фоновые проверки).</summary>
+    public virtual void OnHidden() { }
 }
 
 public sealed partial class NavItem : ObservableObject
@@ -112,6 +114,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void Navigate(PageViewModel page)
     {
+        if (!ReferenceEquals(CurrentPage, page)) CurrentPage?.OnHidden();
         CurrentPage = page;
         foreach (var n in Nav)
         {

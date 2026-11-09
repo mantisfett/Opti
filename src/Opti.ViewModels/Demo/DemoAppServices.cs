@@ -171,6 +171,21 @@ public sealed class DemoAppServices : IAppServices
 
     public int CloseBackgroundApp(string name) => 0;
 
+    public Task<Opti.Measure.Capture.BufferbloatResult> RunBufferbloatAsync(string target, IProgress<string> phase, CancellationToken ct) =>
+        Task.FromResult(new Opti.Measure.Capture.BufferbloatResult(target, 18, 1.4, 0, 71, 214));
+
+    public async Task MonitorPingAsync(string target, IProgress<Opti.Measure.Capture.PingSample> progress, CancellationToken ct)
+    {
+        // Примерный ряд: ~20 мс с небольшим разбросом, редкие скачки и одна потеря; первые замеры приходят сразу
+        var rng = new Random(7);
+        for (int i = 0; !ct.IsCancellationRequested; i++)
+        {
+            double ms = 19 + rng.NextDouble() * 4 + (i % 23 == 17 ? 38 : 0);
+            progress.Report(new Opti.Measure.Capture.PingSample(i == 41 ? double.NaN : ms));
+            try { await Task.Delay(i < 60 ? 5 : 250, ct); } catch (OperationCanceledException) { break; }
+        }
+    }
+
     public Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.FromResult<Opti.Fixes.Services.ApplyReport?>(null);
 
     public Task<UpdateInfo?> CheckForUpdatesAsync() => Task.FromResult<UpdateInfo?>(null);

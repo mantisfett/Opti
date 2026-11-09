@@ -38,6 +38,14 @@ public sealed class DnsRow
     public bool CanApply => !IsCurrent && Servers.Length > 0;
 }
 
+public sealed class PingBar
+{
+    /// <summary>Высота столбика, 2..48.</summary>
+    public required double Height { get; init; }
+    public required string Tone { get; init; }
+    public required string Tip { get; init; }
+}
+
 /// <summary>Страница «Сеть»: куда связь быстрее и стабильнее, какой DNS быстрее. Только чтение; DNS меняется по кнопке, с откатом.</summary>
 public sealed partial class NetworkViewModel : PageViewModel
 {
@@ -47,10 +55,112 @@ public sealed partial class NetworkViewModel : PageViewModel
 
     public ObservableCollection<RegionRow> Regions { get; } = new();
     public ObservableCollection<DnsRow> DnsRows { get; } = new();
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand))] private bool _isBusy;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand), nameof(RunBloatCommand))] private bool _isBusy;
     [ObservableProperty] private string? _regionsSummary;
     [ObservableProperty] private string? _dnsSummary;
     [ObservableProperty] private string? _progressText;
+
+    // ---------------- Нагрузка на канал (bufferbloat) ----------------
+    [ObservableProperty] private string? _bloatSummary;
+    [ObservableProperty] private string _bloatGrade = "";
+    [ObservableProperty] private string _bloatTone = Palette.Neutral;
+    [ObservableProperty] private string _bloatIdle = "";
+    [ObservableProperty] private string _bloatDown = "";
+    [ObservableProperty] private string _bloatUp = "";
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private async Task RunBloatAsync()
+    {
+        var host = string.IsNullOrWhiteSpace(RouteTarget) ? NetworkTest.DefaultTarget : RouteTarget.Trim();
+        if (!ValidHost(host)) { Main.ShowMessage(Loc.T("Введите имя сервера или IP-адрес."), error: true); return; }
+        IsBusy = true; BloatSummary = null;
+        _cts = new CancellationTokenSource();
+        try
+        {
+            var phase = new Progress<string>(t => { if (IsBusy) ProgressText = t; });
+            ShowBloat(await Main.Services.RunBufferbloatAsync(host, phase, _cts.Token));
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Проверка не удалась: ") + ex.Message, error: true); }
+        finally { IsBusy = false; ProgressText = null; }
+    }
+
+    public void ShowBloat(BufferbloatResult r)
+    {
+        BloatSummary = Bufferbloat.Describe(r);
+        bool ok = !double.IsNaN(r.IdleMs);
+        BloatGrade = ok && (r.DownloadMs is not null || r.UploadMs is not null) ? r.Grade.ToString() : "";
+        BloatTone = ok ? Bufferbloat.GradeTone(r.Grade) : Palette.Bad;
+        string Inc(double? ms, double? inc) => ms is null ? "—" : $"{ms:0} {Loc.T("мс")} (+{inc:0})";
+        BloatIdle = ok ? $"{r.IdleMs:0} {Loc.T("мс")}" : "—";
+        BloatDown = Inc(r.DownloadMs, r.DownloadIncreaseMs);
+        BloatUp = Inc(r.UploadMs, r.UploadIncreaseMs);
+    }
+
+    // ---------------- Живой пинг ----------------
+    private CancellationTokenSource? _monitorCts;
+    private readonly PingStats _stats = new(60);
+    public ObservableCollection<PingBar> Bars { get; } = new();
+    [ObservableProperty] private string _monitorTarget = NetworkTest.DefaultTarget;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanEditMonitorTarget))] private bool _isMonitoring;
+    public bool CanEditMonitorTarget => !IsMonitoring;
+    [ObservableProperty] private string _monitorLast = "—";
+    [ObservableProperty] private string _monitorAvg = "—";
+    [ObservableProperty] private string _monitorMin = "—";
+    [ObservableProperty] private string _monitorMax = "—";
+    [ObservableProperty] private string _monitorJitter = "—";
+    [ObservableProperty] private string _monitorLoss = "—";
+    [ObservableProperty] private string _monitorTone = Palette.Neutral;
+
+    private static bool ValidHost(string host) => host.Length is > 0 and <= 253 && host.All(c => char.IsLetterOrDigit(c) || c is '.' or '-' or ':');
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task ToggleMonitorAsync()
+    {
+        if (IsMonitoring) { StopMonitor(); return; }
+        var host = string.IsNullOrWhiteSpace(MonitorTarget) ? NetworkTest.DefaultTarget : MonitorTarget.Trim();
+        if (!ValidHost(host)) { Main.ShowMessage(Loc.T("Введите имя сервера или IP-адрес."), error: true); return; }
+        _stats.Clear();
+        Bars.Clear();
+        IsMonitoring = true;
+        var cts = _monitorCts = new CancellationTokenSource();
+        try
+        {
+            var progress = new Progress<PingSample>(s => { if (!cts.IsCancellationRequested) AddSample(s); });
+            await Main.Services.MonitorPingAsync(host, progress, cts.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Проверка не удалась: ") + ex.Message, error: true); }
+        finally { if (ReferenceEquals(_monitorCts, cts)) { IsMonitoring = false; _monitorCts = null; } }
+    }
+
+    public void StopMonitor() => _monitorCts?.Cancel();
+    public override void OnHidden() => StopMonitor();
+
+    /// <summary>Тон по среднему пингу и потерям: до 50 мс без потерь — хорошо.</summary>
+    public static string MonitorToneFor(double avg, double loss) => loss >= 2 ? Palette.Bad : double.IsNaN(avg) ? Palette.Bad : avg < 50 && loss < 1 ? Palette.Good : Palette.Neutral;
+
+    public void AddSample(PingSample s)
+    {
+        _stats.Add(s);
+        string F(double v) => double.IsNaN(v) ? "—" : $"{v:0}";
+        MonitorLast = s.Lost ? Loc.T("потеря") : $"{s.Ms:0} {Loc.T("мс")}";
+        MonitorAvg = F(_stats.Average);
+        MonitorMin = F(_stats.Min);
+        MonitorMax = F(_stats.Max);
+        MonitorJitter = $"{_stats.Jitter:0.#}";
+        MonitorLoss = $"{_stats.LossPercent:0} %";
+        MonitorTone = MonitorToneFor(_stats.Average, _stats.LossPercent);
+        double cap = Math.Max(60, double.IsNaN(_stats.Max) ? 60 : _stats.Max);
+        Bars.Clear();
+        foreach (var x in _stats.Samples)
+            Bars.Add(new PingBar
+            {
+                Height = x.Lost ? 48 : Math.Max(2, Math.Min(48, x.Ms / cap * 48)),
+                Tone = x.Lost ? Palette.Bad : x.Ms >= _stats.Average * 2 && x.Ms - _stats.Average > 20 ? Palette.Warn : Palette.Good,
+                Tip = x.Lost ? Loc.T("потеря") : $"{x.Ms:0} {Loc.T("мс")}",
+            });
+    }
 
     // ---------------- Маршрут ----------------
     public ObservableCollection<HopRow> Hops { get; } = new();
@@ -63,7 +173,7 @@ public sealed partial class NetworkViewModel : PageViewModel
     {
         var host = string.IsNullOrWhiteSpace(RouteTarget) ? NetworkTest.DefaultTarget : RouteTarget.Trim();
         // Адрес вводит человек и уходит в трассировку — только имя хоста или IP, без лишнего
-        if (host.Length > 253 || host.Any(c => !(char.IsLetterOrDigit(c) || c is '.' or '-' or ':')))
+        if (!ValidHost(host))
         { Main.ShowMessage(Loc.T("Введите имя сервера или IP-адрес."), error: true); return; }
         IsBusy = true; Hops.Clear(); RouteSummary = null;
         _cts = new CancellationTokenSource();

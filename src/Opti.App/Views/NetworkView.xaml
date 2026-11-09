@@ -42,6 +42,69 @@
                 </StackPanel>
             </Border>
 
+            <!-- Живой пинг -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding ToggleMonitorCommand}" Margin="16,0,0,0" VerticalAlignment="Center">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Content" Value="Запустить"/>
+                                    <Style.Triggers><DataTrigger Binding="{Binding IsMonitoring}" Value="True"><Setter Property="Content" Value="Остановить"/></DataTrigger></Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Живой пинг" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
+                            <TextBlock Text="Пинг каждые полсекунды: запустите, сверните Opti и играйте — потом посмотрите, были ли скачки и потери" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBox Text="{Binding MonitorTarget, UpdateSourceTrigger=PropertyChanged}" Margin="0,12,0,0" Width="420" HorizontalAlignment="Left" IsEnabled="{Binding CanEditMonitorTarget}"
+                             AutomationProperties.Name="Сервер для живого пинга" ToolTip="Имя сервера или IP-адрес"/>
+                    <ItemsControl ItemsSource="{Binding Bars}" Focusable="False" Height="48" Margin="0,14,0,0">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" VerticalAlignment="Bottom"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="6" Margin="0,0,2,0" Height="{Binding Height}" VerticalAlignment="Bottom" CornerRadius="2" ToolTip="{Binding Tip}"
+                                        Background="{Binding Tone, Converter={StaticResource ToneToBrush}}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <UniformGrid Columns="6" Margin="0,14,0,0">
+                        <StackPanel><TextBlock Text="сейчас" Style="{StaticResource Caption}"/><TextBlock Text="{Binding MonitorLast}" Style="{StaticResource Strong}" Foreground="{Binding MonitorTone, Converter={StaticResource ToneToBrush}}"/></StackPanel>
+                        <StackPanel><TextBlock Text="среднее, мс" Style="{StaticResource Caption}"/><TextBlock Text="{Binding MonitorAvg}" Style="{StaticResource Strong}"/></StackPanel>
+                        <StackPanel><TextBlock Text="лучшее, мс" Style="{StaticResource Caption}"/><TextBlock Text="{Binding MonitorMin}" Style="{StaticResource Strong}"/></StackPanel>
+                        <StackPanel><TextBlock Text="худшее, мс" Style="{StaticResource Caption}"/><TextBlock Text="{Binding MonitorMax}" Style="{StaticResource Strong}"/></StackPanel>
+                        <StackPanel><TextBlock Text="разброс, мс" Style="{StaticResource Caption}"/><TextBlock Text="{Binding MonitorJitter}" Style="{StaticResource Strong}"/></StackPanel>
+                        <StackPanel><TextBlock Text="потери" Style="{StaticResource Caption}"/><TextBlock Text="{Binding MonitorLoss}" Style="{StaticResource Strong}"/></StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Нагрузка на канал -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Проверить под нагрузкой" Command="{Binding RunBloatCommand}" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Пинг под нагрузкой" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
+                            <TextBlock Text="Растёт ли пинг, когда канал занят скачиванием или отдачей. Около 30 секунд; на время проверки качаются тестовые данные с speed.cloudflare.com" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,4" Visibility="{Binding BloatSummary, Converter={StaticResource StrToVis}}">
+                        <Border Style="{StaticResource Tag}" Margin="0,0,12,0" Background="{Binding BloatTone, Converter={StaticResource ToneToSoft}}" Visibility="{Binding BloatGrade, Converter={StaticResource StrToVis}}">
+                            <TextBlock Text="{Binding BloatGrade}" Style="{StaticResource TagText}" FontSize="16" Foreground="{Binding BloatTone, Converter={StaticResource ToneToBrush}}"/>
+                        </Border>
+                        <TextBlock Text="{Binding BloatSummary}" Style="{StaticResource Strong}" MaxWidth="740" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <UniformGrid Columns="3" Margin="0,8,0,0" Visibility="{Binding BloatSummary, Converter={StaticResource StrToVis}}">
+                        <StackPanel><TextBlock Text="в простое" Style="{StaticResource Caption}"/><TextBlock Text="{Binding BloatIdle}" Style="{StaticResource Strong}"/></StackPanel>
+                        <StackPanel><TextBlock Text="под скачиванием" Style="{StaticResource Caption}"/><TextBlock Text="{Binding BloatDown}" Style="{StaticResource Strong}"/></StackPanel>
+                        <StackPanel><TextBlock Text="под отдачей" Style="{StaticResource Caption}"/><TextBlock Text="{Binding BloatUp}" Style="{StaticResource Strong}"/></StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
             <!-- DNS -->
             <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
                 <StackPanel>

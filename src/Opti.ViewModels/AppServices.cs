@@ -52,6 +52,14 @@ public interface IAppServices
     Task<IReadOnlyList<Opti.Measure.Capture.RouteHop>> TraceRouteAsync(string host, IProgress<Opti.Measure.Capture.RouteHop> progress, CancellationToken ct) =>
         Task.Run<IReadOnlyList<Opti.Measure.Capture.RouteHop>>(async () => await Opti.Measure.Capture.RouteTrace.RunAsync(host, progress: progress, ct: ct), ct);
 
+    /// <summary>Пинг в простое и под нагрузкой (скачивание и отдача) — bufferbloat.</summary>
+    Task<Opti.Measure.Capture.BufferbloatResult> RunBufferbloatAsync(string target, IProgress<string> phase, CancellationToken ct) =>
+        Task.Run(() => Opti.Measure.Capture.Bufferbloat.RunAsync(target, phase, ct: ct), ct);
+
+    /// <summary>Живой пинг: замеры приходят, пока не отменят.</summary>
+    Task MonitorPingAsync(string target, IProgress<Opti.Measure.Capture.PingSample> progress, CancellationToken ct) =>
+        Task.Run(() => Opti.Measure.Capture.LivePing.RunAsync(target, progress, ct: ct), ct);
+
     /// <summary>Скорость DNS: текущие серверы и популярные публичные.</summary>
     Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct) =>
         Task.Run<IReadOnlyList<Opti.Measure.Capture.DnsResult>>(async () =>
