@@ -93,7 +93,7 @@ internal static class Screenshots
         foreach (var (page, title) in new (PageViewModel, string)[]
                  {
                      (vm.Drivers, "drivers"), (vm.Tweaks, "tweaks"), (vm.Cleanup, "cleanup"),
-                     (vm.Network, "network"), (vm.Background, "background"), (vm.Software, "software"), (vm.History, "history"), (vm.SettingsPage, "settings"),
+                     (vm.Network, "network"), (vm.Background, "background"), (vm.Startup, "startup"), (vm.Software, "software"), (vm.History, "history"), (vm.SettingsPage, "settings"),
                  })
         {
             vm.Navigate(page);

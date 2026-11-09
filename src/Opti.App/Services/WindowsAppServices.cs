@@ -36,10 +36,12 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
         Workflow = new TuneWorkflow(Settings, new SessionStore(), backends, _journal,
             new WindowsRestorePointService(), scheduler, new WindowsCrashEventSource());
         Tweaks = new TweakService(backends, _journal);
+        Startup = new Opti.Workflow.StartupManager(backends, _journal, () => Opti.Analysis.Collectors.BackgroundCollector.ReadStartupItems());
     }
 
     public TuneWorkflow Workflow { get; }
     public TweakService Tweaks { get; }
+    public Opti.Workflow.StartupManager? Startup { get; }
     public int OsBuild => Environment.OSVersion.Version.Build;
 
     public void RestartExplorer()

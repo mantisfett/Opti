@@ -49,6 +49,7 @@ public sealed partial class MainViewModel : ObservableObject
         Tweaks = new TweaksViewModel(this);
         Network = new NetworkViewModel(this);
         Background = new BackgroundViewModel(this);
+        Startup = new StartupViewModel(this);
         Nav = new ObservableCollection<NavItem>
         {
             // Значки — глифы шрифта Segoe Fluent Icons / Segoe MDL2 Assets
@@ -60,6 +61,7 @@ public sealed partial class MainViewModel : ObservableObject
             new() { Title = Loc.T("Твики"), Icon = "\uE70F", Page = () => Tweaks },
             new() { Title = Loc.T("Сеть"), Icon = "\uE839", Page = () => Network },
             new() { Title = Loc.T("Фон"), Icon = "\uE9F9", Page = () => Background },
+            new() { Title = Loc.T("Автозагрузка"), Icon = "\uE7E8", Page = () => Startup },
             new() { Title = Loc.T("Очистка"), Icon = "\uEA99", Page = () => Cleanup },
             new() { Title = Loc.T("Программы"), Icon = "\uE71D", Page = () => Software },
             new() { Title = Loc.T("История"), Icon = "\uE81C", Page = () => History, IsFooter = true },
@@ -81,6 +83,7 @@ public sealed partial class MainViewModel : ObservableObject
     public TweaksViewModel Tweaks { get; }
     public NetworkViewModel Network { get; }
     public BackgroundViewModel Background { get; }
+    public StartupViewModel Startup { get; }
     public CompareViewModel? Compare { get; private set; }
     public ObservableCollection<NavItem> Nav { get; }
     public IEnumerable<NavItem> NavTop => Nav.Where(n => !n.IsFooter);

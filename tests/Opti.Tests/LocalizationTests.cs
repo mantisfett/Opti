@@ -160,6 +160,10 @@ public sealed class LocalizationTests : IDisposable
         NoCyrillic(main.Background.Summary, "background summary");
         NoCyrillic(main.Background.Title, "background title");
         foreach (var r in main.Background.Rows) { NoCyrillic(r.Category, "bg category"); NoCyrillic(r.MemoryText, "bg memory"); NoCyrillic(r.Detail, "bg detail"); }
+        main.Startup.Load();
+        NoCyrillic(main.Startup.Summary, "startup summary");
+        NoCyrillic(main.Startup.Title, "startup title");
+        foreach (var r in main.Startup.Rows) { NoCyrillic(r.Category, "startup category"); NoCyrillic(r.Source, "startup source"); NoCyrillic(r.AdviceText, "startup advice"); }
         var drivers = new DriversViewModel(main);
         drivers.Load(svc.Profile, DateTimeOffset.Now);
         NoCyrillic(drivers.Summary, "drivers summary");

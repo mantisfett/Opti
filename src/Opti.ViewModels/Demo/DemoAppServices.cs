@@ -29,14 +29,35 @@ public sealed class DemoAppServices : IAppServices
         Profile = profile ?? LoadEmbeddedProfile("desktop-rtx");
         if (Profile.Drivers.Count == 0) Profile.Drivers.AddRange(DemoDrivers);
         Profile.DeliveryOptimizationMode ??= 3;
+        if (Profile.Background.StartupItems.Count == 0) Profile.Background.StartupItems.AddRange(DemoStartup);
         var backends = ProfileSeeder.CreateEmulation(Profile, out _emulation);
         Journal = new InMemoryChangeJournal();
         Settings = new OptiSettings { MeasureRuns = 3, CheckForUpdates = false };
         Workflow = new TuneWorkflow(Settings, new SessionStore(Path.Combine(dataDir, "sessions")), backends, Journal);
         Tweaks = new TweakService(backends, Journal);
+        Startup = new Opti.Workflow.StartupManager(backends, Journal, () => Profile.Background.StartupItems);
     }
 
     private readonly Dictionary<ChangeType, InMemoryBackend> _emulation;
+
+    private const string Approved = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run|";
+    private const string RunKey = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
+    private static StartupItem Startup1(string name, string cmd, bool enabled = true) =>
+        new() { Name = name, Command = cmd, Location = RunKey, Enabled = enabled, ApprovedKey = Approved + name };
+
+    /// <summary>Примерные пункты автозагрузки для демо (в профиле их нет).</summary>
+    private static readonly StartupItem[] DemoStartup =
+    {
+        Startup1("Discord", @"C:\Users\Demo\AppData\Local\Discord\Update.exe --processStart Discord.exe"),
+        Startup1("Steam", @"C:\Program Files (x86)\Steam\steam.exe -silent"),
+        Startup1("OneDrive", @"C:\Users\Demo\AppData\Local\Microsoft\OneDrive\OneDrive.exe /background"),
+        Startup1("Spotify", @"C:\Users\Demo\AppData\Roaming\Spotify\Spotify.exe --autostart"),
+        Startup1("Adobe Creative Cloud", @"C:\Program Files\Adobe\Adobe Creative Cloud\ACC\Creative Cloud.exe --showwindow=false"),
+        Startup1("LGHUB", @"C:\Program Files\LGHUB\lghub.exe --background"),
+        Startup1("EpicGamesLauncher", @"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe -silent", enabled: false),
+        Startup1("SecurityHealth", @"%windir%\system32\SecurityHealthSystray.exe"),
+        Startup1("RtkAudUService", @"C:\Windows\System32\DriverStore\RtkAudUService64.exe -background"),
+    };
 
     public SystemProfile Profile { get; }
 
@@ -52,6 +73,7 @@ public sealed class DemoAppServices : IAppServices
     public OptiSettings Settings { get; }
     public IChangeJournal Journal { get; }
     public TweakService Tweaks { get; }
+    public Opti.Workflow.StartupManager? Startup { get; }
     public string AppVersion => AppInfo.Version + Loc.T(" (демо)");
     public string ReportsDir => Path.Combine(DataDir, "reports");
     public string DataDir { get; }

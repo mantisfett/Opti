@@ -38,41 +38,7 @@ public sealed class BackgroundCollector : ICollector
 
     public void Collect(SystemProfile p)
     {
-        foreach (var (runKey, approvedKey) in RunKeys)
-        {
-            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
-            foreach (var (name, value) in Reg.Values(runKey))
-            {
-                approved.TryGetValue(name, out var flag);
-                p.Background.StartupItems.Add(new StartupItem
-                {
-                    Name = name,
-                    Command = value?.ToString(),
-                    Location = runKey,
-                    Enabled = IsEnabled(flag),
-                    ApprovedKey = approvedKey + "|" + name,
-                });
-            }
-        }
-        foreach (var (folder, approvedKey) in new[]
-                 {
-                     (Environment.GetFolderPath(Environment.SpecialFolder.Startup), @"HKCU\" + Explorer + @"\StartupFolder"),
-                     (Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), @"HKLM\" + Explorer + @"\StartupFolder"),
-                 })
-        {
-            if (!Directory.Exists(folder)) continue;
-            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
-            foreach (var file in Directory.EnumerateFiles(folder).Where(f => !f.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)))
-            {
-                var fn = Path.GetFileName(file);
-                approved.TryGetValue(fn, out var flag);
-                p.Background.StartupItems.Add(new StartupItem
-                {
-                    Name = Path.GetFileNameWithoutExtension(file), Command = file, Location = folder,
-                    Enabled = IsEnabled(flag), ApprovedKey = approvedKey + "|" + fn,
-                });
-            }
-        }
+        p.Background.StartupItems.AddRange(ReadStartupItems());
 
         var procs = Process.GetProcesses();
         try
@@ -102,6 +68,48 @@ public sealed class BackgroundCollector : ICollector
                 .OrderByDescending(u => u.CpuPercent).ThenByDescending(u => u.WorkingSetMb).Take(15).ToList();
         }
         finally { foreach (var pr in procs) pr.Dispose(); }
+    }
+
+    /// <summary>Пункты автозагрузки: ключи Run (пользователь, все пользователи, 32-бит) и папки «Автозагрузка», со статусом из StartupApproved.</summary>
+    public static List<StartupItem> ReadStartupItems()
+    {
+        var items = new List<StartupItem>();
+        foreach (var (runKey, approvedKey) in RunKeys)
+        {
+            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
+            foreach (var (name, value) in Reg.Values(runKey))
+            {
+                approved.TryGetValue(name, out var flag);
+                items.Add(new StartupItem
+                {
+                    Name = name,
+                    Command = value?.ToString(),
+                    Location = runKey,
+                    Enabled = IsEnabled(flag),
+                    ApprovedKey = approvedKey + "|" + name,
+                });
+            }
+        }
+        foreach (var (folder, approvedKey) in new[]
+                 {
+                     (Environment.GetFolderPath(Environment.SpecialFolder.Startup), @"HKCU\" + Explorer + @"\StartupFolder"),
+                     (Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), @"HKLM\" + Explorer + @"\StartupFolder"),
+                 })
+        {
+            if (!Directory.Exists(folder)) continue;
+            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
+            foreach (var file in Directory.EnumerateFiles(folder).Where(f => !f.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)))
+            {
+                var fn = Path.GetFileName(file);
+                approved.TryGetValue(fn, out var flag);
+                items.Add(new StartupItem
+                {
+                    Name = Path.GetFileNameWithoutExtension(file), Command = file, Location = folder,
+                    Enabled = IsEnabled(flag), ApprovedKey = approvedKey + "|" + fn,
+                });
+            }
+        }
+        return items;
     }
 
     /// <summary>StartupApproved: нечётный первый байт (03, 07) — отключено.</summary>

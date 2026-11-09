@@ -16,7 +16,7 @@ Opti.Core.Diagnostics.OptiLog.Info($"opti-cli {Opti.Workflow.AppInfo.Version}: {
 try
 {
     // Команды, которые меняют систему или сессию, — только в одном экземпляре (окно Opti тоже держит блокировку).
-    using var instance = a.Command is "run" or "resume" or "measure" or "apply" or "ab" or "compare" or "rollback" or "verify" or "uninstall"
+    using var instance = a.Command is "run" or "resume" or "measure" or "apply" or "ab" or "compare" or "rollback" or "verify" or "uninstall" || (a.Command == "startup" && (a.Has("disable") || a.Has("enable") || a.Has("suggested")))
         ? Opti.Workflow.SingleInstance.TryAcquire(TimeSpan.FromSeconds(3))
           ?? throw new InvalidOperationException(Loc.T("Opti уже работает (окно или другая команда). Закройте его и повторите."))
         : null;
@@ -40,6 +40,7 @@ try
         "bugreport" => Commands.BugReport(a),
         "verify" => Commands.Verify(a),
         "uninstall" => Commands.Uninstall(a),
+        "startup" => Commands.Startup(a),
         _ => Commands.Help(),
     };
 }

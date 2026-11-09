@@ -96,6 +96,49 @@ internal static partial class Commands
         return report.AllInPlace ? 0 : 1;
     }
 
+    public static int Startup(Args a)
+    {
+        RequireWindows(Loc.T("Автозагрузка"));
+        using var host = new CliHost();
+        var mgr = new StartupManager(Opti.Fixes.Backends.WindowsBackends.Create(), host.Journal,
+            () => Opti.Analysis.Collectors.BackgroundCollector.ReadStartupItems());
+        var all = mgr.Scan();
+        var errors = 0;
+        void Change(IEnumerable<StartupEntry> items, bool enable)
+        {
+            foreach (var e in items)
+            {
+                try { mgr.SetEnabled(e, enable); Output.Color(ConsoleColor.Green, (enable ? Loc.T("включено: ") : Loc.T("отключено: ")) + e.Name + "\n"); }
+                catch (Exception ex) { errors++; Output.Color(ConsoleColor.Red, $"{e.Name}: {ex.Message}\n"); }
+            }
+        }
+        IEnumerable<StartupEntry> Named(string key)
+        {
+            var names = a.GetAll(key).SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).ToList();
+            foreach (var n in names)
+            {
+                var hit = all.Where(e => string.Equals(e.Name, n, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (hit.Count == 0) { errors++; Output.Color(ConsoleColor.Red, Loc.T($"нет такого пункта: {n}\n")); }
+                foreach (var e in hit) yield return e;
+            }
+        }
+        var changed = false;
+        if (a.Has("suggested")) { Change(all.Where(e => e.Enabled && e.Advice == StartupAdvice.Suggest), false); changed = true; }
+        if (a.Has("disable")) { Change(Named("disable"), false); changed = true; }
+        if (a.Has("enable")) { Change(Named("enable"), true); changed = true; }
+        if (changed) all = mgr.Scan();
+
+        Output.Header(Loc.T($"Автозагрузка: включено {all.Count(e => e.Enabled)} из {all.Count}"));
+        foreach (var e in all)
+        {
+            var mark = e.Enabled ? "[x]" : "[ ]";
+            var advice = e.Advice switch { StartupAdvice.Suggest => Loc.T("  можно отключить"), StartupAdvice.Keep => Loc.T("  лучше оставить"), _ => "" };
+            Output.Color(e.Enabled && e.Advice == StartupAdvice.Suggest ? ConsoleColor.Yellow : ConsoleColor.Gray, $"  {mark} {e.Name}{advice}\n");
+            Output.Color(ConsoleColor.DarkGray, $"      {e.Command}\n");
+        }
+        return errors > 0 ? 3 : 0;
+    }
+
     public static int Uninstall(Args a)
     {
         RequireWindows(Loc.T("Удаление"));

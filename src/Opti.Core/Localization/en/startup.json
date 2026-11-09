@@ -1,0 +1,22 @@
+{
+"Автозагрузка": "Startup",
+"Что запускается вместе с Windows. Отключение обратимо: программы не удаляются, переключатель возвращает всё как было.": "What starts with Windows. Disabling is reversible: programs are not removed, and the switch brings everything back.",
+"Отключить рекомендуемые": "Disable recommended",
+"Время загрузки Opti не измеряет: «влияние на запуск» в Диспетчере задач берётся из системной телеметрии. Защита, драйверы устройств и сам Opti заблокированы от случайного отключения.": "Opti does not measure boot time: the \"startup impact\" in Task Manager comes from system telemetry. Security software, device drivers and Opti itself are locked against accidental disabling.",
+"можно отключить": "can be disabled",
+"лучше оставить": "better to keep",
+"В этом режиме автозагрузка недоступна.": "Startup management is not available in this mode.",
+"Не удалось прочитать автозагрузку: ": "Could not read startup items: ",
+"Автозагрузка пуста.": "Startup is empty.",
+"При входе запускается {} из {}. Без {} из них можно обойтись — они обычно не нужны сразу после включения ПК.": "{0} of {1} start at sign-in. You can do without {2} of them — they are usually not needed right after turning the PC on.",
+"При входе запускается {} из {}. Лишнего не видно.": "{0} of {1} start at sign-in. Nothing superfluous.",
+"Отключить рекомендуемые?": "Disable the recommended ones?",
+"Будет отключено пунктов: {} ({}). Программы не удаляются и запускаются вручную как обычно; включить обратно можно здесь или откатить в «Истории».": "Items to be disabled: {0} ({1}). Programs are not removed and still start manually as usual; you can re-enable them here or roll back in History.",
+"Лишнее убрано из автозагрузки. Заметно со следующего входа в Windows.": "Superfluous items removed from startup. You will notice it from the next Windows sign-in.",
+"реестр, этот пользователь": "registry, this user",
+"реестр, все пользователи (32-бит)": "registry, all users (32-bit)",
+"реестр, все пользователи": "registry, all users",
+"папка «Автозагрузка»": "\"Startup\" folder",
+"Этот пункт защищён: его лучше не отключать.": "This item is protected: better not to disable it.",
+"Менеджер автозагрузки": "Startup manager"
+}

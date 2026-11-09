@@ -66,6 +66,9 @@ public interface IAppServices
             return list;
         }, ct);
 
+    /// <summary>Менеджер автозагрузки. null — недоступно.</summary>
+    Opti.Workflow.StartupManager? Startup => null;
+
     /// <summary>Самые тяжёлые фоновые программы (замер процессора по процессам).</summary>
     Task<List<Opti.Workflow.BackgroundApp>> ScanBackgroundAsync(CancellationToken ct) => Opti.Workflow.BackgroundScanner.ScanAsync(ct: ct);
 
