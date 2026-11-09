@@ -74,6 +74,9 @@ public interface IAppServices
             return list;
         }, ct);
 
+    /// <summary>Игровая сессия (закрыть лишнее + схема питания на время игры). null — недоступно.</summary>
+    Opti.Workflow.GameSession? Game => null;
+
     /// <summary>Менеджер автозагрузки. null — недоступно.</summary>
     Opti.Workflow.StartupManager? Startup => null;
 

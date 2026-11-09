@@ -36,6 +36,7 @@ public sealed class DemoAppServices : IAppServices
         Workflow = new TuneWorkflow(Settings, new SessionStore(Path.Combine(dataDir, "sessions")), backends, Journal);
         Tweaks = new TweakService(backends, Journal);
         Startup = new Opti.Workflow.StartupManager(backends, Journal, () => Profile.Background.StartupItems);
+        Game = new Opti.Workflow.GameSession(backends, Journal, () => Profile, _ => 1);
     }
 
     private readonly Dictionary<ChangeType, InMemoryBackend> _emulation;
@@ -74,6 +75,7 @@ public sealed class DemoAppServices : IAppServices
     public IChangeJournal Journal { get; }
     public TweakService Tweaks { get; }
     public Opti.Workflow.StartupManager? Startup { get; }
+    public Opti.Workflow.GameSession? Game { get; }
     public string AppVersion => AppInfo.Version + Loc.T(" (демо)");
     public string ReportsDir => Path.Combine(DataDir, "reports");
     public string DataDir { get; }

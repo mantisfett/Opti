@@ -36,12 +36,23 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
         Workflow = new TuneWorkflow(Settings, new SessionStore(), backends, _journal,
             new WindowsRestorePointService(), scheduler, new WindowsCrashEventSource());
         Tweaks = new TweakService(backends, _journal);
+        Game = new Opti.Workflow.GameSession(backends, _journal, ReadPowerProfile, Opti.Workflow.BackgroundScanner.Close);
         Startup = new Opti.Workflow.StartupManager(backends, _journal, () => Opti.Analysis.Collectors.BackgroundCollector.ReadStartupItems());
     }
 
     public TuneWorkflow Workflow { get; }
     public TweakService Tweaks { get; }
     public Opti.Workflow.StartupManager? Startup { get; }
+    public Opti.Workflow.GameSession? Game { get; }
+
+    /// <summary>Быстрый сбор только того, что нужно игровой сессии: тип устройства и схемы питания.</summary>
+    private static Opti.Core.Profile.SystemProfile ReadPowerProfile()
+    {
+        var p = new Opti.Core.Profile.SystemProfile();
+        new Opti.Analysis.Collectors.DeviceCollector().Collect(p);
+        new Opti.Analysis.Collectors.PowerCollector().Collect(p);
+        return p;
+    }
     public int OsBuild => Environment.OSVersion.Version.Build;
 
     public void RestartExplorer()

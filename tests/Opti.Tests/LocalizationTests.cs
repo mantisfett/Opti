@@ -166,7 +166,11 @@ public sealed class LocalizationTests : IDisposable
         await main.Background.ScanCommand.ExecuteAsync(null);
         NoCyrillic(main.Background.Summary, "background summary");
         NoCyrillic(main.Background.Title, "background title");
-        foreach (var r in main.Background.Rows) { NoCyrillic(r.Category, "bg category"); NoCyrillic(r.MemoryText, "bg memory"); NoCyrillic(r.Detail, "bg detail"); }
+        await main.Background.PrepareGameCommand.ExecuteAsync(null);
+        NoCyrillic(main.Toast, "game session toast");
+        main.Background.EndGameCommand.Execute(null);
+        NoCyrillic(main.Toast, "game end toast");
+        foreach (var r in main.Background.Rows) { NoCyrillic(r.MarkHint, "bg mark hint"); NoCyrillic(r.Category, "bg category"); NoCyrillic(r.MemoryText, "bg memory"); NoCyrillic(r.Detail, "bg detail"); }
         main.Startup.Load();
         NoCyrillic(main.Startup.Summary, "startup summary");
         NoCyrillic(main.Startup.Title, "startup title");
