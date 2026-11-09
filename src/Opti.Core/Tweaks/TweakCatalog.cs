@@ -1,6 +1,6 @@
 namespace Opti.Core.Tweaks;
 
-public enum TweakCategory { ContextMenu, Explorer, StartAndTaskbar, Responsiveness, System }
+public enum TweakCategory { ContextMenu, Explorer, StartAndTaskbar, Responsiveness, System, Privacy }
 
 /// <summary>Что нужно, чтобы твик вступил в силу.</summary>
 public enum TweakApplyMode { Immediate, RestartExplorer, SignOut, Reboot }
@@ -40,6 +40,7 @@ public static class TweakCatalog
         TweakCategory.Explorer => "Проводник",
         TweakCategory.StartAndTaskbar => "Пуск и панель задач",
         TweakCategory.Responsiveness => "Отзывчивость",
+        TweakCategory.Privacy => "Приватность",
         _ => "Система",
     };
 
@@ -49,6 +50,7 @@ public static class TweakCatalog
         TweakCategory.Explorer => "",
         TweakCategory.StartAndTaskbar => "",
         TweakCategory.Responsiveness => "",
+        TweakCategory.Privacy => "\uE72E",
         _ => "",
     };
 
@@ -164,6 +166,85 @@ public static class TweakCatalog
             Values = new[] { new TweakValue(@"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", "DWord", "0") },
             ApplyMode = TweakApplyMode.Reboot,
             Link = "https://learn.microsoft.com/en-us/troubleshoot/windows-client/setup-upgrade-and-drivers/disable-and-re-enable-hibernation",
+        },
+
+        // ---------- Приватность ----------
+        new()
+        {
+            Id = "NO_ADVERTISING_ID", Category = TweakCategory.Privacy, Recommended = true,
+            Title = "Выключить рекламный идентификатор",
+            Description = "Приложения перестают получать общий рекламный ID для персонализации рекламы. Программы продолжают работать как раньше.",
+            Values = new[] { new TweakValue(@"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", "DWord", "0") },
+            ApplyMode = TweakApplyMode.Immediate,
+        },
+        new()
+        {
+            Id = "NO_TAILORED_EXPERIENCES", Category = TweakCategory.Privacy, Recommended = true,
+            Title = "Без «персонализированных советов» из диагностических данных",
+            Description = "Windows не использует данные о работе устройства, чтобы подбирать советы и рекламу.",
+            Values = new[] { new TweakValue(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy", "TailoredExperiencesWithDiagnosticDataEnabled", "DWord", "0") },
+            ApplyMode = TweakApplyMode.Immediate,
+        },
+        new()
+        {
+            Id = "NO_ACTIVITY_HISTORY", Category = TweakCategory.Privacy, Recommended = true,
+            Title = "Не вести и не отправлять журнал действий",
+            Description = "Отключает «Журнал действий» (хронологию запущенных приложений и открытых файлов) и его отправку в Microsoft.",
+            Values = new[]
+            {
+                new TweakValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", "PublishUserActivities", "DWord", "0"),
+                new TweakValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", "UploadUserActivities", "DWord", "0"),
+            },
+            ApplyMode = TweakApplyMode.Reboot,
+        },
+        new()
+        {
+            Id = "MIN_DIAGNOSTICS", Category = TweakCategory.Privacy,
+            Title = "Минимум диагностических данных",
+            Description = "Windows отправляет только обязательные диагностические данные (на Домашней и Pro это нижний уровень). Обновления и защита работают как прежде.",
+            Values = new[] { new TweakValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", "DWord", "0") },
+            ApplyMode = TweakApplyMode.Reboot,
+            Link = "https://learn.microsoft.com/en-us/windows/privacy/configure-windows-diagnostic-data-in-your-organization",
+        },
+        new()
+        {
+            Id = "NO_FEEDBACK_PROMPTS", Category = TweakCategory.Privacy,
+            Title = "Без запросов отзывов о Windows",
+            Description = "Windows перестаёт просить оценить систему и оставить отзыв.",
+            Values = new[] { new TweakValue(@"HKCU\Software\Microsoft\Siuf\Rules", "NumberOfSIUFInPeriod", "DWord", "0") },
+            ApplyMode = TweakApplyMode.Immediate,
+        },
+        new()
+        {
+            Id = "NO_ONLINE_SPEECH", Category = TweakCategory.Privacy,
+            Title = "Выключить онлайн-распознавание речи",
+            Description = "Голосовой ввод и диктовка перестают отправлять запись в облако для распознавания.",
+            Values = new[] { new TweakValue(@"HKCU\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy", "HasAccepted", "DWord", "0") },
+            ApplyMode = TweakApplyMode.Immediate,
+        },
+        new()
+        {
+            Id = "NO_COPILOT", Category = TweakCategory.Privacy, MinBuild = 22621,
+            Title = "Отключить Windows Copilot",
+            Description = "Политика убирает кнопку и панель Copilot. На новых сборках Copilot — отдельное приложение, его можно удалить в «Параметры» → «Приложения».",
+            Values = new[] { new TweakValue(@"HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot", "DWord", "1") },
+            ApplyMode = TweakApplyMode.RestartExplorer,
+        },
+        new()
+        {
+            Id = "NO_RECALL", Category = TweakCategory.Privacy, MinBuild = 26100,
+            Title = "Отключить сохранение снимков экрана (Recall)",
+            Description = "Политика запрещает Windows сохранять снимки экрана и анализировать их ИИ. Уже сохранённое удаляется в параметрах Windows.",
+            Values = new[] { new TweakValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis", "DWord", "1") },
+            ApplyMode = TweakApplyMode.Reboot,
+        },
+        new()
+        {
+            Id = "NO_WIDGETS", Category = TweakCategory.Privacy, MinBuild = 22000,
+            Title = "Отключить «Виджеты»",
+            Description = "Панель виджетов и новостей не запускается и не тратит память и трафик в фоне.",
+            Values = new[] { new TweakValue(@"HKLM\SOFTWARE\Policies\Microsoft\Dsh", "AllowNewsAndInterests", "DWord", "0") },
+            ApplyMode = TweakApplyMode.RestartExplorer,
         },
     };
 

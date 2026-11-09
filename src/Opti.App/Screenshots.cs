@@ -87,11 +87,13 @@ internal static class Screenshots
 
         await vm.Network.RunRegionsCommand.ExecuteAsync(null);
         await vm.Network.RunDnsCommand.ExecuteAsync(null);
+        await vm.Network.RunRouteCommand.ExecuteAsync(null);
+        await vm.Background.ScanCommand.ExecuteAsync(null);
 
         foreach (var (page, title) in new (PageViewModel, string)[]
                  {
                      (vm.Drivers, "drivers"), (vm.Tweaks, "tweaks"), (vm.Cleanup, "cleanup"),
-                     (vm.Network, "network"), (vm.Software, "software"), (vm.History, "history"), (vm.SettingsPage, "settings"),
+                     (vm.Network, "network"), (vm.Background, "background"), (vm.Software, "software"), (vm.History, "history"), (vm.SettingsPage, "settings"),
                  })
         {
             vm.Navigate(page);

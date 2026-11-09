@@ -21,6 +21,7 @@
         <DataTemplate DataType="{x:Type vm:AutoSetupViewModel}"><v:AutoSetupView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:TweaksViewModel}"><v:TweaksView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:NetworkViewModel}"><v:NetworkView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BackgroundViewModel}"><v:BackgroundView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><v:HistoryView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><v:SettingsView/></DataTemplate>
                     <DataTemplate x:Key="NavItemTemplate">

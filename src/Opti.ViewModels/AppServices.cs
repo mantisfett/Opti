@@ -48,6 +48,10 @@ public interface IAppServices
     Task<IReadOnlyList<Opti.Measure.Capture.ProbeResult>> ProbeRegionsAsync(IProgress<Opti.Measure.Capture.ProbeResult> progress, CancellationToken ct) =>
         Task.Run<IReadOnlyList<Opti.Measure.Capture.ProbeResult>>(async () => await Opti.Measure.Capture.ConnectionProbe.ProbeAllAsync(Opti.Measure.Capture.ConnectionProbe.Regions, progress, ct), ct);
 
+    /// <summary>Трассировка маршрута до сервера.</summary>
+    Task<IReadOnlyList<Opti.Measure.Capture.RouteHop>> TraceRouteAsync(string host, IProgress<Opti.Measure.Capture.RouteHop> progress, CancellationToken ct) =>
+        Task.Run<IReadOnlyList<Opti.Measure.Capture.RouteHop>>(async () => await Opti.Measure.Capture.RouteTrace.RunAsync(host, progress: progress, ct: ct), ct);
+
     /// <summary>Скорость DNS: текущие серверы и популярные публичные.</summary>
     Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct) =>
         Task.Run<IReadOnlyList<Opti.Measure.Capture.DnsResult>>(async () =>
@@ -61,6 +65,12 @@ public interface IAppServices
             }
             return list;
         }, ct);
+
+    /// <summary>Самые тяжёлые фоновые программы (замер процессора по процессам).</summary>
+    Task<List<Opti.Workflow.BackgroundApp>> ScanBackgroundAsync(CancellationToken ct) => Opti.Workflow.BackgroundScanner.ScanAsync(ct: ct);
+
+    /// <summary>Закрыть программу по имени процесса. Возвращает число закрытых процессов.</summary>
+    int CloseBackgroundApp(string name) => Opti.Workflow.BackgroundScanner.Close(name);
 
     /// <summary>Применить DNS-серверы (через журнал: откат в «Истории»). null — недоступно (демо).</summary>
     Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.Run<Opti.Fixes.Services.ApplyReport?>(() =>

@@ -124,6 +124,31 @@ public sealed class DemoAppServices : IAppServices
         return Task.FromResult(list);
     }
 
+    public Task<IReadOnlyList<Opti.Measure.Capture.RouteHop>> TraceRouteAsync(string host, IProgress<Opti.Measure.Capture.RouteHop> progress, CancellationToken ct)
+    {
+        IReadOnlyList<Opti.Measure.Capture.RouteHop> hops = new[]
+        {
+            new Opti.Measure.Capture.RouteHop(1, "192.168.1.1", 1.2, 0, 3), new Opti.Measure.Capture.RouteHop(2, "10.20.0.1", 6.8, 0, 3),
+            new Opti.Measure.Capture.RouteHop(3, null, double.NaN, 100, 3), new Opti.Measure.Capture.RouteHop(4, "81.23.44.9", 9.4, 0, 3),
+            new Opti.Measure.Capture.RouteHop(5, "80.81.192.18", 14.1, 0, 3), new Opti.Measure.Capture.RouteHop(6, "52.93.12.201", 17.6, 0, 3),
+            new Opti.Measure.Capture.RouteHop(7, "52.94.100.5", 18.3, 0, 3),
+        };
+        foreach (var h in hops) progress.Report(h);
+        return Task.FromResult(hops);
+    }
+
+    public Task<List<Opti.Workflow.BackgroundApp>> ScanBackgroundAsync(CancellationToken ct) => Task.FromResult(new List<Opti.Workflow.BackgroundApp>
+    {
+        new("chrome", 31, 6.4, 2150, Opti.Workflow.BackgroundCategory.Browser, true),
+        new("Discord", 6, 3.1, 640, Opti.Workflow.BackgroundCategory.Chat, true),
+        new("OneDrive", 1, 2.2, 180, Opti.Workflow.BackgroundCategory.Cloud, true),
+        new("Steam", 5, 1.4, 410, Opti.Workflow.BackgroundCategory.Launcher, true),
+        new("Spotify", 4, 0.9, 330, Opti.Workflow.BackgroundCategory.Media, true),
+        new("LGHUB", 3, 0.6, 260, Opti.Workflow.BackgroundCategory.Vendor, true),
+    });
+
+    public int CloseBackgroundApp(string name) => 0;
+
     public Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.FromResult<Opti.Fixes.Services.ApplyReport?>(null);
 
     public Task<UpdateInfo?> CheckForUpdatesAsync() => Task.FromResult<UpdateInfo?>(null);

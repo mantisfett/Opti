@@ -63,5 +63,18 @@
 "Применить": "Apply",
 "Быстрый DNS ускоряет вход в игру и поиск матча. На пинг самого матча он не влияет.": "A fast DNS speeds up logging in and finding a match. It does not affect the ping of the match itself.",
 "Что ещё снижает пинг: кабель вместо Wi-Fi, закрытые загрузки в фоне, «Оптимизация доставки» только в локальной сети (находка в анализе). Настройки вроде «TCP-твиков» Opti не предлагает: измеримого эффекта у них нет.": "What else lowers ping: a cable instead of Wi-Fi, background downloads closed, Delivery Optimization on the local network only (a finding in the analysis). Opti does not offer “TCP tweaks”: they have no measurable effect.",
-"Сейчас: 192.168.1.1": "Current: 192.168.1.1"
+"Сейчас: 192.168.1.1": "Current: 192.168.1.1",
+"Введите имя сервера или IP-адрес.": "Enter a server name or IP address.",
+"Узел {}…": "Hop {0}…",
+"нет ответа (узел не отвечает на служебные пакеты)": "no response (the node does not answer service packets)",
+"Ни один узел не ответил — проверьте подключение или попробуйте другой сервер.": "No node responded — check the connection or try another server.",
+"Проблема дома: до роутера {} мс, потери {} %. Проверьте Wi-Fi (лучше кабель) и сам роутер.": "Problem at home: {0} ms to the router, loss {1} %. Check Wi-Fi (a cable is better) and the router itself.",
+"Потери на конечном узле ({} %) — пакеты теряются по пути или у сервера.": "Loss at the final node ({0} %) — packets are lost on the way or at the server.",
+"Главный скачок задержки (+{} мс) — на узле {} ({}). Если дальше всё стабильно, это просто дальний участок; если растут потери — стык провайдеров.": "The main latency jump (+{0} ms) is at node {1} ({2}). If everything after it is stable, it is just a long leg; if loss grows, it is a hand-off between providers.",
+"Маршрут чистый: {} мс до конца, без заметных скачков и потерь.": "The route is clean: {0} ms end to end, no noticeable jumps or loss.",
+"Маршрут до сервера": "Route to a server",
+"Где теряется время: дома, у провайдера или на дальнем участке": "Where time is lost: at home, at the ISP or on a long leg",
+"Проверить маршрут": "Check route",
+"Сервер для проверки маршрута": "Server for the route check",
+"Имя сервера или IP-адрес; после проверки связи подставляется ближайший регион": "Server name or IP address; after the connection check the closest region is filled in"
 }

@@ -15,6 +15,16 @@ public sealed class RegionRow
     /// <summary>Длина полоски 0..1 относительно худшего региона (чем короче, тем лучше).</summary>
     public required double Bar { get; init; }
     public bool IsBest { get; init; }
+    public string Host { get; init; } = "";
+}
+
+public sealed class HopRow
+{
+    public required string Ttl { get; init; }
+    public required string Address { get; init; }
+    public required string MedianText { get; init; }
+    public required string LossText { get; init; }
+    public required string Tone { get; init; }
 }
 
 public sealed class DnsRow
@@ -37,10 +47,50 @@ public sealed partial class NetworkViewModel : PageViewModel
 
     public ObservableCollection<RegionRow> Regions { get; } = new();
     public ObservableCollection<DnsRow> DnsRows { get; } = new();
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand))] private bool _isBusy;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand))] private bool _isBusy;
     [ObservableProperty] private string? _regionsSummary;
     [ObservableProperty] private string? _dnsSummary;
     [ObservableProperty] private string? _progressText;
+
+    // ---------------- Маршрут ----------------
+    public ObservableCollection<HopRow> Hops { get; } = new();
+    [ObservableProperty] private string _routeTarget = "";
+    [ObservableProperty] private string? _routeSummary;
+    [ObservableProperty] private string _routeTone = Palette.Neutral;
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private async Task RunRouteAsync()
+    {
+        var host = string.IsNullOrWhiteSpace(RouteTarget) ? NetworkTest.DefaultTarget : RouteTarget.Trim();
+        // Адрес вводит человек и уходит в трассировку — только имя хоста или IP, без лишнего
+        if (host.Length > 253 || host.Any(c => !(char.IsLetterOrDigit(c) || c is '.' or '-' or ':')))
+        { Main.ShowMessage(Loc.T("Введите имя сервера или IP-адрес."), error: true); return; }
+        IsBusy = true; Hops.Clear(); RouteSummary = null;
+        _cts = new CancellationTokenSource();
+        try
+        {
+            var progress = new Progress<RouteHop>(h => { if (IsBusy) ProgressText = Loc.T($"Узел {h.Ttl}…"); });
+            ShowRoute(await Main.Services.TraceRouteAsync(host, progress, _cts.Token));
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Проверка не удалась: ") + ex.Message, error: true); }
+        finally { IsBusy = false; ProgressText = null; }
+    }
+
+    public void ShowRoute(IReadOnlyList<RouteHop> hops)
+    {
+        Hops.Clear();
+        foreach (var h in hops)
+            Hops.Add(new HopRow
+            {
+                Ttl = h.Ttl.ToString(), Address = h.Responds ? h.Address! : Loc.T("нет ответа (узел не отвечает на служебные пакеты)"),
+                MedianText = h.Responds ? $"{h.MedianMs:0.#} {Loc.T("мс")}" : "—", LossText = h.LossPercent > 0 && h.Responds ? $"{h.LossPercent:0} %" : "",
+                Tone = !h.Responds ? Palette.Neutral : h.LossPercent >= 34 ? Palette.Warn : Palette.Good,
+            });
+        var v = RouteTrace.Analyze(hops);
+        RouteSummary = v.Summary;
+        RouteTone = v.Tone;
+    }
 
     /// <summary>Тон по задержке до региона: до 70 мс — хорошо, дальше — нейтрально (это география, а не поломка).</summary>
     public static string RttTone(double ms) => double.IsNaN(ms) ? Palette.Bad : ms < 70 ? Palette.Good : Palette.Neutral;
@@ -75,12 +125,13 @@ public sealed partial class NetworkViewModel : PageViewModel
         foreach (var r in ok)
             Regions.Add(new RegionRow
             {
-                Name = Loc.T(r.Target.Name), MedianText = $"{r.MedianMs:0} {Loc.T("мс")}", Tone = RttTone(r.MedianMs), Bar = r.MedianMs / worst, IsBest = r == ok[0],
+                Name = Loc.T(r.Target.Name), MedianText = $"{r.MedianMs:0} {Loc.T("мс")}", Tone = RttTone(r.MedianMs), Bar = r.MedianMs / worst, IsBest = r == ok[0], Host = r.Target.Host,
                 DetailText = Loc.T($"разброс {r.JitterMs:0.#} мс · потери {r.LossPercent:0} %"),
             });
         foreach (var r in all.Where(r => !r.Reachable))
             Regions.Add(new RegionRow { Name = Loc.T(r.Target.Name), MedianText = Loc.T("нет ответа"), DetailText = "", Tone = Palette.Bad, Bar = 0 });
         RegionsSummary = Describe(ok);
+        if (ok.Count > 0 && string.IsNullOrWhiteSpace(RouteTarget)) RouteTarget = ok[0].Target.Host;
     }
 
     /// <summary>Вывод простым языком: где ближе всего и есть ли нестабильность.</summary>

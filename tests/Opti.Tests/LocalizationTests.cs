@@ -153,6 +153,13 @@ public sealed class LocalizationTests : IDisposable
         NoCyrillic(main.Network.DnsSummary, "dns summary");
         foreach (var r in main.Network.Regions) { NoCyrillic(r.Name, "region"); NoCyrillic(r.MedianText, "region ms"); NoCyrillic(r.DetailText, "region detail"); }
         foreach (var r in main.Network.DnsRows) { NoCyrillic(r.Name, "dns"); NoCyrillic(r.MedianText, "dns ms"); }
+        await main.Network.RunRouteCommand.ExecuteAsync(null);
+        NoCyrillic(main.Network.RouteSummary, "route summary");
+        foreach (var h in main.Network.Hops) { NoCyrillic(h.Address, "hop"); NoCyrillic(h.MedianText, "hop ms"); }
+        await main.Background.ScanCommand.ExecuteAsync(null);
+        NoCyrillic(main.Background.Summary, "background summary");
+        NoCyrillic(main.Background.Title, "background title");
+        foreach (var r in main.Background.Rows) { NoCyrillic(r.Category, "bg category"); NoCyrillic(r.MemoryText, "bg memory"); NoCyrillic(r.Detail, "bg detail"); }
         var drivers = new DriversViewModel(main);
         drivers.Load(svc.Profile, DateTimeOffset.Now);
         NoCyrillic(drivers.Summary, "drivers summary");

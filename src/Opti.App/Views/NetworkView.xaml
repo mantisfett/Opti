@@ -69,6 +69,40 @@
                 </StackPanel>
             </Border>
 
+            <!-- Маршрут -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Проверить маршрут" Command="{Binding RunRouteCommand}" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Маршрут до сервера" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
+                            <TextBlock Text="Где теряется время: дома, у провайдера или на дальнем участке" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBox Text="{Binding RouteTarget, UpdateSourceTrigger=PropertyChanged}" Margin="0,12,0,0" MaxWidth="420" HorizontalAlignment="Left" Width="420"
+                             AutomationProperties.Name="Сервер для проверки маршрута" ToolTip="Имя сервера или IP-адрес; после проверки связи подставляется ближайший регион"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,4" Visibility="{Binding RouteSummary, Converter={StaticResource StrToVis}}">
+                        <Ellipse Style="{StaticResource Dot}" Fill="{Binding RouteTone, Converter={StaticResource ToneToBrush}}"/>
+                        <TextBlock Text="{Binding RouteSummary}" Style="{StaticResource Strong}" MaxWidth="760"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Hops}" Focusable="False" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="64"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Ttl}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Address}" Style="{StaticResource Mono}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding MedianText}" Style="{StaticResource Strong}" HorizontalAlignment="Right" Foreground="{Binding Tone, Converter={StaticResource ToneToBrush}}"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding LossText}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <TextBlock Style="{StaticResource Caption}" Margin="2,12,0,0"
                        Text="Что ещё снижает пинг: кабель вместо Wi-Fi, закрытые загрузки в фоне, «Оптимизация доставки» только в локальной сети (находка в анализе). Настройки вроде «TCP-твиков» Opti не предлагает: измеримого эффекта у них нет."/>
         </StackPanel>
