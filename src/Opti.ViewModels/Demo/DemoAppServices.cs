@@ -190,6 +190,19 @@ public sealed class DemoAppServices : IAppServices
         }
     }
 
+    public Task<Opti.Measure.Capture.WifiScanResult> ScanWifiAsync(CancellationToken ct)
+    {
+        // Примерный двор: свой роутер на 2,4 ГГц (канал 6) и 5 ГГц, соседи на 5–7 и 1
+        var nets = new List<Opti.Measure.Capture.WifiNetwork>
+        {
+            new("HomeNet", "aa:bb:cc:00:00:01", 88, 6), new("HomeNet", "aa:bb:cc:00:00:02", 64, 36),
+            new("Neighbor-5G", "11:22:33:00:00:01", 80, 6), new("TP-Link_4F2A", "11:22:33:00:00:02", 62, 5),
+            new("Keenetic-77", "11:22:33:00:00:03", 55, 7), new("Xiaomi_Home", "11:22:33:00:00:04", 40, 1),
+            new("ASUS_guest", "11:22:33:00:00:05", 48, 6), new("Rostelecom-A1", "11:22:33:00:00:06", 70, 44),
+        };
+        return Task.FromResult(new Opti.Measure.Capture.WifiScanResult(nets, new Opti.Measure.Capture.WifiCurrent("HomeNet", 6, 88)));
+    }
+
     public Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.FromResult<Opti.Fixes.Services.ApplyReport?>(null);
 
     public Task<UpdateInfo?> CheckForUpdatesAsync() => Task.FromResult<UpdateInfo?>(null);

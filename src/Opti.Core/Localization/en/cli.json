@@ -169,5 +169,6 @@
 "нет такого пункта: {}\n": "no such item: {0}\n",
 "Автозагрузка: включено {} из {}": "Startup: {0} of {1} enabled",
 "  можно отключить": "  can be disabled",
-"  лучше оставить": "  better to keep"
+"  лучше оставить": "  better to keep",
+"Wi-Fi: загруженность каналов": "Wi-Fi: channel congestion"
 }

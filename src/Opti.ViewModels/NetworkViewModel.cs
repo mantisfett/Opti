@@ -38,6 +38,17 @@ public sealed class DnsRow
     public bool CanApply => !IsCurrent && Servers.Length > 0;
 }
 
+public sealed class WifiRow
+{
+    public required string Name { get; init; }
+    public required string Detail { get; init; }
+    public required string Tag { get; init; }
+    public required string Tone { get; init; }
+    /// <summary>Длина полоски 0..1 относительно самого загруженного канала.</summary>
+    public required double Bar { get; init; }
+    public bool HasTag => Tag.Length > 0;
+}
+
 public sealed class PingBar
 {
     /// <summary>Высота столбика, 2..48.</summary>
@@ -55,10 +66,44 @@ public sealed partial class NetworkViewModel : PageViewModel
 
     public ObservableCollection<RegionRow> Regions { get; } = new();
     public ObservableCollection<DnsRow> DnsRows { get; } = new();
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand), nameof(RunBloatCommand))] private bool _isBusy;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand), nameof(RunBloatCommand), nameof(RunWifiCommand))] private bool _isBusy;
     [ObservableProperty] private string? _regionsSummary;
     [ObservableProperty] private string? _dnsSummary;
     [ObservableProperty] private string? _progressText;
+
+    // ---------------- Wi-Fi: каналы ----------------
+    public ObservableCollection<WifiRow> WifiRows { get; } = new();
+    [ObservableProperty] private string? _wifiSummary;
+    [ObservableProperty] private string _wifiTone = Palette.Neutral;
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private async Task RunWifiAsync()
+    {
+        IsBusy = true; WifiSummary = null; WifiRows.Clear();
+        _cts = new CancellationTokenSource();
+        try { ShowWifi(await Main.Services.ScanWifiAsync(_cts.Token)); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Проверка не удалась: ") + ex.Message, error: true); }
+        finally { IsBusy = false; ProgressText = null; }
+    }
+
+    public void ShowWifi(WifiScanResult scan)
+    {
+        var advice = WifiChannels.Analyze(scan.Networks, scan.Current);
+        WifiSummary = advice.Summary;
+        WifiTone = advice.Tone;
+        WifiRows.Clear();
+        double max = Math.Max(1, advice.Channels.Select(c => c.Load).DefaultIfEmpty(1).Max());
+        foreach (var c in advice.Channels)
+            WifiRows.Add(new WifiRow
+            {
+                Name = (c.Is24 ? Loc.T("2,4 ГГц") : Loc.T("5 ГГц")) + " · " + Loc.T($"канал {c.Channel}"),
+                Detail = Loc.T($"сетей рядом: {c.Neighbors}"),
+                Tag = c.IsCurrent ? Loc.T("ваш канал") : c.IsBest ? Loc.T("свободнее всего") : "",
+                Tone = c.IsCurrent ? (c.IsBest || advice.Tone == Palette.Good ? Palette.Good : Palette.Warn) : c.IsBest ? Palette.Good : Palette.Neutral,
+                Bar = c.Load / max,
+            });
+    }
 
     // ---------------- Нагрузка на канал (bufferbloat) ----------------
     [ObservableProperty] private string? _bloatSummary;

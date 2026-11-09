@@ -46,7 +46,7 @@ internal static partial class Commands
 
     public static async Task<int> Net(Args a)
     {
-        if (a.Has("regions") || a.Has("dns")) return await NetReport(a);
+        if (a.Has("regions") || a.Has("dns") || a.Has("wifi")) return await NetReport(a);
         var target = a.Get("target") ?? OptiSettings.Load().NetworkTarget;
         Console.WriteLine(Loc.T($"Пинг до {target} в простое{(a.Has("no-load") ? "" : " и под нагрузкой (скачивание ~200 МБ)")}…"));
         var q = await NetworkTest.RunAsync(target, a.Has("no-load") ? null : NetworkTest.DefaultLoadUrl);
@@ -71,6 +71,21 @@ internal static partial class Commands
             }
             foreach (var r in all.Where(r => !r.Reachable)) Output.Color(ConsoleColor.Red, $"  {Loc.T(r.Target.Name),-30} {Loc.T("нет ответа")}\n");
             Console.WriteLine("\n" + ConnectionAdvice.Describe(ok));
+        }
+        if (a.Has("wifi"))
+        {
+            Output.Header(Loc.T("Wi-Fi: загруженность каналов"));
+            var run = Opti.Native.ProcessRunner.Instance;
+            var nets = WifiChannels.ParseNetworks(run.RunConsoleUtf8("netsh wlan show networks mode=bssid").StdOut);
+            var cur = WifiChannels.ParseCurrent(run.RunConsoleUtf8("netsh wlan show interfaces").StdOut);
+            var advice = WifiChannels.Analyze(nets, cur);
+            foreach (var c in advice.Channels)
+            {
+                var tag = c.IsCurrent ? "  <- " + Loc.T("ваш канал") : c.IsBest ? "  <- " + Loc.T("свободнее всего") : "";
+                Output.Color(c.IsCurrent && advice.Tone == "warn" ? ConsoleColor.Yellow : ConsoleColor.Gray,
+                    $"  {(c.Is24 ? "2.4" : "5  ")} GHz  {Loc.T($"канал {c.Channel}"),-12} {Loc.T($"сетей рядом: {c.Neighbors}")}{tag}\n");
+            }
+            Console.WriteLine("\n" + advice.Summary);
         }
         if (a.Has("dns"))
         {

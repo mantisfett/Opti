@@ -60,6 +60,15 @@ public interface IAppServices
     Task MonitorPingAsync(string target, IProgress<Opti.Measure.Capture.PingSample> progress, CancellationToken ct) =>
         Task.Run(() => Opti.Measure.Capture.LivePing.RunAsync(target, progress, ct: ct), ct);
 
+    /// <summary>Wi-Fi: соседние сети по каналам и текущее подключение (netsh).</summary>
+    Task<Opti.Measure.Capture.WifiScanResult> ScanWifiAsync(CancellationToken ct) => Task.Run(() =>
+    {
+        var run = Opti.Native.ProcessRunner.Instance;
+        var nets = Opti.Measure.Capture.WifiChannels.ParseNetworks(run.RunConsoleUtf8("netsh wlan show networks mode=bssid").StdOut);
+        var cur = Opti.Measure.Capture.WifiChannels.ParseCurrent(run.RunConsoleUtf8("netsh wlan show interfaces").StdOut);
+        return new Opti.Measure.Capture.WifiScanResult(nets, cur);
+    }, ct);
+
     /// <summary>Скорость DNS: текущие серверы и популярные публичные.</summary>
     Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct) =>
         Task.Run<IReadOnlyList<Opti.Measure.Capture.DnsResult>>(async () =>
