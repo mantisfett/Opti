@@ -37,6 +37,9 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
             new WindowsRestorePointService(), scheduler, new WindowsCrashEventSource());
         Tweaks = new TweakService(backends, _journal);
         Game = new Opti.Workflow.GameSession(backends, _journal, ReadPowerProfile, Opti.Workflow.BackgroundScanner.Close);
+        _watcher = new Opti.Workflow.GameWatcher(Game, () => Settings.AutoGameSession,
+            () => Opti.Workflow.GameWatcher.ParseNames(Settings.GameProcesses), RunningProcessNames);
+        _watcher.Start(TimeSpan.FromSeconds(5));
         Startup = new Opti.Workflow.StartupManager(backends, _journal, () => Opti.Analysis.Collectors.BackgroundCollector.ReadStartupItems());
     }
 
@@ -44,6 +47,14 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
     public TweakService Tweaks { get; }
     public Opti.Workflow.StartupManager? Startup { get; }
     public Opti.Workflow.GameSession? Game { get; }
+    private readonly Opti.Workflow.GameWatcher _watcher;
+
+    private static ISet<string> RunningProcessNames()
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in Process.GetProcesses()) { try { set.Add(p.ProcessName); } catch { } finally { p.Dispose(); } }
+        return set;
+    }
 
     /// <summary>Быстрый сбор только того, что нужно игровой сессии: тип устройства и схемы питания.</summary>
     private static Opti.Core.Profile.SystemProfile ReadPowerProfile()
@@ -116,5 +127,5 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
 
     public IReadOnlyList<ICleanupTarget> CleanupTargets() => CleanupCatalog.ForWindows();
 
-    public void Dispose() => _journal.Dispose();
+    public void Dispose() { _watcher.Dispose(); _journal.Dispose(); }
 }

@@ -79,6 +79,19 @@
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding AutoGameSession}" VerticalAlignment="Center" MinWidth="0"/>
+                    <StackPanel><TextBlock Text="Автоматическая игровая сессия" Style="{StaticResource Strong}"/><TextBlock Text="Пока запущена одна из игр из списка ниже, включена схема питания «Высокая производительность»; после закрытия игры схема возвращается. Программы не закрываются." Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="260" Text="{Binding GameProcesses, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"
+                             AutomationProperties.Name="Игры для автоматической сессии"/>
+                    <StackPanel><TextBlock Text="Игры для автоматической сессии" Style="{StaticResource Strong}"/><TextBlock Text="Имена процессов через запятую, например: cs2, VALORANT-Win64-Shipping" Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
                     <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Сообщать о новых версиях" Style="{StaticResource Strong}"/><TextBlock Text="Только уведомление — ничего не скачивается" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>

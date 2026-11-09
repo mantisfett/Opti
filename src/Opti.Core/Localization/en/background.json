@@ -44,5 +44,9 @@
 "Игровая сессия завершена: схема питания возвращена.": "Game session ended: the power plan has been restored.",
 "Схема питания не менялась: на ноутбуке и при работе от батареи это только посадит заряд (или схемы нет).": "The power plan was not changed: on a laptop or on battery it would only drain the charge (or the plan is missing).",
 "Схема питания уже «Высокая производительность».": "The power plan is already \"High performance\".",
-"Не удалось сменить схему питания: ": "Could not change the power plan: "
+"Не удалось сменить схему питания: ": "Could not change the power plan: ",
+"Автоматическая игровая сессия": "Automatic game session",
+"Пока запущена одна из игр из списка ниже, включена схема питания «Высокая производительность»; после закрытия игры схема возвращается. Программы не закрываются.": "While one of the games in the list below is running, the \"High performance\" power plan is active; after the game closes the plan is restored. Programs are not closed.",
+"Игры для автоматической сессии": "Games for the automatic session",
+"Имена процессов через запятую, например: cs2, VALORANT-Win64-Shipping": "Process names separated by commas, for example: cs2, VALORANT-Win64-Shipping"
 }

@@ -118,3 +118,114 @@ public class GameSessionTests : IDisposable
         Assert.False(main.Background.IsSessionActive);
     }
 }
+
+public class GameWatcherTests
+{
+    private static (GameWatcher W, GameSession G, Dictionary<ChangeType, InMemoryBackend> Map, HashSet<string> Running, Func<bool>[] Enabled) Create(bool enabled = true, bool laptop = false)
+    {
+        var p = new SystemProfile();
+        p.Device.IsLaptop = laptop;
+        p.Power.OnAcPower = true;
+        p.Power.ActiveSchemeGuid = "a1841308-3541-4fab-bc81-f71556f20b4a";
+        p.Power.AvailableSchemeGuids = new() { "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", "a1841308-3541-4fab-bc81-f71556f20b4a" };
+        var reg = InMemoryBackend.CreateRegistry(out var map);
+        map[ChangeType.PowerSetting].Seed(Targets.ActiveScheme, StateValue.Str(p.Power.ActiveSchemeGuid));
+        var game = new GameSession(reg, new InMemoryChangeJournal(), () => p, _ => 1);
+        var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var flag = new[] { () => enabled };
+        var w = new GameWatcher(game, () => flag[0](), () => new[] { "cs2.exe", " Valorant " }, () => running);
+        return (w, game, map, running, flag);
+    }
+
+    private static string Scheme(Dictionary<ChangeType, InMemoryBackend> map) => map[ChangeType.PowerSetting].Read(Targets.ActiveScheme).Value!;
+
+    [Fact]
+    public void Game_start_switches_power_and_game_exit_restores()
+    {
+        var (w, game, map, running, _) = Create();
+        Assert.False(w.Tick());
+        running.Add("cs2");
+        Assert.True(w.Tick());
+        Assert.True(w.OwnsSession);
+        Assert.Equal("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", Scheme(map));
+        Assert.True(w.Tick()); // повторные проверки ничего не меняют
+        running.Clear();
+        Assert.False(w.Tick());
+        Assert.False(w.OwnsSession);
+        Assert.False(game.IsActive);
+        Assert.Equal("a1841308-3541-4fab-bc81-f71556f20b4a", Scheme(map));
+    }
+
+    [Fact]
+    public void Names_are_matched_without_exe_and_case()
+    {
+        var (w, _, _, running, _) = Create();
+        running.Add("VALORANT");
+        Assert.True(w.Tick());
+    }
+
+    [Fact]
+    public void Disabled_watcher_does_nothing_and_releases_when_turned_off()
+    {
+        var (w, game, map, running, flag) = Create(enabled: false);
+        running.Add("cs2");
+        Assert.False(w.Tick());
+        Assert.Equal("a1841308-3541-4fab-bc81-f71556f20b4a", Scheme(map));
+
+        flag[0] = () => true;
+        Assert.True(w.Tick());
+        flag[0] = () => false; // выключили в настройках во время игры — схема возвращается
+        w.Tick();
+        Assert.False(game.IsActive);
+        Assert.Equal("a1841308-3541-4fab-bc81-f71556f20b4a", Scheme(map));
+    }
+
+    [Fact]
+    public void Manual_session_is_not_touched_by_watcher()
+    {
+        var (w, game, map, running, _) = Create();
+        game.Start(Array.Empty<string>(), powerPlan: true);
+        running.Add("cs2");
+        w.Tick();
+        Assert.False(w.OwnsSession);
+        running.Clear();
+        w.Tick();
+        Assert.True(game.IsActive); // вручную начатую сессию завершает только пользователь
+        Assert.Equal("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", Scheme(map));
+    }
+
+    [Fact]
+    public void Laptop_is_left_alone()
+    {
+        var (w, game, map, running, _) = Create(laptop: true);
+        running.Add("cs2");
+        Assert.True(w.Tick());
+        Assert.False(w.OwnsSession);
+        Assert.False(game.IsActive);
+        Assert.Equal("a1841308-3541-4fab-bc81-f71556f20b4a", Scheme(map));
+    }
+
+    [Fact]
+    public void Dispose_restores_when_game_is_gone_but_keeps_plan_while_playing()
+    {
+        var (w, game, _, running, _) = Create();
+        running.Add("cs2");
+        w.Tick();
+        running.Clear();
+        w.Dispose();
+        Assert.False(game.IsActive);
+
+        var (w2, game2, _, running2, _) = Create();
+        running2.Add("cs2");
+        w2.Tick();
+        w2.Dispose(); // игра идёт — схему не трогаем
+        Assert.True(game2.IsActive);
+    }
+
+    [Theory]
+    [InlineData("cs2, game.exe; Other\nthird", new[] { "cs2", "game", "Other", "third" })]
+    [InlineData("", new string[0])]
+    [InlineData(" , ;", new string[0])]
+    [InlineData("CS2.EXE, cs2", new[] { "CS2" })]
+    public void ParseNames_handles_separators(string text, string[] expected) => Assert.Equal(expected, GameWatcher.ParseNames(text));
+}
