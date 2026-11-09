@@ -48,5 +48,12 @@
 "Автоматическая игровая сессия": "Automatic game session",
 "Пока запущена одна из игр из списка ниже, включена схема питания «Высокая производительность»; после закрытия игры схема возвращается. Программы не закрываются.": "While one of the games in the list below is running, the \"High performance\" power plan is active; after the game closes the plan is restored. Programs are not closed.",
 "Игры для автоматической сессии": "Games for the automatic session",
-"Имена процессов через запятую, например: cs2, VALORANT-Win64-Shipping": "Process names separated by commas, for example: cs2, VALORANT-Win64-Shipping"
+"Имена процессов через запятую, например: cs2, VALORANT-Win64-Shipping": "Process names separated by commas, for example: cs2, VALORANT-Win64-Shipping",
+"Высокий приоритет процессов игр": "High priority for game processes",
+"Для игр из списка выше Windows сама ставит приоритет «Высокий» при запуске (без фоновой программы-регулятора). Эффект зависит от игры — проверяйте замером «до / после»; откат в «Истории».": "For the games in the list above, Windows itself sets the \"High\" priority at launch (no background regulator program). The effect depends on the game — check it with a before/after measurement; roll back in History.",
+"Высокий приоритет включён для: {}. Вступит в силу при следующем запуске игры.": "High priority enabled for: {0}. It takes effect the next time the game starts.",
+"Приоритет возвращён для: {}.": "Priority restored for: {0}.",
+"Пропущены странные имена: {}.": "Skipped unusual names: {0}.",
+"Ошибки: ": "Errors: ",
+"Приоритет игр": "Game priority"
 }

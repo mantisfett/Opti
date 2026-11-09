@@ -36,6 +36,7 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
         Workflow = new TuneWorkflow(Settings, new SessionStore(), backends, _journal,
             new WindowsRestorePointService(), scheduler, new WindowsCrashEventSource());
         Tweaks = new TweakService(backends, _journal);
+        Priority = new Opti.Workflow.GamePriority(backends, _journal);
         Game = new Opti.Workflow.GameSession(backends, _journal, ReadPowerProfile, Opti.Workflow.BackgroundScanner.Close);
         _watcher = new Opti.Workflow.GameWatcher(Game, () => Settings.AutoGameSession,
             () => Opti.Workflow.GameWatcher.ParseNames(Settings.GameProcesses), RunningProcessNames);
@@ -47,6 +48,7 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
     public TweakService Tweaks { get; }
     public Opti.Workflow.StartupManager? Startup { get; }
     public Opti.Workflow.GameSession? Game { get; }
+    public Opti.Workflow.GamePriority? Priority { get; }
     private readonly Opti.Workflow.GameWatcher _watcher;
 
     private static ISet<string> RunningProcessNames()

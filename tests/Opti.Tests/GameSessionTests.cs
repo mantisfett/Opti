@@ -229,3 +229,84 @@ public class GameWatcherTests
     [InlineData("CS2.EXE, cs2", new[] { "CS2" })]
     public void ParseNames_handles_separators(string text, string[] expected) => Assert.Equal(expected, GameWatcher.ParseNames(text));
 }
+
+public class GamePriorityTests : IDisposable
+{
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), "opti-prio-" + Guid.NewGuid().ToString("N")[..8]);
+    public void Dispose() { try { Directory.Delete(_dir, true); } catch { } }
+
+    private static (GamePriority P, Dictionary<ChangeType, InMemoryBackend> Map, InMemoryChangeJournal J) Create()
+    {
+        var reg = InMemoryBackend.CreateRegistry(out var map);
+        var j = new InMemoryChangeJournal();
+        return (new GamePriority(reg, j), map, j);
+    }
+
+    [Theory]
+    [InlineData("cs2", true)]
+    [InlineData("VALORANT-Win64-Shipping", true)]
+    [InlineData("my game_1.2", true)]
+    [InlineData("", false)]
+    [InlineData("..", false)]
+    [InlineData("a..b", false)]
+    [InlineData(@"evil\PerfOptions", false)]
+    [InlineData("evil/x", false)]
+    [InlineData("имя", false)]
+    [InlineData(" lead", false)]
+    [InlineData("a|b", false)]
+    public void Name_validation_keeps_registry_path_safe(string name, bool ok) => Assert.Equal(ok, GamePriority.IsValidName(name));
+
+    [Fact]
+    public void Sync_sets_cpu_priority_class_and_removal_restores_original()
+    {
+        var (p, map, _) = Create();
+        // у одной игры уже есть значение до Opti — откат должен вернуть именно его
+        map[ChangeType.Registry].Seed(GamePriority.Target("old"), StateValue.DWord(2));
+
+        var r = p.Sync(new[] { "cs2", "old" }, enabled: true);
+        Assert.Equal(new[] { "cs2", "old" }, r.Added.OrderBy(x => x));
+        Assert.Equal(3u, uint.Parse(map[ChangeType.Registry].Read(GamePriority.Target("cs2")).Value!));
+        Assert.Equal(new[] { "cs2", "old" }, p.Active());
+
+        var r2 = p.Sync(new[] { "cs2" }, enabled: true); // old убрали из списка
+        Assert.Equal(new[] { "old" }, r2.Removed);
+        Assert.Empty(r2.Added);
+        Assert.Equal("2", map[ChangeType.Registry].Read(GamePriority.Target("old")).Value);
+        Assert.Equal(new[] { "cs2" }, p.Active());
+
+        var r3 = p.Sync(new[] { "cs2" }, enabled: false); // выключили совсем
+        Assert.Equal(new[] { "cs2" }, r3.Removed);
+        Assert.False(map[ChangeType.Registry].Read(GamePriority.Target("cs2")).Exists);
+        Assert.Empty(p.Active());
+    }
+
+    [Fact]
+    public void Sync_is_idempotent_and_skips_invalid_names()
+    {
+        var (p, map, j) = Create();
+        p.Sync(new[] { "cs2" }, true);
+        int records = j.GetAll().Count;
+        var r = p.Sync(new[] { "cs2", @"bad\name", "../x" }, true);
+        Assert.Empty(r.Added);
+        Assert.Equal(2, r.Invalid.Count);
+        Assert.Equal(records, j.GetAll().Count);
+        Assert.DoesNotContain(map[ChangeType.Registry].Snapshot().Keys, k => k.Contains("bad"));
+    }
+
+    [Fact]
+    public async Task Settings_save_applies_priority()
+    {
+        var main = new MainViewModel(new DemoAppServices(_dir));
+        main.SettingsPage.OnShown();
+        main.SettingsPage.GameProcesses = "cs2.exe, bad\\name";
+        main.SettingsPage.GamePriorityHigh = true;
+        main.SettingsPage.SaveCommand.Execute(null);
+        Assert.Equal(new[] { "cs2" }, main.Services.Priority!.Active());
+        Assert.Contains("cs2", main.Toast);
+
+        main.SettingsPage.GamePriorityHigh = false;
+        main.SettingsPage.SaveCommand.Execute(null);
+        Assert.Empty(main.Services.Priority!.Active());
+        await Task.CompletedTask;
+    }
+}

@@ -74,6 +74,9 @@ public interface IAppServices
             return list;
         }, ct);
 
+    /// <summary>Высокий приоритет процессов игр (через Windows, с откатом). null — недоступно.</summary>
+    Opti.Workflow.GamePriority? Priority => null;
+
     /// <summary>Игровая сессия (закрыть лишнее + схема питания на время игры). null — недоступно.</summary>
     Opti.Workflow.GameSession? Game => null;
 

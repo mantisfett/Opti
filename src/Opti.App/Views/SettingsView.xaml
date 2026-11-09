@@ -92,6 +92,12 @@
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding GamePriorityHigh}" VerticalAlignment="Center" MinWidth="0"/>
+                    <StackPanel><TextBlock Text="Высокий приоритет процессов игр" Style="{StaticResource Strong}"/><TextBlock Text="Для игр из списка выше Windows сама ставит приоритет «Высокий» при запуске (без фоновой программы-регулятора). Эффект зависит от игры — проверяйте замером «до / после»; откат в «Истории»." Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
                     <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Сообщать о новых версиях" Style="{StaticResource Strong}"/><TextBlock Text="Только уведомление — ничего не скачивается" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>

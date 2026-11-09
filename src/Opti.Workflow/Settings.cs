@@ -30,6 +30,8 @@ public sealed class OptiSettings
     public bool AutoGameSession { get; set; }
     /// <summary>Игры (имена процессов через запятую, «game.exe» или «game»).</summary>
     public string GameProcesses { get; set; } = "";
+    /// <summary>Постоянный высокий приоритет процессов игр из списка (через Windows, с откатом).</summary>
+    public bool GamePriorityHigh { get; set; }
     /// <summary>Язык интерфейса: "auto" (по Windows), "ru" или "en". Вступает в силу после перезапуска.</summary>
     public string Language { get; set; } = "auto";
 

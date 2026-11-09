@@ -34,6 +34,7 @@ public sealed partial class SettingsViewModel : PageViewModel
     [ObservableProperty] private bool _checkForUpdates;
     [ObservableProperty] private bool _verifyOnStartup;
     [ObservableProperty] private bool _autoGameSession;
+    [ObservableProperty] private bool _gamePriorityHigh;
     [ObservableProperty] private string? _gameProcesses;
     [ObservableProperty] private string? _updateStatus;
     public string Version => Main.Services.AppVersion;
@@ -55,6 +56,7 @@ public sealed partial class SettingsViewModel : PageViewModel
         CheckForUpdates = s.CheckForUpdates;
         VerifyOnStartup = s.VerifyOnStartup;
         AutoGameSession = s.AutoGameSession;
+        GamePriorityHigh = s.GamePriorityHigh;
         GameProcesses = s.GameProcesses;
         ExcludedFixes.Clear();
         foreach (var f in Main.Services.Workflow.Catalog)
@@ -78,15 +80,32 @@ public sealed partial class SettingsViewModel : PageViewModel
         s.CheckForUpdates = CheckForUpdates;
         s.VerifyOnStartup = VerifyOnStartup;
         s.AutoGameSession = AutoGameSession;
+        s.GamePriorityHigh = GamePriorityHigh;
         s.GameProcesses = string.Join(", ", Opti.Workflow.GameWatcher.ParseNames(GameProcesses));
         s.ExcludedFixIds = ExcludedFixes.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         try
         {
             s.Save(Path.Combine(Main.Services.DataDir, "settings.json"));
-            Main.ShowMessage(Loc.T("Настройки сохранены."));
+            Main.ShowMessage(SyncPriority() ?? Loc.T("Настройки сохранены."), error: false);
         }
         catch (Exception ex) { Main.ShowMessage(Loc.T("Не удалось сохранить: ") + ex.Message, error: true); }
         Reload();
+    }
+
+    /// <summary>Приводит приоритет игр в системе к настройкам. Возвращает текст для пользователя, если есть что сказать.</summary>
+    private string? SyncPriority()
+    {
+        var prio = Main.Services.Priority;
+        if (prio is null) return null;
+        var s = Main.Services.Settings;
+        var r = prio.Sync(Opti.Workflow.GameWatcher.ParseNames(s.GameProcesses), s.GamePriorityHigh);
+        var parts = new List<string> { Loc.T("Настройки сохранены.") };
+        if (r.Added.Count > 0) parts.Add(Loc.T($"Высокий приоритет включён для: {string.Join(", ", r.Added)}. Вступит в силу при следующем запуске игры."));
+        if (r.Removed.Count > 0) parts.Add(Loc.T($"Приоритет возвращён для: {string.Join(", ", r.Removed)}."));
+        if (r.Invalid.Count > 0) parts.Add(Loc.T($"Пропущены странные имена: {string.Join(", ", r.Invalid)}."));
+        if (r.Errors.Count > 0) parts.Add(Loc.T("Ошибки: ") + string.Join("; ", r.Errors));
+        Main.History.Refresh();
+        return string.Join(" ", parts);
     }
 
     [RelayCommand]
