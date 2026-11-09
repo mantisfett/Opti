@@ -48,6 +48,8 @@ public static class Program
             if (!File.Exists(exe)) return Fail("Повреждённая сборка: нет " + Path.GetFileName(exe));
             var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Environment.CurrentDirectory };
             foreach (var a in args) psi.ArgumentList.Add(a);
+            // Путь к самому лаунчеру — для самообновления (SelfUpdater заменяет этот файл новой версией из релиза)
+            if (Environment.ProcessPath is { } self) psi.Environment["OPTI_LAUNCHER_PATH"] = self;
             if (notes.Count > 0) psi.Environment["OPTI_LAUNCHER_NOTES"] = string.Join("\n", notes);
 
             using var p = Process.Start(psi) ?? throw new InvalidOperationException("Не удалось запустить " + exe);

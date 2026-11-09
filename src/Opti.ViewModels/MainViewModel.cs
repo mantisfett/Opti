@@ -142,9 +142,27 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand] private void CloseToast() => Toast = null;
 
     [RelayCommand]
-    private void OpenUpdate()
+    private async Task OpenUpdate()
     {
-        if (UpdateUrl is not null) Services.OpenPath(UpdateUrl);
+        if (!Services.CanSelfUpdate)
+        {
+            if (UpdateUrl is not null) Services.OpenPath(UpdateUrl);
+            return;
+        }
+        if (!await Services.ConfirmAsync("Opti", Loc.T("Скачать и установить новую версию? Файл проверяется по контрольной сумме и подписи; после установки перезапустите Opti."))) return;
+        try
+        {
+            var v = await Services.InstallUpdateAsync(new Progress<string>(m => UpdateMessage = m));
+            UpdateMessage = null;
+            UpdateUrl = null;
+            ShowMessage(Loc.T($"Opti обновлён до {v}. Перезапустите программу, чтобы начать работу в новой версии."));
+        }
+        catch (Exception ex)
+        {
+            Opti.Core.Diagnostics.OptiLog.Warn("Обновление не удалось", ex);
+            UpdateMessage = null;
+            ShowMessage(Loc.T("Обновление не удалось: ") + ex.Message, error: true);
+        }
     }
 
     public void ShowCompare(CompareViewModel vm)

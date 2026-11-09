@@ -146,5 +146,16 @@
 "Тяжёлые видео (больше 1 ГБ)": "Large videos (over 1 GB)",
 "Записи игр (OBS, NVIDIA, Xbox Game Bar) и фильмы в «Видео», «Загрузках» и на рабочем столе. Ниже — самые большие; откройте и удалите ненужные.": "Game recordings (OBS, NVIDIA, Xbox Game Bar) and movies in Videos, Downloads and on the desktop. The largest are listed below; open and delete the ones you do not need.",
 "Предыдущая установка Windows (Windows.old)": "Previous Windows installation (Windows.old)",
-"Остаётся после обновления или переустановки с сохранением файлов. Удаляет сама Windows: «Параметры» → «Память» → «Временные файлы».": "Left after an upgrade or a reinstall that kept files. Windows removes it itself: Settings → Storage → Temporary files."
+"Остаётся после обновления или переустановки с сохранением файлов. Удаляет сама Windows: «Параметры» → «Память» → «Временные файлы».": "Left after an upgrade or a reinstall that kept files. Windows removes it itself: Settings → Storage → Temporary files.",
+"Обновление возможно только в Windows.": "Updating is possible only on Windows.",
+"Opti запущен не из релизного файла: скачайте новую версию со страницы релизов.": "Opti was not started from a release file: download the new version from the releases page.",
+"Ищу новую версию…": "Looking for a new version…",
+"Не удалось прочитать описание релиза.": "Could not read the release description.",
+"В релизе нет SHA256SUMS.txt — обновление отменено.": "The release has no SHA256SUMS.txt — update cancelled.",
+"В релизе нет {} — обновление отменено.": "The release has no {0} — update cancelled.",
+"В SHA256SUMS.txt нет {} — обновление отменено.": "SHA256SUMS.txt has no {0} — update cancelled.",
+"Скачиваю {} {}…": "Downloading {0} {1}…",
+"Контрольная сумма {} не совпала — обновление отменено.": "The checksum of {0} did not match — update cancelled.",
+"Подпись {} не совпадает с подписью текущей версии — обновление отменено.": "The signature of {0} does not match the current version — update cancelled.",
+"Устанавливаю…": "Installing…"
 }

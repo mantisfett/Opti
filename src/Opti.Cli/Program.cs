@@ -11,12 +11,13 @@ if (OperatingSystem.IsWindows() && Opti.Native.SessionUser.MismatchWarning() is 
     Output.Color(ConsoleColor.Yellow, Opti.Core.Localization.Loc.T(who) + "\n");
 var a = new Args(args);
 Opti.Core.Diagnostics.OptiLog.Init(Opti.Fixes.Backends.OptiPaths.LogsDir);
+Opti.Workflow.SelfUpdater.CleanupOld();
 Opti.Core.Diagnostics.OptiLog.Info($"opti-cli {Opti.Workflow.AppInfo.Version}: {a.Command}");
 
 try
 {
     // Команды, которые меняют систему или сессию, — только в одном экземпляре (окно Opti тоже держит блокировку).
-    using var instance = a.Command is "run" or "resume" or "measure" or "apply" or "ab" or "compare" or "rollback" or "verify" or "uninstall" || (a.Command == "startup" && (a.Has("disable") || a.Has("enable") || a.Has("suggested")))
+    using var instance = a.Command is "run" or "resume" or "measure" or "apply" or "ab" or "compare" or "rollback" or "verify" or "uninstall" or "update" || (a.Command == "startup" && (a.Has("disable") || a.Has("enable") || a.Has("suggested")))
         ? Opti.Workflow.SingleInstance.TryAcquire(TimeSpan.FromSeconds(3))
           ?? throw new InvalidOperationException(Loc.T("Opti уже работает (окно или другая команда). Закройте его и повторите."))
         : null;
@@ -36,6 +37,7 @@ try
         "latency" => Commands.Latency(a),
         "net" => await Commands.Net(a),
         "version" or "--version" => await Commands.Version(a),
+        "update" => await Commands.Update(a),
         "doctor" => Doctor.Run(a),
         "bugreport" => Commands.BugReport(a),
         "verify" => Commands.Verify(a),

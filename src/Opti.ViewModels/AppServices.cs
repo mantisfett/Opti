@@ -27,6 +27,10 @@ public interface IAppServices
     void RevealFile(string path) => OpenPath(Path.GetDirectoryName(path) ?? path);
     Task<bool> ConfirmAsync(string title, string message);
     Task<UpdateInfo?> CheckForUpdatesAsync();
+    /// <summary>Можно ли обновиться на месте (запуск из релизного Opti.exe). Иначе — только ссылка на страницу релиза.</summary>
+    bool CanSelfUpdate => false;
+    /// <summary>Скачать, проверить и установить последнюю версию. Возвращает установленную версию.</summary>
+    Task<string> InstallUpdateAsync(IProgress<string> progress) => throw new NotSupportedException();
     /// <summary>Категории бережной очистки.</summary>
     IReadOnlyList<Opti.Workflow.Cleanup.ICleanupTarget> CleanupTargets();
     /// <summary>Твики удобства (контекстное меню, Проводник, «Пуск»…).</summary>
