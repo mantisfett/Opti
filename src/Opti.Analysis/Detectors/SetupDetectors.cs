@@ -246,6 +246,21 @@ public sealed class InputDetector : DetectorBase
                 Links = { Sources.MouseSettings },
             };
 
+        // Скорость указателя: при ускорении мыши она уже не при чём (его и так предлагают отключить)
+        if (p.Input.MouseAcceleration != true && p.Input.MousePointerSpeed is { } speed && speed != 10)
+            yield return new Finding
+            {
+                Id = "MOUSE_POINTER_SPEED",
+                Title = Loc.T("Скорость указателя мыши не «6 из 11»"),
+                Severity = Severity.Advice,
+                Explanation = Loc.T("Только на отметке «6 из 11» Windows двигает указатель 1:1 с мышью. На других отметках она умножает или пропускает пиксели: " +
+                              "для игр, которые читают мышь напрямую, это не важно, но для меню, лаунчеров и игр на указателе Windows прицеливание становится неточным. " +
+                              "Чувствительность лучше настраивать в самой игре и значением DPI мыши."),
+                Evidence = { Loc.T($"Скорость указателя: {speed} (норма для 1:1 — 10)") },
+                ManualSteps = { Loc.T("Параметры → Bluetooth и устройства → Мышь → «Скорость указателя»: шестое деление из одиннадцати.") },
+                Links = { Sources.MouseSettings },
+            };
+
         bool sticky = p.Input.StickyKeysFlags is { } sf && (sf & 4) != 0 && (sf & 1) == 0;
         bool filter = p.Input.FilterKeysFlags is { } ff && (ff & 4) != 0 && (ff & 1) == 0;
         if (sticky || filter)

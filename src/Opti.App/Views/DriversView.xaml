@@ -47,6 +47,8 @@
                                                 <StackPanel VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Name}" Style="{StaticResource Strong}"/>
                                                     <TextBlock Text="{Binding Details}" Style="{StaticResource Caption}"/>
+                                                    <TextBlock Text="{Binding Hint}" Style="{StaticResource Caption}" Margin="0,6,0,0" MaxWidth="640" HorizontalAlignment="Left"
+                                                               Visibility="{Binding Hint, Converter={StaticResource StrToVis}}"/>
                                                 </StackPanel>
                                             </DockPanel>
                                         </Border>

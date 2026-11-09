@@ -37,6 +37,7 @@ public sealed class ExtrasCollector : ICollector
         }
 
         if (Reg.Str(@"HKCU\Control Panel\Mouse", "MouseSpeed") is { } ms) p.Input.MouseAcceleration = ms.Trim() != "0";
+        if (int.TryParse(Reg.Str(@"HKCU\Control Panel\Mouse", "MouseSensitivity"), out var speed) && speed is >= 1 and <= 20) p.Input.MousePointerSpeed = speed;
         if (int.TryParse(Reg.Str(@"HKCU\Control Panel\Accessibility\StickyKeys", "Flags"), out var sk)) p.Input.StickyKeysFlags = sk;
         if (int.TryParse(Reg.Str(@"HKCU\Control Panel\Accessibility\Keyboard Response", "Flags"), out var fk)) p.Input.FilterKeysFlags = fk;
 

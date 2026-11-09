@@ -116,6 +116,23 @@ public static partial class DriverAdvisor
         };
     }
 
+    /// <summary>
+    /// Как поставить драйвер видеокарты начисто, когда он старый или стандартный. Только текст: Opti ничего не скачивает и не удаляет.
+    /// null — подсказка не нужна (не видеокарта или драйвер в порядке).
+    /// </summary>
+    public static string? CleanInstallHint(DriverInfo d, DriverStatus status)
+    {
+        if (d.Category != DriverCategory.Display || status == DriverStatus.Ok) return null;
+        var common = Loc.T(" Перед обновлением создайте точку восстановления. Если после обновления появились артефакты или вылеты — удалите драйвер программой Display Driver Uninstaller (сторонняя, запускается в безопасном режиме) и поставьте заново; обычно это не нужно.");
+        return VendorOf(d) switch
+        {
+            ChipVendor.Nvidia => Loc.T("Как обновить начисто: в установщике NVIDIA выберите «Пользовательская установка» и отметьте «Выполнить чистую установку».") + common,
+            ChipVendor.Amd => Loc.T("Как обновить начисто: в установщике AMD Software выберите «Сброс к заводским настройкам» (Factory Reset).") + common,
+            ChipVendor.Intel => Loc.T("Как обновить: Intel Driver & Support Assistant сам подберёт драйвер для вашей графики.") + common,
+            _ => null,
+        };
+    }
+
     public static string CategoryName(DriverCategory c) => c switch
     {
         DriverCategory.Display => Loc.T("Видео"),

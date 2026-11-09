@@ -17,6 +17,8 @@ public sealed class DriverRow
     public required string LinkTitle { get; init; }
     public required string Url { get; init; }
     public bool NeedsAttention { get; init; }
+    /// <summary>Подсказка, как поставить драйвер начисто (только для видеокарты с проблемным драйвером).</summary>
+    public string? Hint { get; init; }
 }
 
 public sealed class DriverGroup
@@ -77,6 +79,7 @@ public sealed partial class DriversViewModel : PageViewModel
                     Tone = st switch { DriverStatus.Missing => Palette.Bad, DriverStatus.Ok => Palette.Good, _ => Palette.Warn },
                     NeedsAttention = st != DriverStatus.Ok,
                     LinkTitle = link.Title, Url = link.Url,
+                    Hint = DriverAdvisor.CleanInstallHint(d, st),
                 };
             }).ToList();
             if (rows.Count > 0) groups.Add(new DriverGroup { Title = DriverAdvisor.CategoryName(cat), Rows = rows });

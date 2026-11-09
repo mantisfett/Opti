@@ -213,5 +213,9 @@
 "Драйверы и реестр": "Drivers and registry",
 "Драйверы: ": "Drivers: ",
 "Реестр {}: {}": "Registry {0}: {1}",
-"слот ?": "slot ?"
+"слот ?": "slot ?",
+"Скорость указателя мыши не «6 из 11»": "Mouse pointer speed is not \"6 of 11\"",
+"Только на отметке «6 из 11» Windows двигает указатель 1:1 с мышью. На других отметках она умножает или пропускает пиксели: для игр, которые читают мышь напрямую, это не важно, но для меню, лаунчеров и игр на указателе Windows прицеливание становится неточным. Чувствительность лучше настраивать в самой игре и значением DPI мыши.": "Only at \"6 of 11\" does Windows move the pointer 1:1 with the mouse. At other settings it multiplies or skips pixels: for games that read the mouse directly this does not matter, but in menus, launchers and games that use the Windows pointer, aiming becomes imprecise. It is better to tune sensitivity in the game itself and with the mouse DPI.",
+"Скорость указателя: {} (норма для 1:1 — 10)": "Pointer speed: {0} (10 is 1:1)",
+"Параметры → Bluetooth и устройства → Мышь → «Скорость указателя»: шестое деление из одиннадцати.": "Settings → Bluetooth & devices → Mouse → \"Pointer speed\": the sixth notch of eleven."
 }

@@ -392,6 +392,8 @@ public sealed class InputInfo
 {
     /// <summary>«Повышенная точность установки указателя» (ускорение мыши).</summary>
     public bool? MouseAcceleration { get; set; }
+    /// <summary>HKCU\Control Panel\Mouse\MouseSensitivity: скорость указателя 1–20; 10 («6 из 11») — движение 1:1.</summary>
+    public int? MousePointerSpeed { get; set; }
     /// <summary>HKCU\Control Panel\Accessibility\StickyKeys\Flags.</summary>
     public int? StickyKeysFlags { get; set; }
     /// <summary>HKCU\Control Panel\Accessibility\Keyboard Response\Flags (залипание фильтрации ввода).</summary>
