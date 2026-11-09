@@ -241,5 +241,9 @@
 "Открыть «Защиту системы»": "Open “System Protection”",
 "Открыть параметры": "Open settings",
 "мс": "ms",
-" мс": " ms"
+" мс": " ms",
+"Скачать и установить новую версию? Файл проверяется по контрольной сумме и подписи; после установки перезапустите Opti.": "Download and install the new version? The file is checked against its checksum and signature; restart Opti after installing.",
+"Opti обновлён до {}. Перезапустите программу, чтобы начать работу в новой версии.": "Opti has been updated to {0}. Restart the program to use the new version.",
+"Обновление не удалось: ": "Update failed: ",
+"Обновление не удалось": "Update failed"
 }

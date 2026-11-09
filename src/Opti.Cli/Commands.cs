@@ -49,6 +49,7 @@ internal static partial class Commands
               latency  [--seconds 60]                                        Задержка системы: DPC/ISR + точность таймера
               net      [--target 1.1.1.1] [--no-load] [--regions] [--dns]   Пинг, джиттер, bufferbloat; --regions — задержка до регионов, --dns — скорость DNS, --wifi — каналы Wi-Fi
               version                                                        Версия и проверка обновлений
+              update   [--check]                                             Обновить Opti до последней версии (проверка SHA-256 и подписи)
               doctor                                                         Проверка окружения (права, ETW, утилиты, PresentMon)
               verify   [--reapply] [--all]                                   На месте ли изменения Opti (обновления Windows и драйверов
                                                                              их иногда возвращают); --reapply — применить снова

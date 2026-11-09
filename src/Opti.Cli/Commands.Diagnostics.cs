@@ -111,4 +111,19 @@ internal static partial class Commands
         }
         return 0;
     }
+
+    public static async Task<int> Update(Args a)
+    {
+        var u = await UpdateChecker.CheckAsync(AppInfo.Version);
+        if (u is null) { Console.WriteLine(Loc.T("Не удалось проверить обновления.")); return 1; }
+        if (!u.IsNewer) { Console.WriteLine(Loc.T("Установлена последняя версия.")); return 0; }
+        if (a.Has("check") || !SelfUpdater.CanSelfUpdate)
+        {
+            Output.Color(ConsoleColor.Green, Loc.T($"Доступна версия {u.LatestVersion}: {u.Url}\n"));
+            return 0;
+        }
+        var v = await SelfUpdater.InstallLatestAsync(AppInfo.Version, new Progress<string>(Console.WriteLine));
+        Output.Color(ConsoleColor.Green, Loc.T($"Opti обновлён до {v}. Запустите программу заново.\n"));
+        return 0;
+    }
 }

@@ -24,6 +24,7 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
         // Сначала защита папки данных: только потом читаем настройки и журнал из неё.
         var notices = OptiPaths.PrepareDataDir().ToList();
         Opti.Core.Diagnostics.OptiLog.Init(OptiPaths.LogsDir);
+        SelfUpdater.CleanupOld();
         Opti.Core.Diagnostics.OptiLog.Info($"Opti {AppInfo.Version} запущен: Windows {Environment.OSVersion.Version}, администратор: {DataDirSecurity.IsElevated()}");
         foreach (var n in notices) Opti.Core.Diagnostics.OptiLog.Warn(n);
         if (Opti.Native.SessionUser.MismatchWarning() is { } who) notices.Add(Opti.Core.Localization.Loc.T(who));
@@ -126,6 +127,10 @@ public sealed class WindowsAppServices : IAppServices, IDisposable
         Task.FromResult(MessageBox.Show(Application.Current.MainWindow, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes);
 
     public Task<UpdateInfo?> CheckForUpdatesAsync() => UpdateChecker.CheckAsync(AppVersion);
+
+    public bool CanSelfUpdate => SelfUpdater.CanSelfUpdate;
+
+    public Task<string> InstallUpdateAsync(IProgress<string> progress) => SelfUpdater.InstallLatestAsync(AppVersion, progress);
 
     public IReadOnlyList<ICleanupTarget> CleanupTargets() => CleanupCatalog.ForWindows();
 
