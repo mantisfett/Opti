@@ -157,6 +157,9 @@ public sealed class LocalizationTests : IDisposable
         NoCyrillic(main.Latency.Summary, "latency summary"); NoCyrillic(main.Latency.TimerText, "latency timer"); NoCyrillic(main.Latency.Title, "latency title");
         foreach (var r in main.Latency.Rows) { NoCyrillic(r.DpcText, "latency dpc"); NoCyrillic(r.IsrText, "latency isr"); }
         foreach (var st in main.Latency.Steps) NoCyrillic(st, "latency step");
+        await main.Network.RunTrafficCommand.ExecuteAsync(null);
+        NoCyrillic(main.Network.TrafficSummary, "traffic summary");
+        foreach (var r in main.Network.TrafficRows) { NoCyrillic(r.UpText, "traffic up"); NoCyrillic(r.DownText, "traffic down"); }
         await main.Network.RunWifiCommand.ExecuteAsync(null);
         NoCyrillic(main.Network.WifiSummary, "wifi summary");
         foreach (var r in main.Network.WifiRows) { NoCyrillic(r.Name, "wifi name"); NoCyrillic(r.Detail, "wifi detail"); NoCyrillic(r.Tag, "wifi tag"); }

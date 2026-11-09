@@ -98,7 +98,7 @@ internal static class Screenshots
                  })
         {
             vm.Navigate(page);
-            if (page == vm.Network) { _ = vm.Network.ToggleMonitorCommand.ExecuteAsync(null); await Task.Delay(600); await vm.Network.RunBloatCommand.ExecuteAsync(null); await vm.Network.RunWifiCommand.ExecuteAsync(null); }
+            if (page == vm.Network) { _ = vm.Network.ToggleMonitorCommand.ExecuteAsync(null); await Task.Delay(600); await vm.Network.RunBloatCommand.ExecuteAsync(null); await vm.Network.RunWifiCommand.ExecuteAsync(null); await vm.Network.RunTrafficCommand.ExecuteAsync(null); }
             await Shot(title);
         }
         window.Close();

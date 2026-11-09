@@ -139,5 +139,21 @@
 "Точность таймера (Sleep 1 мс): среднее {} мс, 99 % — до {} мс, максимум {} мс": "Timer accuracy (Sleep 1 ms): mean {0} ms, 99 % up to {1} ms, max {2} ms",
 "; текущее разрешение таймера {} мс": "; current timer resolution {0} ms",
 "Тест задержек работает только в Windows.": "The latency test works only on Windows.",
-"мкс": "µs"
+"мкс": "µs",
+"Замерить трафик": "Measure traffic",
+"Кто грузит сеть": "Who is using the network",
+"15 секунд: сколько каждая программа отдаёт и качает. Фоновая загрузка — частая причина скачков пинга. Видны только объёмы, не содержимое": "15 seconds: how much each program uploads and downloads. Background transfers are a common cause of ping spikes. Only volumes are visible, not content",
+"Отдаёт": "Uploading",
+"Качает": "Downloading",
+"отдаёт · качает": "upload · download",
+"Замер трафика работает только в Windows.": "Traffic measurement works only on Windows.",
+"Считаю трафик, осталось около {} с…": "Counting traffic, about {0} s left…",
+"Фоновой сетевой активности почти нет — канал свободен для игры.": "There is almost no background network activity — the link is free for gaming.",
+"Больше всего трафика у {}: отдаёт {}, качает {}.": "The most traffic is from {0}: uploading {1}, downloading {2}.",
+" Пока это идёт, пинг в играх растёт — закройте программу или поставьте её загрузки на паузу на время игры.": " While this goes on, ping in games rises — close the program or pause its transfers while you play.",
+"Другой замер на событиях ядра уже идёт (задержки или сетевой трафик). Дождитесь его окончания.": "Another kernel-event measurement is already running (latency or network traffic). Wait for it to finish.",
+"Для замера трафика нужны права администратора.": "Administrator rights are required to measure traffic.",
+"неизвестный процесс": "unknown process",
+"МБ/с": "MB/s",
+"КБ/с": "KB/s"
 }

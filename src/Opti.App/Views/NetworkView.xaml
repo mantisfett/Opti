@@ -105,6 +105,41 @@
                 </StackPanel>
             </Border>
 
+            <!-- Кто грузит сеть -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Замерить трафик" Command="{Binding RunTrafficCommand}" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Кто грузит сеть" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
+                            <TextBlock Text="15 секунд: сколько каждая программа отдаёт и качает. Фоновая загрузка — частая причина скачков пинга. Видны только объёмы, не содержимое" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,4" Visibility="{Binding TrafficSummary, Converter={StaticResource StrToVis}}">
+                        <Ellipse Style="{StaticResource Dot}" Fill="{Binding TrafficTone, Converter={StaticResource ToneToBrush}}"/>
+                        <TextBlock Text="{Binding TrafficSummary}" Style="{StaticResource Strong}" MaxWidth="760"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding TrafficRows}" Focusable="False" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="110"/><ColumnDefinition Width="90"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <Border Grid.Column="1" Height="6" CornerRadius="3" Margin="8,0,12,0" Background="{DynamicResource ControlStrongStrokeColorDisabledBrush}" VerticalAlignment="Center">
+                                        <ProgressBar Value="{Binding Bar, Mode=OneWay}" Maximum="1" Height="6" Foreground="{Binding Tone, Converter={StaticResource ToneToBrush}}" Background="Transparent" BorderThickness="0"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="2" Text="{Binding UpText}" Style="{StaticResource Strong}" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="Отдаёт"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding DownText}" Style="{StaticResource Strong}" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="Качает"/>
+                                    <Button Grid.Column="4" Content="Закрыть" HorizontalAlignment="Right" CommandParameter="{Binding}" Visibility="{Binding CanClose, Converter={StaticResource BoolToVis}}"
+                                            Command="{Binding DataContext.CloseTrafficAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="отдаёт · качает" Style="{StaticResource Caption}" Margin="0,4,0,0" HorizontalAlignment="Right" Visibility="{Binding TrafficSummary, Converter={StaticResource StrToVis}}"/>
+                </StackPanel>
+            </Border>
+
             <!-- Wi-Fi -->
             <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
                 <StackPanel>

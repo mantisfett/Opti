@@ -23,6 +23,7 @@ public static class EtwDpcCapture
         if (!(TraceEventSession.IsElevated() ?? false))
             throw new UnauthorizedAccessException(Loc.T("Для теста DPC/ISR нужны права администратора."));
 
+        using var _ = EtwGate.Enter();
         var images = new List<Image>();
         var byRoutine = new Dictionary<ulong, Acc>();
         var gate = new object();

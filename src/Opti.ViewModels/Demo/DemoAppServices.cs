@@ -221,6 +221,15 @@ public sealed class DemoAppServices : IAppServices
         return new Opti.Measure.Capture.LatencyReport(dpc, new Opti.Measure.Capture.TimerAccuracyResult(1000, 1.98, 2.4, 3.1, 1.0));
     }
 
+    public Task<List<Opti.Measure.Capture.NetUsageRow>> MeasureTrafficAsync(int seconds, CancellationToken ct) => Task.FromResult(new List<Opti.Measure.Capture.NetUsageRow>
+    {
+        new("OneDrive", 41_000_000, 3_000_000, seconds),
+        new("chrome", 2_400_000, 36_000_000, seconds),
+        new("Steam", 300_000, 9_500_000, seconds),
+        new("Discord", 900_000, 1_100_000, seconds),
+        new("svchost", 120_000, 400_000, seconds),
+    });
+
     public Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.FromResult<Opti.Fixes.Services.ApplyReport?>(null);
 
     public Task<UpdateInfo?> CheckForUpdatesAsync() => Task.FromResult<UpdateInfo?>(null);

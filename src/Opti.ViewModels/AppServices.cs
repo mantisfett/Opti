@@ -77,6 +77,13 @@ public interface IAppServices
         return new Opti.Measure.Capture.LatencyReport(dpc, Opti.Measure.Capture.TimerAccuracyTest.Run());
     }, ct);
 
+    /// <summary>Сетевой трафик по программам за время замера (события ядра; нужны права администратора).</summary>
+    Task<List<Opti.Measure.Capture.NetUsageRow>> MeasureTrafficAsync(int seconds, CancellationToken ct) => Task.Run(() =>
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException(Opti.Core.Localization.Loc.T("Замер трафика работает только в Windows."));
+        return Opti.Measure.Capture.EtwNetUsageCapture.Run(TimeSpan.FromSeconds(seconds), ct);
+    }, ct);
+
     /// <summary>Скорость DNS: текущие серверы и популярные публичные.</summary>
     Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct) =>
         Task.Run<IReadOnlyList<Opti.Measure.Capture.DnsResult>>(async () =>

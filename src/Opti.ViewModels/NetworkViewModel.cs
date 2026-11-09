@@ -38,6 +38,17 @@ public sealed class DnsRow
     public bool CanApply => !IsCurrent && Servers.Length > 0;
 }
 
+public sealed class TrafficRow
+{
+    public required string Name { get; init; }
+    public required string UpText { get; init; }
+    public required string DownText { get; init; }
+    public required string Tone { get; init; }
+    public required double Bar { get; init; }
+    public required string ProcessName { get; init; }
+    public bool CanClose { get; init; }
+}
+
 public sealed class WifiRow
 {
     public required string Name { get; init; }
@@ -66,10 +77,79 @@ public sealed partial class NetworkViewModel : PageViewModel
 
     public ObservableCollection<RegionRow> Regions { get; } = new();
     public ObservableCollection<DnsRow> DnsRows { get; } = new();
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand), nameof(RunBloatCommand), nameof(RunWifiCommand))] private bool _isBusy;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunRegionsCommand), nameof(RunDnsCommand), nameof(RunRouteCommand), nameof(RunBloatCommand), nameof(RunWifiCommand), nameof(RunTrafficCommand))] private bool _isBusy;
     [ObservableProperty] private string? _regionsSummary;
     [ObservableProperty] private string? _dnsSummary;
     [ObservableProperty] private string? _progressText;
+
+    // ---------------- Кто грузит сеть ----------------
+    public const int TrafficSeconds = 15;
+    public ObservableCollection<TrafficRow> TrafficRows { get; } = new();
+    [ObservableProperty] private string? _trafficSummary;
+    [ObservableProperty] private string _trafficTone = Palette.Neutral;
+
+    /// <summary>Тон по скорости: от 200 КБ/с — заметно (внимание), от 2 МБ/с — сильно занимает канал.</summary>
+    public static string TrafficToneFor(double kbps) => kbps >= 2048 ? Palette.Bad : kbps >= 200 ? Palette.Warn : Palette.Neutral;
+
+    public static string FormatRate(double kbps) => kbps >= 1024 ? $"{kbps / 1024:0.#} {Loc.T("МБ/с")}" : $"{kbps:0} {Loc.T("КБ/с")}";
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private async Task RunTrafficAsync()
+    {
+        IsBusy = true; TrafficSummary = null; TrafficRows.Clear();
+        _cts = new CancellationTokenSource();
+        try
+        {
+            var task = Main.Services.MeasureTrafficAsync(TrafficSeconds, _cts.Token);
+            for (int left = TrafficSeconds; !task.IsCompleted; left = Math.Max(0, left - 1))
+            {
+                ProgressText = Loc.T($"Считаю трафик, осталось около {left} с…");
+                await Task.WhenAny(task, Task.Delay(1000, CancellationToken.None));
+            }
+            ShowTraffic(await task);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Проверка не удалась: ") + ex.Message, error: true); }
+        finally { IsBusy = false; ProgressText = null; }
+    }
+
+    public void ShowTraffic(IReadOnlyList<NetUsageRow> rows)
+    {
+        TrafficRows.Clear();
+        double max = Math.Max(1, rows.Select(r => r.TotalKbps).DefaultIfEmpty(1).Max());
+        foreach (var r in rows)
+            TrafficRows.Add(new TrafficRow
+            {
+                Name = r.Process, ProcessName = r.Process,
+                UpText = FormatRate(r.SentKbps), DownText = FormatRate(r.ReceivedKbps),
+                Tone = TrafficToneFor(Math.Max(r.SentKbps, r.ReceivedKbps)), Bar = r.TotalKbps / max,
+                CanClose = !Opti.Workflow.BackgroundScanner.IsProtected(r.Process),
+            });
+        var top = rows.FirstOrDefault();
+        if (top is null || top.TotalKbps < 50)
+        {
+            TrafficSummary = Loc.T("Фоновой сетевой активности почти нет — канал свободен для игры.");
+            TrafficTone = Palette.Good;
+        }
+        else
+        {
+            TrafficSummary = Loc.T($"Больше всего трафика у {top.Process}: отдаёт {FormatRate(top.SentKbps)}, качает {FormatRate(top.ReceivedKbps)}.")
+                + (Math.Max(top.SentKbps, top.ReceivedKbps) >= 200 ? Loc.T(" Пока это идёт, пинг в играх растёт — закройте программу или поставьте её загрузки на паузу на время игры.") : "");
+            TrafficTone = TrafficToneFor(Math.Max(top.SentKbps, top.ReceivedKbps)) == Palette.Neutral ? Palette.Good : Palette.Warn;
+        }
+    }
+
+    [RelayCommand]
+    private async Task CloseTrafficAppAsync(TrafficRow row)
+    {
+        if (!row.CanClose) return;
+        if (!await Main.Services.ConfirmAsync(Loc.T($"Закрыть {row.Name}?"),
+                Loc.T("Программа закроется сейчас. Несохранённые данные в ней могут пропасть. Навсегда ничего не отключается.")))
+            return;
+        var n = Main.Services.CloseBackgroundApp(row.ProcessName);
+        Main.ShowMessage(n > 0 ? Loc.T($"Закрыто: {row.Name}.") : Loc.T($"Не удалось закрыть {row.Name} — возможно, она уже закрыта или защищена."), n == 0);
+        if (n > 0) TrafficRows.Remove(row);
+    }
 
     // ---------------- Wi-Fi: каналы ----------------
     public ObservableCollection<WifiRow> WifiRows { get; } = new();
