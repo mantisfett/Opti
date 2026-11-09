@@ -6,7 +6,7 @@ namespace Opti.Workflow;
 
 public static class AppInfo
 {
-    public const string Repository = "allora-dev/optim";
+    public const string Repository = "mantisfett/Opti";
     public const string ReleasesUrl = "https://github.com/" + Repository + "/releases";
 
     public static string Version

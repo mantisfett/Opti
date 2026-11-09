@@ -42,7 +42,7 @@ jobs:
           OPTI_SIGN_CERT_PASSWORD: ${{ secrets.OPTI_SIGN_CERT_PASSWORD }}
         run: ./build/publish.ps1 -Version ${{ steps.ver.outputs.version }}
       # Аттестация: любой может проверить, что Opti.exe собран этим workflow из этого коммита:
-      #   gh attestation verify Opti.exe --repo allora-dev/optim
+      #   gh attestation verify Opti.exe --repo mantisfett/Opti
       - name: Аттестация происхождения сборки
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         # В приватном репозитории без GitHub Enterprise аттестации недоступны — релиз не должен из-за этого падать
