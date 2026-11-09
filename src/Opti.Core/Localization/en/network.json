@@ -122,5 +122,22 @@
 "канал {}": "channel {0}",
 "сетей рядом: {}": "networks nearby: {0}",
 "ваш канал": "your channel",
-"свободнее всего": "clearest"
+"свободнее всего": "clearest",
+"Задержки": "Latency",
+"Какие драйверы надолго занимают процессор. Из-за них бывают микрофризы, треск звука и «ватная» мышь. Тест только читает события ядра и ничего не меняет.": "Which drivers hog the CPU for too long. They cause micro-freezes, crackling audio and a \"mushy\" mouse. The test only reads kernel events and changes nothing.",
+"Запустить тест": "Run the test",
+"Тест задержек системы": "System latency test",
+"30 секунд; для редких всплесков — 2 минуты. Запустите и поиграйте: задержки ловятся, пока ПК занят делом": "30 seconds; 2 minutes for rare spikes. Start it and play: delays are caught while the PC is busy",
+"Дольше (2 минуты)": "Longer (2 minutes)",
+"драйвер": "driver",
+"DPC, макс.": "DPC, max",
+"ISR, макс.": "ISR, max",
+"DPC и ISR — время, которое драйвер занимает процессор на уровне ядра. До 0,5 мс — норма, больше 1 мс — повод обновить или отключить устройство. Для теста нужны права администратора.": "DPC and ISR are the time a driver occupies the CPU at kernel level. Up to 0.5 ms is normal; above 1 ms is a reason to update or disable the device. The test needs administrator rights.",
+"Идёт замер, осталось около {} с. Не запускайте тяжёлые программы — а лучше поиграйте, чтобы поймать задержки в деле.": "Measuring, about {0} s left. Do not start heavy programs — or better, play, to catch delays in action.",
+"Событий драйверов не поймано — повторите тест, пока ПК чем-то занят (игра, звук, сеть).": "No driver events captured — repeat the test while the PC is busy (game, audio, network).",
+"Всё в порядке: худший драйвер — {}, {} мкс (порог проблем — 1000 мкс).": "All good: the worst driver is {0}, {1} µs (the problem threshold is 1000 µs).",
+"Точность таймера (Sleep 1 мс): среднее {} мс, 99 % — до {} мс, максимум {} мс": "Timer accuracy (Sleep 1 ms): mean {0} ms, 99 % up to {1} ms, max {2} ms",
+"; текущее разрешение таймера {} мс": "; current timer resolution {0} ms",
+"Тест задержек работает только в Windows.": "The latency test works only on Windows.",
+"мкс": "µs"
 }

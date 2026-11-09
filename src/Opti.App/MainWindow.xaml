@@ -21,6 +21,7 @@
         <DataTemplate DataType="{x:Type vm:AutoSetupViewModel}"><v:AutoSetupView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:TweaksViewModel}"><v:TweaksView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:NetworkViewModel}"><v:NetworkView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LatencyViewModel}"><v:LatencyView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:BackgroundViewModel}"><v:BackgroundView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:StartupViewModel}"><v:StartupView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><v:HistoryView/></DataTemplate>

@@ -203,6 +203,24 @@ public sealed class DemoAppServices : IAppServices
         return Task.FromResult(new Opti.Measure.Capture.WifiScanResult(nets, new Opti.Measure.Capture.WifiCurrent("HomeNet", 6, 88)));
     }
 
+    public async Task<Opti.Measure.Capture.LatencyReport> MeasureLatencyAsync(int seconds, CancellationToken ct)
+    {
+        await Task.Delay(30, ct);
+        var dpc = new DpcLatencyInfo
+        {
+            DurationSec = seconds,
+            Drivers =
+            {
+                new DriverLatency { Driver = "ndis.sys", MaxDpcUs = 1840, MaxIsrUs = 40, DpcCount = 21000 },
+                new DriverLatency { Driver = "nvlddmkm.sys", MaxDpcUs = 620, MaxIsrUs = 180, DpcCount = 88000 },
+                new DriverLatency { Driver = "storport.sys", MaxDpcUs = 310, MaxIsrUs = 20, DpcCount = 9000 },
+                new DriverLatency { Driver = "USBXHCI.sys", MaxDpcUs = 190, MaxIsrUs = 60, DpcCount = 32000 },
+                new DriverLatency { Driver = "ACPI.sys", MaxDpcUs = 85, MaxIsrUs = 12, DpcCount = 4000 },
+            },
+        };
+        return new Opti.Measure.Capture.LatencyReport(dpc, new Opti.Measure.Capture.TimerAccuracyResult(1000, 1.98, 2.4, 3.1, 1.0));
+    }
+
     public Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.FromResult<Opti.Fixes.Services.ApplyReport?>(null);
 
     public Task<UpdateInfo?> CheckForUpdatesAsync() => Task.FromResult<UpdateInfo?>(null);

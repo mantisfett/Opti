@@ -153,6 +153,10 @@ public sealed class LocalizationTests : IDisposable
         NoCyrillic(main.Network.DnsSummary, "dns summary");
         foreach (var r in main.Network.Regions) { NoCyrillic(r.Name, "region"); NoCyrillic(r.MedianText, "region ms"); NoCyrillic(r.DetailText, "region detail"); }
         foreach (var r in main.Network.DnsRows) { NoCyrillic(r.Name, "dns"); NoCyrillic(r.MedianText, "dns ms"); }
+        await main.Latency.RunCommand.ExecuteAsync(null);
+        NoCyrillic(main.Latency.Summary, "latency summary"); NoCyrillic(main.Latency.TimerText, "latency timer"); NoCyrillic(main.Latency.Title, "latency title");
+        foreach (var r in main.Latency.Rows) { NoCyrillic(r.DpcText, "latency dpc"); NoCyrillic(r.IsrText, "latency isr"); }
+        foreach (var st in main.Latency.Steps) NoCyrillic(st, "latency step");
         await main.Network.RunWifiCommand.ExecuteAsync(null);
         NoCyrillic(main.Network.WifiSummary, "wifi summary");
         foreach (var r in main.Network.WifiRows) { NoCyrillic(r.Name, "wifi name"); NoCyrillic(r.Detail, "wifi detail"); NoCyrillic(r.Tag, "wifi tag"); }

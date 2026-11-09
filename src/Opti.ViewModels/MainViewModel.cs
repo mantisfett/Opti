@@ -50,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
         Software = new SoftwareViewModel(this);
         Tweaks = new TweaksViewModel(this);
         Network = new NetworkViewModel(this);
+        Latency = new LatencyViewModel(this);
         Background = new BackgroundViewModel(this);
         Startup = new StartupViewModel(this);
         Nav = new ObservableCollection<NavItem>
@@ -62,6 +63,7 @@ public sealed partial class MainViewModel : ObservableObject
             new() { Title = Loc.T("Драйверы"), Icon = "\uE950", Page = () => Drivers, IsEnabled = false, Header = Loc.T("ИНСТРУМЕНТЫ"), DisabledHint = Loc.T("Появится после анализа") },
             new() { Title = Loc.T("Твики"), Icon = "\uE70F", Page = () => Tweaks },
             new() { Title = Loc.T("Сеть"), Icon = "\uE839", Page = () => Network },
+            new() { Title = Loc.T("Задержки"), Icon = "\uE916", Page = () => Latency },
             new() { Title = Loc.T("Фон"), Icon = "\uE9F9", Page = () => Background },
             new() { Title = Loc.T("Автозагрузка"), Icon = "\uE7E8", Page = () => Startup },
             new() { Title = Loc.T("Очистка"), Icon = "\uEA99", Page = () => Cleanup },
@@ -84,6 +86,7 @@ public sealed partial class MainViewModel : ObservableObject
     public SoftwareViewModel Software { get; }
     public TweaksViewModel Tweaks { get; }
     public NetworkViewModel Network { get; }
+    public LatencyViewModel Latency { get; }
     public BackgroundViewModel Background { get; }
     public StartupViewModel Startup { get; }
     public CompareViewModel? Compare { get; private set; }
