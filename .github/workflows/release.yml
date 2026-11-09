@@ -33,8 +33,13 @@ jobs:
           "prerelease=$($v.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
       - name: Тесты
         run: dotnet test -c Release --nologo
+      # Подпись кода включается, когда в секретах репозитория есть OPTI_SIGN_CERT_BASE64 и OPTI_SIGN_CERT_PASSWORD (docs/signing.md);
+      # без них сборка остаётся неподписанной и релиз не падает.
       - name: Портативная сборка
         shell: pwsh
+        env:
+          OPTI_SIGN_CERT_BASE64: ${{ secrets.OPTI_SIGN_CERT_BASE64 }}
+          OPTI_SIGN_CERT_PASSWORD: ${{ secrets.OPTI_SIGN_CERT_PASSWORD }}
         run: ./build/publish.ps1 -Version ${{ steps.ver.outputs.version }}
       # Аттестация: любой может проверить, что Opti.exe собран этим workflow из этого коммита:
       #   gh attestation verify Opti.exe --repo allora-dev/optim

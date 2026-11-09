@@ -21,5 +21,12 @@ Publish 'src\Opti.Launcher' @("-p:OptiPayloadDir=$payload", '-p:OptiCli=true', '
 Move-Item artifacts\gui\Opti.exe artifacts\Opti.exe
 Move-Item artifacts\cli\opti-cli.exe artifacts\opti-cli.exe
 Remove-Item artifacts\gui, artifacts\cli, $payload -Recurse -Force
+# Подпись кода (необязательно): если заданы OPTI_SIGN_CERT_BASE64 (PFX в base64) и OPTI_SIGN_CERT_PASSWORD, оба .exe подписываются
+# до подсчёта контрольных сумм. Без сертификата сборка остаётся неподписанной, и SmartScreen покажет предупреждение. См. docs/signing.md.
+if ($env:OPTI_SIGN_CERT_BASE64) {
+    & (Join-Path $PSScriptRoot 'sign.ps1') -Files (Get-ChildItem artifacts\*.exe).FullName
+} else {
+    Write-Host 'Сертификат подписи не задан: сборка не подписана (docs/signing.md).'
+}
 Get-ChildItem artifacts\*.exe | Get-FileHash -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Set-Content artifacts\SHA256SUMS.txt
 Get-ChildItem artifacts
