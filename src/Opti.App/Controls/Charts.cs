@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using Opti.Workflow.Reports;
+using Opti.Core.Localization;
 
 namespace Opti.App.Controls;
 
@@ -50,7 +51,7 @@ public abstract class ChartBase : FrameworkElement
 
     protected void Label(DrawingContext dc, string text, double x, double y, TextAlignment align)
     {
-        var ft = new FormattedText(text, CultureInfo.GetCultureInfo("ru-RU"), FlowDirection.LeftToRight, new Typeface("Segoe UI Variable Text, Segoe UI"), 11, LabelBrush,
+        var ft = new FormattedText(text, Opti.Core.Localization.Loc.Culture, FlowDirection.LeftToRight, new Typeface("Segoe UI Variable Small, Segoe UI"), 11, LabelBrush,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
         double dx = align switch { TextAlignment.Right => -ft.Width, TextAlignment.Center => -ft.Width / 2, _ => 0 };
         dc.DrawText(ft, new Point(x + dx, y - ft.Height / 2));
@@ -64,7 +65,7 @@ public abstract class ChartBase : FrameworkElement
             double v = yMax * i / 4;
             double y = Top + (h - Top - Bottom) * (1 - i / 4.0);
             dc.DrawLine(gridPen, new Point(Left, y), new Point(w - Right, y));
-            Label(dc, v.ToString(v >= 10 ? "0" : "0.#", CultureInfo.GetCultureInfo("ru-RU")) + (i == 4 ? " " + unit : ""), Left - 6, y, TextAlignment.Right);
+            Label(dc, v.ToString(v >= 10 ? "0" : "0.#", Opti.Core.Localization.Loc.Culture) + (i == 4 ? " " + unit : ""), Left - 6, y, TextAlignment.Right);
         }
     }
 
@@ -87,9 +88,9 @@ public sealed class FrameTimeChart : ChartBase
         double yMax = SvgCharts.NiceCeil(Math.Max(Pct(all, 99.9) * 1.25, Pct(all, 50) * 2));
         double xMax = series.Max(s => s.Item1!.Sum() / 1000.0);
         double pw = w - Left - Right, ph = h - Top - Bottom;
-        Grid(dc, w, h, yMax, "мс");
+        Grid(dc, w, h, yMax, Loc.T("мс"));
         for (int i = 0; i <= 4; i++)
-            Label(dc, (xMax * i / 4).ToString("0.#", CultureInfo.GetCultureInfo("ru-RU")) + " с", Left + pw * i / 4, h - Bottom / 2 + 2, TextAlignment.Center);
+            Label(dc, (xMax * i / 4).ToString("0.#", Opti.Core.Localization.Loc.Culture) + Loc.T(" с"), Left + pw * i / 4, h - Bottom / 2 + 2, TextAlignment.Center);
 
         foreach (var (data, brush) in series)
         {
@@ -150,6 +151,6 @@ public sealed class HistogramChart : ChartBase
                 dc.DrawRoundedRectangle(series[si].Item2, null, new Rect(Left + b * slot + 1 + si * barW, Top + ph - bh, barW, bh), 1.5, 1.5);
             }
         for (int i = 0; i <= 5; i++)
-            Label(dc, (lo + (hi - lo) * i / 5).ToString("0.#", CultureInfo.GetCultureInfo("ru-RU")) + " мс", Left + pw * i / 5, h - Bottom / 2 + 2, TextAlignment.Center);
+            Label(dc, (lo + (hi - lo) * i / 5).ToString("0.#", Opti.Core.Localization.Loc.Culture) + Loc.T(" мс"), Left + pw * i / 5, h - Bottom / 2 + 2, TextAlignment.Center);
     }
 }

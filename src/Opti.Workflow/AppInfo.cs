@@ -6,7 +6,7 @@ namespace Opti.Workflow;
 
 public static class AppInfo
 {
-    public const string Repository = "allora-dev/optim";
+    public const string Repository = "mantisfett/Opti";
     public const string ReleasesUrl = "https://github.com/" + Repository + "/releases";
 
     public static string Version
@@ -49,23 +49,50 @@ public static class UpdateChecker
             if (best is null) return null;
             return new UpdateInfo(best.Value.Tag.TrimStart('v'), best.Value.Url, IsNewer(best.Value.Tag, currentVersion));
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            Opti.Core.Diagnostics.OptiLog.Info("Проверка обновлений не удалась: " + ex.Message);
+            return null;
+        }
     }
 
-    /// <summary>Сравнение версий вида 1.2.3 (префикс v и суффиксы -beta допускаются; предрелиз ниже релиза).</summary>
-    public static bool IsNewer(string candidate, string current)
+    /// <summary>
+    /// Сравнение версий по SemVer 2.0: 1.2.3, префикс v допускается. Предрелиз ниже релиза; предрелизы сравниваются
+    /// по частям: числа — как числа (beta.2 &lt; beta.10), текст — по алфавиту (alpha &lt; beta &lt; rc). Метаданные после «+» не учитываются.
+    /// </summary>
+    public static bool IsNewer(string candidate, string current) => CompareVersions(candidate, current) > 0;
+
+    public static int CompareVersions(string x, string y)
     {
-        static (Version V, bool Pre) P(string s)
+        static (Version V, string[] Pre) P(string s)
         {
             s = s.Trim().TrimStart('v', 'V');
+            int plus = s.IndexOf('+');
+            if (plus >= 0) s = s[..plus];
             int dash = s.IndexOf('-');
-            bool pre = dash >= 0;
-            if (pre) s = s[..dash];
-            return (System.Version.TryParse(s.Contains('.') ? s : s + ".0", out var v) ? v : new Version(0, 0), pre);
+            var pre = dash >= 0 ? s[(dash + 1)..].Split('.', StringSplitOptions.RemoveEmptyEntries) : Array.Empty<string>();
+            if (dash >= 0) s = s[..dash];
+            var v = System.Version.TryParse(s.Contains('.') ? s : s + ".0", out var parsed) ? parsed : new Version(0, 0);
+            return (new Version(v.Major, v.Minor, Math.Max(v.Build, 0)), pre);
         }
-        var (a, aPre) = P(candidate);
-        var (b, bPre) = P(current);
+        var (a, aPre) = P(x);
+        var (b, bPre) = P(y);
         int c = a.CompareTo(b);
-        return c > 0 || (c == 0 && bPre && !aPre);
+        if (c != 0) return c;
+        // Релиз выше любого своего предрелиза
+        if (aPre.Length == 0 || bPre.Length == 0) return aPre.Length == bPre.Length ? 0 : aPre.Length == 0 ? 1 : -1;
+        for (int i = 0; i < Math.Min(aPre.Length, bPre.Length); i++)
+        {
+            bool an = int.TryParse(aPre[i], out var ai), bn = int.TryParse(bPre[i], out var bi);
+            int r = (an, bn) switch
+            {
+                (true, true) => ai.CompareTo(bi),
+                (true, false) => -1, // числовые части ниже текстовых
+                (false, true) => 1,
+                _ => string.CompareOrdinal(aPre[i], bPre[i]),
+            };
+            if (r != 0) return Math.Sign(r);
+        }
+        return aPre.Length.CompareTo(bPre.Length);
     }
 }

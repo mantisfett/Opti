@@ -30,26 +30,76 @@ public class StrategyTests
         {
             var p = TestProfiles.Load(name);
             var triggered = TestProfiles.Findings(p).SelectMany(f => f.FixIds).ToHashSet();
-            var plan = new StrategyEngine(FixCatalog.All()).Build(p, TestProfiles.Findings(p), UserGoal.MaxFps);
+            var plan = new StrategyEngine(FixCatalog.All()).Build(p, TestProfiles.Findings(p), UserGoal.Maximum);
             Assert.All(plan.Fixes, f => Assert.Contains(f.Fix.Id, triggered));
         }
     }
 
     [Fact]
-    public void QuietGoal_ExcludesPerformancePower()
+    public void Minimal_KeepsOnlyRepairsSelected()
     {
-        var plan = Plan("desktop-rtx", UserGoal.QuietCool);
-        Assert.DoesNotContain(plan.Fixes, f => f.Fix.Id is FixIds.PowerSchemePerf or FixIds.PowerAcTuning);
-        Assert.Contains(plan.Excluded, e => e.FixId == FixIds.PowerSchemePerf && e.Reason.Contains("Тихо"));
+        var plan = Plan("desktop-rtx", UserGoal.Minimal);
+        // настройки под производительность остаются в плане, но не отмечены
+        var scheme = plan.Fixes.Single(f => f.Fix.Id == FixIds.PowerSchemePerf);
+        Assert.False(scheme.Selected);
+        Assert.Contains(scheme.Notes, n => n.Contains("Минимальная"));
+        Assert.All(plan.Fixes.Where(f => f.Selected), f => Assert.Equal(FixIntent.Repair, f.Fix.Intent));
+        Assert.DoesNotContain(plan.Fixes, f => f.Selected && f.Fix.RequiresAbTest);
+        // исправления ошибок отмечены
+        Assert.True(plan.Fixes.Single(f => f.Fix.Id == FixIds.MpoReset).Selected);
 
-        var fps = Plan("desktop-rtx", UserGoal.MaxFps);
-        Assert.Contains(fps.Fixes, f => f.Fix.Id == FixIds.PowerSchemePerf && f.Selected);
+        var max = Plan("desktop-rtx", UserGoal.Maximum);
+        Assert.Contains(max.Fixes, f => f.Fix.Id == FixIds.PowerSchemePerf && f.Selected);
     }
+
+    [Fact]
+    public void Modes_AreNested_MinimalWithinBalancedWithinMaximum()
+    {
+        foreach (var name in TestProfiles.All)
+        {
+            HashSet<string> Sel(UserGoal g) => Plan(name, g).Fixes.Where(f => f.Selected).Select(f => f.Fix.Id).ToHashSet();
+            var min = Sel(UserGoal.Minimal);
+            var bal = Sel(UserGoal.Balanced);
+            var max = Sel(UserGoal.Maximum);
+            Assert.True(min.IsSubsetOf(bal), $"{name}: Минимальная ⊄ Баланс");
+            Assert.True(bal.IsSubsetOf(max), $"{name}: Баланс ⊄ Максимальная");
+        }
+    }
+
+    [Fact]
+    public void Modes_DifferForPowerThrottlingAndMouse()
+    {
+        var p = TestProfiles.Load("desktop-rtx");
+        p.Power.PowerThrottlingDisabledGlobally = false;
+        p.Input.MouseAcceleration = true;
+        var engine = new StrategyEngine(FixCatalog.All());
+        var findings = TestProfiles.Findings(p);
+        bool Selected(UserGoal g, string id) => engine.Build(p, findings, g).Fixes.SingleOrDefault(f => f.Fix.Id == id)?.Selected ?? false;
+        Assert.True(Selected(UserGoal.Maximum, FixIds.MouseAccelOff));
+        Assert.False(Selected(UserGoal.Balanced, FixIds.MouseAccelOff));
+        Assert.False(Selected(UserGoal.Minimal, FixIds.MouseAccelOff));
+    }
+
+    [Theory]
+    [InlineData("\"LowLatency\"", UserGoal.Maximum)]
+    [InlineData("\"MaxFps\"", UserGoal.Maximum)]
+    [InlineData("\"Smoothness\"", UserGoal.Balanced)]
+    [InlineData("\"Streaming\"", UserGoal.Balanced)]
+    [InlineData("\"QuietCool\"", UserGoal.Minimal)]
+    [InlineData("\"Minimal\"", UserGoal.Minimal)]
+    [InlineData("\"что-то новое\"", UserGoal.Balanced)]
+    public void LegacyGoals_AreReadAsModes(string json, UserGoal expected)
+    {
+        Assert.Equal(expected, Opti.Core.Json.OptiJson.Deserialize<Holder>($"{{\"goal\": {json}}}").Goal);
+        Assert.Contains($"\"{expected}\"", Opti.Core.Json.OptiJson.Serialize(new Holder { Goal = expected }));
+    }
+
+    public sealed class Holder { public UserGoal Goal { get; set; } }
 
     [Fact]
     public void Laptop_DoesNotSwitchWholeSchemeButTunesAc()
     {
-        var plan = Plan("laptop-optimus", UserGoal.MaxFps);
+        var plan = Plan("laptop-optimus", UserGoal.Maximum);
         Assert.DoesNotContain(plan.Fixes, f => f.Fix.Id == FixIds.PowerSchemePerf);
         Assert.Contains(plan.Fixes, f => f.Fix.Id == FixIds.PowerAcTuning);
     }
@@ -57,7 +107,7 @@ public class StrategyTests
     [Fact]
     public void RiskyAndAbFixes_GoLastAndSeparately()
     {
-        var plan = Plan("desktop-rtx", UserGoal.LowLatency);
+        var plan = Plan("desktop-rtx", UserGoal.Maximum);
         var hags = plan.Fixes.Single(f => f.Fix.Id == FixIds.HagsAb);
         Assert.True(hags.ApplySeparately);
         var lastSafe = plan.Fixes.Where(f => !f.ApplySeparately).Max(f => f.Order);
@@ -73,7 +123,7 @@ public class StrategyTests
     {
         var p = TestProfiles.Load("desktop-rtx");
         p.Security.BitLockerOnSystemDrive = true;
-        var plan = new StrategyEngine(FixCatalog.All()).Build(p, TestProfiles.Findings(p), UserGoal.LowLatency);
+        var plan = new StrategyEngine(FixCatalog.All()).Build(p, TestProfiles.Findings(p), UserGoal.Maximum);
         var bcd = plan.Fixes.Single(f => f.Fix.Id == FixIds.BcdTimersReset);
         Assert.False(bcd.Selected);
         Assert.Contains(bcd.Notes, n => n.Contains("BitLocker"));
@@ -82,7 +132,7 @@ public class StrategyTests
     [Fact]
     public void ModifiedOs_DoesNotDuplicateOrForceItsSettings()
     {
-        var plan = Plan("revios", UserGoal.LowLatency);
+        var plan = Plan("revios", UserGoal.Maximum);
         Assert.DoesNotContain(plan.Fixes, f => f.Fix.Id == FixIds.TimerResGlobal); // уже включено сборкой
         var mpo = plan.Fixes.Single(f => f.Fix.Id == FixIds.MpoReset);
         Assert.False(mpo.Selected);
@@ -94,15 +144,15 @@ public class StrategyTests
     [Fact]
     public void StartupFix_NeedsUserChoice()
     {
-        var plan = Plan("laptop-igpu", UserGoal.Smoothness);
+        var plan = Plan("laptop-igpu", UserGoal.Balanced);
         var s = plan.Fixes.Single(f => f.Fix.Id == FixIds.StartupDisable);
         Assert.False(s.Selected);
     }
 
     [Fact]
-    public void ObsFixes_InPlanForStreaming()
+    public void ObsFixes_InPlanInEveryMode()
     {
-        var plan = Plan("laptop-optimus", UserGoal.Streaming);
+        var plan = Plan("laptop-optimus", UserGoal.Balanced);
         Assert.Contains(plan.Fixes, f => f.Fix.Id == FixIds.ObsGameCapture && f.Selected);
         Assert.Contains(plan.Fixes, f => f.Fix.Id == FixIds.ObsNoAdmin && f.Selected);
         Assert.Contains(plan.Fixes.Single(f => f.Fix.Id == FixIds.GameDvrOff).Notes, n => n.Contains("Game Bar"));
@@ -111,7 +161,7 @@ public class StrategyTests
     [Fact]
     public void AdviceOnlyFindings_AreSeparated()
     {
-        var plan = Plan("weak-pc", UserGoal.MaxFps);
+        var plan = Plan("weak-pc", UserGoal.Maximum);
         Assert.Contains(plan.AdviceOnly, f => f.Id == "THERMAL_THROTTLE");
         Assert.DoesNotContain(plan.Fixes, f => f.TriggeredBy.Contains("THERMAL_THROTTLE"));
     }

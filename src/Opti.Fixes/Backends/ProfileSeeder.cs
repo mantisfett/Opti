@@ -43,6 +43,7 @@ public static class ProfileSeeder
         };
         if (overlay is not null) pw.Seed(Targets.PowerOverlay, StateValue.Str(overlay));
 
+        if (p.DeliveryOptimizationMode is { } dom) r.Seed(Targets.Reg(DeliveryOptimizationLanFix.Key, "DODownloadMode"), StateValue.DWord((uint)dom));
         if (p.Graphics.OverlayTestMode is { } otm) r.Seed(Targets.Reg(MpoResetFix.Key, "OverlayTestMode"), StateValue.DWord((uint)otm));
         if (p.Graphics.HagsEnabled is { } hags) r.Seed(Targets.Reg(HagsAbFix.Key, "HwSchMode"), StateValue.DWord(hags ? 2u : 1u));
         if (p.Graphics.GameModeEnabled == false) r.Seed(Targets.Reg(@"HKCU\Software\Microsoft\GameBar", "AutoGameModeEnabled"), StateValue.DWord(0));
@@ -74,6 +75,10 @@ public static class ProfileSeeder
         if (p.Input.StickyKeysFlags is { } sk) r.Seed(Targets.Reg(AccessibilityHotkeysOffFix.StickyKey, "Flags"), StateValue.Str(sk.ToString()));
         if (p.Input.FilterKeysFlags is { } fk) r.Seed(Targets.Reg(AccessibilityHotkeysOffFix.FilterKey, "Flags"), StateValue.Str(fk.ToString()));
         if (p.Memory.PageFileDisabled == true) r.Seed(Targets.Reg(PageFileAutoFix.Key, "PagingFiles"), new StateValue(true, "MultiString", ""));
+
+        foreach (var rule in Opti.Core.Registry.RegistryAuditCatalog.All)
+            if (p.RegistryAudit.TryGetValue(rule.Id, out var rv) && rv is not null)
+                r.Seed(Targets.Reg(rule.Key, rule.ValueName), uint.TryParse(rv, out var dw) ? StateValue.DWord(dw) : StateValue.Str(rv));
 
         var bcd = map[ChangeType.Bcd];
         if (p.Timers.UsePlatformClock is { } upc) bcd.Seed(Targets.Bcd("useplatformclock"), StateValue.Str(upc ? "Yes" : "No"));

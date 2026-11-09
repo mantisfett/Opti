@@ -2,21 +2,53 @@ using System.Globalization;
 using Opti.Core.Fixes;
 using Opti.Core.Json;
 using Microsoft.Data.Sqlite;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Journal;
 
-/// <summary>Журнал изменений в SQLite (C:\ProgramData\Opti\journal.db).</summary>
+/// <summary>
+/// Журнал изменений в SQLite (C:\ProgramData\Opti\journal.db).
+/// Версия схемы хранится в PRAGMA user_version; при открытии журнал обновляется до текущей версии в транзакции.
+/// Журнал более новой версии не открывается: старая программа могла бы неправильно его прочитать и откатить не то.
+/// </summary>
 public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
 {
+    /// <summary>1 — версии 1.0–1.2; 2 — подтверждение записи (столбец committed).</summary>
+    public const int SchemaVersion = 2;
     private readonly SqliteConnection _db;
 
     public SqliteChangeJournal(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         _db = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString());
-        _db.Open();
-        Exec("PRAGMA journal_mode=WAL;");
-        Exec("PRAGMA synchronous=FULL;");
+        try
+        {
+            _db.Open();
+            Exec("PRAGMA journal_mode=WAL;");
+            Exec("PRAGMA synchronous=FULL;");
+            Exec("PRAGMA busy_timeout=5000;");
+            Migrate();
+        }
+        catch
+        {
+            // Журнал не открылся (например, он новее программы) — файл не должен остаться занятым
+            _db.Dispose();
+            throw;
+        }
+    }
+
+    public int Version => Convert.ToInt32(Scalar("PRAGMA user_version;"));
+
+    private void Migrate()
+    {
+        int version = Version;
+        if (version > SchemaVersion)
+            throw new InvalidDataException(Loc.T($"Журнал отката создан более новой версией Opti (схема {version}, эта программа знает {SchemaVersion}). ") +
+                                           Loc.T("Обновите Opti, чтобы не повредить журнал."));
+        if (version == SchemaVersion) return;
+
+        using var tx = _db.BeginTransaction();
+        // Версия 1 (и пустая база): исходные таблицы. Для старых журналов user_version = 0, но таблицы уже есть.
         Exec("""
             CREATE TABLE IF NOT EXISTS changes(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +68,21 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
               goal TEXT NULL,
               restore_point TEXT NULL,
               notes TEXT NULL);
-            """);
+            """, tx);
+        // Версия 2: подтверждение записи. Старые записи считаются подтверждёнными.
+        if (!HasColumn("changes", "committed", tx))
+            Exec("ALTER TABLE changes ADD COLUMN committed INTEGER NOT NULL DEFAULT 1;", tx);
+        Exec($"PRAGMA user_version={SchemaVersion};", tx);
+        tx.Commit();
+    }
+
+    private bool HasColumn(string table, string column, SqliteTransaction tx)
+    {
+        using var cmd = _db.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name=$c";
+        cmd.Parameters.AddWithValue("$c", column);
+        return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
     }
 
     public StateValue? GetActiveOriginal(ChangeType type, string target)
@@ -52,8 +98,8 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
     {
         using var cmd = _db.CreateCommand();
         cmd.CommandText = """
-            INSERT INTO changes(fix_id,type,target,before_json,after_json,ts,session_id)
-            VALUES($f,$t,$g,$b,$a,$ts,$s); SELECT last_insert_rowid();
+            INSERT INTO changes(fix_id,type,target,before_json,after_json,ts,session_id,committed)
+            VALUES($f,$t,$g,$b,$a,$ts,$s,0); SELECT last_insert_rowid();
             """;
         cmd.Parameters.AddWithValue("$f", r.FixId);
         cmd.Parameters.AddWithValue("$t", r.Type.ToString());
@@ -73,6 +119,14 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
         cmd.ExecuteNonQuery();
     }
 
+    public void Commit(long recordId)
+    {
+        using var cmd = _db.CreateCommand();
+        cmd.CommandText = "UPDATE changes SET committed=1 WHERE id=$id";
+        cmd.Parameters.AddWithValue("$id", recordId);
+        cmd.ExecuteNonQuery();
+    }
+
     public void MarkRolledBack(long recordId, DateTimeOffset at)
     {
         using var cmd = _db.CreateCommand();
@@ -85,7 +139,7 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
     public IReadOnlyList<ChangeRecord> GetAll()
     {
         using var cmd = _db.CreateCommand();
-        cmd.CommandText = "SELECT id,fix_id,type,target,before_json,after_json,ts,session_id,rolled_back,rolled_back_at FROM changes ORDER BY id";
+        cmd.CommandText = "SELECT id,fix_id,type,target,before_json,after_json,ts,session_id,rolled_back,rolled_back_at,committed FROM changes ORDER BY id";
         using var rd = cmd.ExecuteReader();
         var list = new List<ChangeRecord>();
         while (rd.Read())
@@ -102,6 +156,7 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
                 SessionId = rd.GetString(7),
                 RolledBack = rd.GetInt64(8) != 0,
                 RolledBackAt = rd.IsDBNull(9) ? null : DateTimeOffset.Parse(rd.GetString(9), CultureInfo.InvariantCulture),
+                Committed = rd.GetInt64(10) != 0,
             });
         }
         return list;
@@ -140,11 +195,19 @@ public sealed class SqliteChangeJournal : IChangeJournal, IDisposable
         return list;
     }
 
-    private void Exec(string sql)
+    private void Exec(string sql, SqliteTransaction? tx = null)
+    {
+        using var cmd = _db.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = sql;
+        cmd.ExecuteNonQuery();
+    }
+
+    private object? Scalar(string sql)
     {
         using var cmd = _db.CreateCommand();
         cmd.CommandText = sql;
-        cmd.ExecuteNonQuery();
+        return cmd.ExecuteScalar();
     }
 
     public void Dispose() => _db.Dispose();

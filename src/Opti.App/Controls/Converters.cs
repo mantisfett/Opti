@@ -22,14 +22,19 @@ public sealed class StringToVisibilityConverter : IValueConverter
 /// <summary>Пустая коллекция или null — скрыть.</summary>
 public sealed class CountToVisibilityConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-        value switch
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        bool any = value switch
         {
-            int n => n > 0 ? Visibility.Visible : Visibility.Collapsed,
-            ICollection c => c.Count > 0 ? Visibility.Visible : Visibility.Collapsed,
-            IEnumerable e => e.Cast<object>().Any() ? Visibility.Visible : Visibility.Collapsed,
-            _ => Visibility.Collapsed,
+            int n => n > 0,
+            ICollection c => c.Count > 0,
+            IEnumerable e => e.Cast<object>().Any(),
+            _ => false,
         };
+        // ConverterParameter=invert — показать, когда пусто (пустые состояния)
+        if (parameter as string == "invert") any = !any;
+        return any ? Visibility.Visible : Visibility.Collapsed;
+    }
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
@@ -54,6 +59,23 @@ public sealed class ToneToBrushConverter : IValueConverter
         if (!Map.TryGetValue(tone, out var m)) m = Map["neutral"];
         if (Application.Current?.TryFindResource(m.Key) is System.Windows.Media.Brush b) return b;
         return new System.Windows.Media.BrushConverter().ConvertFromString(m.Fallback)!;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
+}
+
+/// <summary>Тот же тон, но полупрозрачной заливкой — фон плашек (тегов) и подсказок.</summary>
+public sealed class ToneToSoftBrushConverter : IValueConverter
+{
+    private static readonly ToneToBrushConverter Solid = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var b = Solid.Convert(value, targetType, parameter, culture) as System.Windows.Media.SolidColorBrush;
+        var color = b?.Color ?? System.Windows.Media.Colors.Gray;
+        var soft = new System.Windows.Media.SolidColorBrush(color) { Opacity = 0.16 };
+        soft.Freeze();
+        return soft;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;

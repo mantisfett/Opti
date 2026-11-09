@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Лаунчер портативной сборки (Opti.exe и opti-cli.exe в релизе).
+    Сам он — один управляемый файл без нативных библиотек, поэтому ничего не распаковывает во временную папку
+    пользователя. Приложение (папка публикации Opti.App + Opti.Cli) встроено как zip и выкладывается в
+    защищённую C:\ProgramData\Opti\app\<версия>-<хеш>, откуда и запускается.
+    Сборка: build/publish.ps1 или build/publish.sh (параметры OptiPayloadDir и OptiCli).
+  -->
+  <PropertyGroup>
+    <OutputType Condition="'$(OptiCli)' == 'true'">Exe</OutputType>
+    <OutputType Condition="'$(OptiCli)' != 'true'">WinExe</OutputType>
+    <AssemblyName Condition="'$(OptiCli)' == 'true'">opti-cli</AssemblyName>
+    <AssemblyName Condition="'$(OptiCli)' != 'true'">Opti</AssemblyName>
+    <RootNamespace>Opti.Launcher</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Opti.App\Assets\opti.ico</ApplicationIcon>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SelfContained Condition="'$(RuntimeIdentifier)' != ''">true</SelfContained>
+    <PublishSingleFile Condition="'$(RuntimeIdentifier)' != ''">true</PublishSingleFile>
+    <PublishTrimmed Condition="'$(RuntimeIdentifier)' != ''">true</PublishTrimmed>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- Главное: никаких нативных файлов рядом и никакой распаковки -->
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>false</IncludeAllContentForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Та же защита папки данных, что и в приложении (без зависимости от всего Opti.Fixes) -->
+    <Compile Include="..\Opti.Fixes\Backends\DataDirSecurity.cs" Link="DataDirSecurity.cs" />
+  </ItemGroup>
+
+  <!-- Упаковка приложения: папка публикации → zip → встроенный ресурс «Opti.Payload.zip» -->
+  <Target Name="OptiPackPayload" BeforeTargets="BeforeBuild" Condition="'$(OptiPayloadDir)' != ''">
+    <Error Condition="!Exists('$(OptiPayloadDir)')" Text="Нет папки приложения $(OptiPayloadDir)" />
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <ZipDirectory SourceDirectory="$(OptiPayloadDir)" DestinationFile="$(IntermediateOutputPath)payload.zip" Overwrite="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(IntermediateOutputPath)payload.zip" LogicalName="Opti.Payload.zip" />
+    </ItemGroup>
+  </Target>
+</Project>

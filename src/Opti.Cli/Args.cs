@@ -9,15 +9,15 @@ public sealed class Args
 
     public Args(string[] argv)
     {
-        bool hasCommand = argv.Length > 0 && !argv[0].StartsWith("--");
+        bool hasCommand = argv.Length > 0 && !argv[0].StartsWith("--", StringComparison.Ordinal);
         Command = hasCommand ? argv[0].ToLowerInvariant() : "help";
         for (int i = hasCommand ? 1 : 0; i < argv.Length; i++)
         {
             var a = argv[i];
-            if (a.StartsWith("--"))
+            if (a.StartsWith("--", StringComparison.Ordinal))
             {
                 var key = a[2..];
-                string val = i + 1 < argv.Length && !argv[i + 1].StartsWith("--") ? argv[++i] : "true";
+                string val = i + 1 < argv.Length && !argv[i + 1].StartsWith("--", StringComparison.Ordinal) ? argv[++i] : "true";
                 if (!_opts.TryGetValue(key, out var list)) _opts[key] = list = new();
                 list.Add(val);
             }

@@ -2,13 +2,14 @@ using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
 [SupportedOSPlatform("windows")]
 public sealed class GamesCollector : ICollector
 {
-    public string Name => "Игры";
+    public string Name => Loc.T("Игры");
 
     public void Collect(SystemProfile p)
     {
@@ -35,7 +36,7 @@ public sealed class GamesCollector : ICollector
 
     private static void Try(SystemProfile p, string what, Action a)
     {
-        try { a(); } catch (Exception ex) { p.CollectorErrors.Add($"Игры {what}: {ex.Message}"); }
+        try { a(); } catch (Exception ex) { p.CollectorErrors.Add(Loc.T($"Игры {what}: {ex.Message}")); }
     }
 
     private static IEnumerable<GameInfo> Steam()

@@ -46,7 +46,7 @@ public static class HagsNative
             {
                 Marshal.FreeHGlobal(buf);
                 var c = new CLOSE_ADAPTER { hAdapter = open.hAdapter };
-                D3DKMTCloseAdapter(ref c);
+                _ = D3DKMTCloseAdapter(ref c);
             }
         }
         catch (EntryPointNotFoundException) { return null; }

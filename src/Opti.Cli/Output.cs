@@ -1,6 +1,7 @@
 using Opti.Core.Findings;
 using Opti.Core.Fixes;
 using Opti.Core.Strategy;
+using Opti.Core.Localization;
 
 namespace Opti.Cli;
 
@@ -24,9 +25,9 @@ internal static class Output
 
     public static string SeverityRu(Severity s) => s switch
     {
-        Severity.Critical => "КРИТИЧНО",
-        Severity.Important => "ВАЖНО",
-        _ => "СОВЕТ",
+        Severity.Critical => Loc.T("КРИТИЧНО"),
+        Severity.Important => Loc.T("ВАЖНО"),
+        _ => Loc.T("СОВЕТ"),
     };
 
     public static ConsoleColor SeverityColor(Severity s) => s switch
@@ -38,51 +39,51 @@ internal static class Output
 
     public static string RiskRu(RiskLevel r) => r switch
     {
-        RiskLevel.Safe => "безопасно",
-        RiskLevel.Moderate => "умеренно",
-        _ => "рискованно",
+        RiskLevel.Safe => Loc.T("безопасно"),
+        RiskLevel.Moderate => Loc.T("умеренно"),
+        _ => Loc.T("рискованно"),
     };
 
     public static void PrintFindings(IReadOnlyList<Finding> findings)
     {
-        Header($"Найдено проблем: {findings.Count}");
-        if (findings.Count == 0) { Console.WriteLine("Явных проблем не найдено."); return; }
-        foreach (var f in findings)
+        Header(Loc.T($"Найдено проблем: {findings.Count}"));
+        if (findings.Count == 0) { Console.WriteLine(Loc.T("Явных проблем не найдено.")); return; }
+        foreach (var f in findings.Select(x => x.Translated()))
         {
             Console.WriteLine();
             Color(SeverityColor(f.Severity), $"[{SeverityRu(f.Severity)}] ");
             Console.Write(f.Title);
             Color(ConsoleColor.DarkGray, $"  ({f.Id})\n");
-            if (f.IsHardwareLimitation) Color(ConsoleColor.DarkYellow, "  Аппаратное ограничение: программно не исправляется.\n");
+            if (f.IsHardwareLimitation) Color(ConsoleColor.DarkYellow, Loc.T("  Аппаратное ограничение: программно не исправляется.\n"));
             Console.WriteLine("  " + f.Explanation);
             foreach (var e in f.Evidence) Color(ConsoleColor.DarkGray, $"    • {e}\n");
             foreach (var s in f.ManualSteps) Console.WriteLine($"    → {s}");
             foreach (var l in f.Links) Console.WriteLine($"    🔗 {l}");
-            if (f.FixIds.Count > 0) Color(ConsoleColor.Green, $"    Исправления: {string.Join(", ", f.FixIds)}\n");
+            if (f.FixIds.Count > 0) Color(ConsoleColor.Green, Loc.T($"    Исправления: {string.Join(", ", f.FixIds)}\n"));
         }
     }
 
     public static void PrintPlan(StrategyPlan plan)
     {
-        Header($"Стратегия — цель: {plan.Goal.Ru()}; устройство: {plan.Device.Describe()}");
-        if (plan.Fixes.Count == 0) Console.WriteLine("Программе нечего исправлять автоматически.");
+        Header(Loc.T($"Стратегия — режим «{plan.Goal.Ru()}»; устройство: {plan.Device.Describe()}"));
+        if (plan.Fixes.Count == 0) Console.WriteLine(Loc.T("Программе нечего исправлять автоматически."));
         foreach (var p in plan.Fixes)
         {
             Console.Write($"{p.Order,2}. [{(p.Selected ? "x" : " ")}] ");
             Console.Write(p.Fix.Title);
-            Color(ConsoleColor.DarkGray, $"  ({p.Fix.Id}, {RiskRu(p.Fix.Risk)}{(p.Fix.RequiresReboot ? ", нужна перезагрузка" : "")}{(p.ApplySeparately ? ", отдельный замер" : "")})\n");
+            Color(ConsoleColor.DarkGray, Loc.T($"  ({p.Fix.Id}, {RiskRu(p.Fix.Risk)}{(p.Fix.RequiresReboot ? ", нужна перезагрузка" : "")}{(p.ApplySeparately ? ", отдельный замер" : "")})\n"));
             Console.WriteLine("       " + p.Fix.Explanation);
-            Color(ConsoleColor.DarkGray, $"       Причина: {string.Join(", ", p.TriggeredBy)}\n");
+            Color(ConsoleColor.DarkGray, Loc.T($"       Причина: {string.Join(", ", p.TriggeredBy)}\n"));
             foreach (var n in p.Notes) Color(ConsoleColor.DarkYellow, $"       ! {n}\n");
         }
         if (plan.Excluded.Count > 0)
         {
-            Header("Не включено в план");
+            Header(Loc.T("Не включено в план"));
             foreach (var e in plan.Excluded) Console.WriteLine($"  – {e.FixId}: {e.Reason}");
         }
         if (plan.AdviceOnly.Count > 0)
         {
-            Header("Только советы (вы делаете сами)");
+            Header(Loc.T("Только советы (вы делаете сами)"));
             foreach (var a in plan.AdviceOnly) Console.WriteLine($"  – {a.Title}");
         }
     }

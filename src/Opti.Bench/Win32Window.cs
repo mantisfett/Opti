@@ -68,7 +68,7 @@ internal sealed class Win32Window : IDisposable
         if (Handle == IntPtr.Zero) throw new InvalidOperationException("Не удалось создать окно");
         ShowWindow(Handle, 5);
         SetForegroundWindow(Handle);
-        if (fullscreen) ShowCursor(false);
+        if (fullscreen) _ = ShowCursor(false);
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -98,7 +98,7 @@ internal sealed class Win32Window : IDisposable
 
     public void Dispose()
     {
-        ShowCursor(true);
+        _ = ShowCursor(true);
         DestroyWindow(Handle);
     }
 }

@@ -12,6 +12,7 @@ public abstract class FixBase : IFix
     public virtual RiskLevel Risk => RiskLevel.Safe;
     public virtual bool RequiresReboot => false;
     public abstract FixCategory Category { get; }
+    public virtual FixIntent Intent => FixIntent.Repair;
     public virtual bool RequiresAbTest => false;
     public virtual bool TouchesBcd => false;
     public virtual bool NeedsUserChoice => false;
@@ -58,6 +59,10 @@ public static class FixCatalog
         new MouseAccelOffFix(),
         new AccessibilityHotkeysOffFix(),
         new PageFileAutoFix(),
+        new DeliveryOptimizationLanFix(),
+        new DnsSetFix(),
+        new RegistryPerfDefaultsFix(),
+        new RegistrySecurityDefaultsFix(),
     };
 
     public static IFix? Find(string id) => All().FirstOrDefault(f => string.Equals(f.Id, id, StringComparison.OrdinalIgnoreCase));

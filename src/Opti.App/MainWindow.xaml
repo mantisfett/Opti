@@ -6,7 +6,8 @@
         Title="Opti" Width="1180" Height="780" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/Assets/opti.ico"
-        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14">
+        FontFamily="{StaticResource TextFont}" FontSize="14"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:HomeViewModel}"><v:HomeView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:AnalysisViewModel}"><v:AnalysisView/></DataTemplate>
@@ -15,45 +16,64 @@
         <DataTemplate DataType="{x:Type vm:ApplyViewModel}"><v:ApplyView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:CompareViewModel}"><v:CompareView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:CleanupViewModel}"><v:CleanupView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:DriversViewModel}"><v:DriversView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SoftwareViewModel}"><v:SoftwareView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AutoSetupViewModel}"><v:AutoSetupView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:TweaksViewModel}"><v:TweaksView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:NetworkViewModel}"><v:NetworkView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LatencyViewModel}"><v:LatencyView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BackgroundViewModel}"><v:BackgroundView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StartupViewModel}"><v:StartupView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><v:HistoryView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><v:SettingsView/></DataTemplate>
+                    <DataTemplate x:Key="NavItemTemplate">
+                        <StackPanel>
+                        <TextBlock Text="{Binding Header}" Style="{StaticResource NavHeader}" Visibility="{Binding Header, Converter={StaticResource StrToVis}}"/>
+                        <Button x:Name="NavBtn" Style="{StaticResource NavButton}" ToolTipService.ShowOnDisabled="True" IsEnabled="{Binding IsEnabled}" CommandParameter="{Binding}"
+                                Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <Grid>
+                                <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left" Margin="-12,0,0,0"
+                                        Background="{StaticResource BrandGradientBrush}" Visibility="Hidden"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="NavIcon" Text="{Binding Icon}" Style="{StaticResource Icon}" Width="30"/>
+                                    <TextBlock x:Name="NavTitle" Text="{Binding Title}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+                        </StackPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                <Setter TargetName="NavBtn" Property="ToolTip" Value="{Binding DisabledHint}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="Pill" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="NavBtn" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+                                <Setter TargetName="NavTitle" Property="FontWeight" Value="SemiBold"/>
+                                <Setter TargetName="NavIcon" Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="232"/>
+            <ColumnDefinition Width="252"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
         <!-- Навигация -->
         <DockPanel Margin="0,12,0,12">
-            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="22,6,0,22">
-                <Image Source="pack://application:,,,/Assets/opti.png" Width="22" Height="22"/>
-                <TextBlock Text="Opti" FontFamily="{StaticResource DisplayFont}" FontSize="17" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            <DockPanel DockPanel.Dock="Top" Margin="20,6,12,20">
+                <Image Source="pack://application:,,,/Assets/opti.png" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Opti" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="Bold" TextOptions.TextFormattingMode="Ideal"/>
+                </StackPanel>
+            </DockPanel>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="22,0,0,4">
+                <Ellipse Width="7" Height="7" Fill="{StaticResource BrandGreenBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding WindowTitle}" Style="{StaticResource Caption}"/>
             </StackPanel>
-            <TextBlock DockPanel.Dock="Bottom" Text="{Binding WindowTitle}" Style="{StaticResource Caption}" Margin="22,0,0,4"/>
-            <ItemsControl ItemsSource="{Binding Nav}" Focusable="False">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource NavButton}" IsEnabled="{Binding IsEnabled}" CommandParameter="{Binding}"
-                                Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}">
-                            <Grid>
-                                <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left" Margin="-12,0,0,0"
-                                        Background="{DynamicResource AccentFillColorDefaultBrush}" Visibility="Hidden"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Icon}" Style="{StaticResource Icon}" Width="30"/>
-                                    <TextBlock x:Name="NavTitle" Text="{Binding Title}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Grid>
-                        </Button>
-                        <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding IsActive}" Value="True">
-                                <Setter TargetName="Pill" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="NavTitle" Property="FontWeight" Value="SemiBold"/>
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding NavBottom}" Focusable="False" Margin="0,0,0,10" ItemTemplate="{StaticResource NavItemTemplate}"/>
+            <ItemsControl ItemsSource="{Binding NavTop}" Focusable="False" ItemTemplate="{StaticResource NavItemTemplate}"/>
         </DockPanel>
 
         <!-- Содержимое -->
@@ -65,7 +85,15 @@
                     <RowDefinition/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Border Margin="24,16,24,0" Padding="14,10" CornerRadius="6" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                <StackPanel>
+                <Border Margin="24,16,24,0" Padding="14,10" CornerRadius="{StaticResource RadiusCard}" Background="{StaticResource AccentSoftBrush}"
+                        Visibility="{Binding DemoBanner, Converter={StaticResource StrToVis}}">
+                    <DockPanel>
+                        <TextBlock Text="&#xE7B3;" Style="{StaticResource Icon}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding DemoBanner}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+                <Border Margin="24,16,24,0" Padding="14,10" CornerRadius="{StaticResource RadiusCard}" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
                         Visibility="{Binding UpdateMessage, Converter={StaticResource StrToVis}}">
                     <DockPanel>
@@ -74,8 +102,9 @@
                         <TextBlock Text="{Binding UpdateMessage}" VerticalAlignment="Center"/>
                     </DockPanel>
                 </Border>
+                </StackPanel>
                 <ContentControl Grid.Row="1" Content="{Binding CurrentPage}" Focusable="False"/>
-                <Border Grid.Row="2" Margin="24,0,24,16" Padding="14,10" CornerRadius="6"
+                <Border Grid.Row="2" Margin="24,0,24,16" Padding="14,10" CornerRadius="{StaticResource RadiusCard}"
                         Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
                         Visibility="{Binding Toast, Converter={StaticResource StrToVis}}">
                     <DockPanel>

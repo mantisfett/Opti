@@ -36,7 +36,7 @@ public class SetupDetectorTests
     {
         foreach (var name in TestProfiles.All)
             foreach (var f in TestProfiles.Findings(TestProfiles.Load(name)))
-                Assert.All(f.Links, l => Assert.True(l.StartsWith("https://") || l.StartsWith("ms-settings:"), l));
+                Assert.All(f.Links, l => Assert.True(l.StartsWith("https://", StringComparison.Ordinal) || l.StartsWith("ms-settings:", StringComparison.Ordinal), l));
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class SetupDetectorTests
         Assert.Contains(TestProfiles.Findings(p), x => x.Id == "PAGEFILE_DISABLED" && x.FixIds.Contains(FixIds.PageFileAuto));
         var reg = ProfileSeeder.CreateEmulation(p, out var map);
         var journal = new InMemoryChangeJournal();
-        new ApplyService(reg, journal, null).Apply(p, new[] { new PageFileAutoFix() }, UserGoal.MaxFps);
+        new ApplyService(reg, journal, null).Apply(p, new[] { new PageFileAutoFix() }, UserGoal.Maximum);
         Assert.Equal("?:\\pagefile.sys", map[ChangeType.Registry].Read(Targets.Reg(PageFileAutoFix.Key, "PagingFiles")).Value);
         new RollbackService(reg, journal).RollbackAll();
         Assert.Equal("", map[ChangeType.Registry].Read(Targets.Reg(PageFileAutoFix.Key, "PagingFiles")).Value);
@@ -72,7 +72,7 @@ public class SetupDetectorTests
     {
         var p = TestProfiles.Load("fresh-install");
         var reg = ProfileSeeder.CreateEmulation(p, out var map);
-        new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(p, new[] { new AccessibilityHotkeysOffFix() }, UserGoal.LowLatency);
+        new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(p, new[] { new AccessibilityHotkeysOffFix() }, UserGoal.Maximum);
         Assert.Equal("506", map[ChangeType.Registry].Read(Targets.Reg(AccessibilityHotkeysOffFix.StickyKey, "Flags")).Value);
         Assert.Equal("122", map[ChangeType.Registry].Read(Targets.Reg(AccessibilityHotkeysOffFix.FilterKey, "Flags")).Value);
     }
@@ -82,7 +82,7 @@ public class SetupDetectorTests
     {
         var p = TestProfiles.Load("fresh-install");
         var engine = new StrategyEngine(FixCatalog.All());
-        Assert.True(engine.Build(p, TestProfiles.Findings(p), UserGoal.LowLatency).Fixes.Single(f => f.Fix.Id == FixIds.MouseAccelOff).Selected);
-        Assert.False(engine.Build(p, TestProfiles.Findings(p), UserGoal.Smoothness).Fixes.Single(f => f.Fix.Id == FixIds.MouseAccelOff).Selected);
+        Assert.True(engine.Build(p, TestProfiles.Findings(p), UserGoal.Maximum).Fixes.Single(f => f.Fix.Id == FixIds.MouseAccelOff).Selected);
+        Assert.False(engine.Build(p, TestProfiles.Findings(p), UserGoal.Balanced).Fixes.Single(f => f.Fix.Id == FixIds.MouseAccelOff).Selected);
     }
 }

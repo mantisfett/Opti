@@ -38,5 +38,11 @@
   "games": [
     { "name": "Counter-Strike 2", "launcher": "Steam", "installDir": "D:\\SteamLibrary\\steamapps\\common\\Counter-Strike Global Offensive", "executables": [ "D:\\SteamLibrary\\steamapps\\common\\Counter-Strike Global Offensive\\game\\bin\\win64\\cs2.exe" ], "isOnline": true },
     { "name": "Cyberpunk 2077", "launcher": "Gog", "installDir": "D:\\GOG\\Cyberpunk 2077", "executables": [ "D:\\GOG\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe" ], "exeGpuPreferences": { "D:\\GOG\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe": 1 } }
+  ],
+  "drivers": [
+    { "deviceName": "Realtek PCIe GbE Family Controller", "category": "Network", "manufacturer": "Realtek", "provider": "Realtek", "version": "10.38.1110.2019", "date": "2019-11-10T00:00:00", "hardwareId": "PCI\\VEN_10EC&DEV_8168" },
+    { "deviceName": "Intel(R) Wi-Fi 6 AX201 160MHz", "category": "Network", "manufacturer": "Intel Corporation", "provider": "Intel", "version": "23.60.0.10", "date": "2025-06-01T00:00:00", "hardwareId": "PCI\\VEN_8086&DEV_A0F0" },
+    { "deviceName": "High Definition Audio Device", "category": "Audio", "manufacturer": "Realtek", "provider": "Microsoft", "version": "10.0.26100.1", "date": "2006-06-21T00:00:00", "hardwareId": "HDAUDIO\\FUNC_01&VEN_10EC&DEV_0256" },
+    { "deviceName": "NVIDIA GeForce RTX 4060 Laptop GPU", "category": "Display", "manufacturer": "NVIDIA", "provider": "NVIDIA", "version": "32.0.15.6094", "date": "2026-08-01T00:00:00", "hardwareId": "PCI\\VEN_10DE&DEV_28A0" }
   ]
 }

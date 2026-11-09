@@ -1,4 +1,5 @@
 using Opti.Core.Fixes;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -36,11 +37,11 @@ public sealed class FileBackend : IStateBackend
                 // Копия могла переехать вместе с папкой данных (GameTune → Opti) — ищем её по имени в текущей папке копий
                 if (!File.Exists(backup) && File.Exists(Path.Combine(_backupDir, Path.GetFileName(backup))))
                     backup = Path.Combine(_backupDir, Path.GetFileName(backup));
-                if (!File.Exists(backup)) throw new FileNotFoundException("Резервная копия не найдена", backup);
+                if (!File.Exists(backup)) throw new FileNotFoundException(Loc.T("Резервная копия не найдена"), backup);
                 File.Copy(backup, target, overwrite: true);
                 break;
             default:
-                throw new NotSupportedException($"Тип {value.Kind} для файла не поддерживается");
+                throw new NotSupportedException(Loc.T($"Тип {value.Kind} для файла не поддерживается"));
         }
     }
 

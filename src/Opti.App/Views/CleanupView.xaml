@@ -1,46 +1,86 @@
 <UserControl x:Class="Opti.App.Views.CleanupView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer>
-        <StackPanel Margin="40,32,40,40" MaxWidth="920" HorizontalAlignment="Left">
-            <TextBlock Text="Очистка" Style="{StaticResource PageTitle}"/>
-            <TextBlock Style="{StaticResource Secondary}" MaxWidth="660" HorizontalAlignment="Left"
-                       Text="Бережно: только временные файлы и кеши, только старые, занятые пропускаются. Документы, игры, пароли и реестр не трогаются."/>
-
-            <ItemsControl ItemsSource="{Binding Items}" Margin="0,20,0,0">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource Card}">
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
-                                    <TextBlock Text="{Binding SizeText}" Style="{StaticResource Strong}" HorizontalAlignment="Right"/>
-                                    <Button Content="Открыть параметры" Margin="0,6,0,0" CommandParameter="{Binding}"
-                                            Command="{Binding DataContext.OpenManualCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}"/>
-                                </StackPanel>
-                                <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsChecked}" VerticalAlignment="Top" Margin="0,0,6,0" MinWidth="0"
-                                          Visibility="{Binding IsAutomatic, Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="&#xE946;" Style="{StaticResource Icon}" VerticalAlignment="Top" Margin="4,2,16,0"
-                                           Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}"/>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
-                                    <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding Caution}" Style="{StaticResource Caption}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,4,0,0"
-                                               Visibility="{Binding Caution, Converter={StaticResource StrToVis}}"/>
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+    <DockPanel>
+        <!-- Панель действий всегда видна внизу -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource ActionBar}">
+            <DockPanel>
+                <ProgressBar DockPanel.Dock="Right" Margin="16,0,0,0" IsIndeterminate="True" Width="160" VerticalAlignment="Center"
+                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
                 <Button Style="{StaticResource AccentButton}" Content="Очистить" Command="{Binding CleanCommand}"/>
-                <Button Content="Пересчитать" Command="{Binding EstimateCommand}" Margin="0,0,16,0"/>
-                <TextBlock Text="{Binding TotalText}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                <Button Content="Пересчитать" Command="{Binding EstimateCommand}" Margin="0,0,8,0"/>
+                <Button Content="Выбрать всё" Command="{Binding SelectAllCommand}" Margin="0,0,16,0"/>
+                <TextBlock Text="{Binding TotalText}" Style="{StaticResource Strong}" VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+        <ScrollViewer>
+            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
+                <TextBlock Text="Очистка" Style="{StaticResource PageTitle}"/>
+                <TextBlock Style="{StaticResource Secondary}" MaxWidth="660" HorizontalAlignment="Left"
+                           Text="Только временные файлы и кеши. Документы, игры и реестр не трогаются."/>
+                <Border Style="{StaticResource Card}" Margin="0,16,0,0" Visibility="{Binding ResultText, Converter={StaticResource StrToVis}}">
+                    <DockPanel>
+                        <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,12,0"/>
+                        <TextBlock Text="{Binding ResultText}" Style="{StaticResource Body}"/>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="Можно очистить" Style="{StaticResource SectionTitle}"/>
+                <ItemsControl ItemsSource="{Binding AutoItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding SizeText}" Style="{StaticResource Strong}" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                    <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsChecked}" VerticalAlignment="Top" Margin="0,0,6,0" MinWidth="0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding Caution}" Style="{StaticResource Caption}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,4,0,0"
+                                                   Visibility="{Binding Caution, Converter={StaticResource StrToVis}}"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="Проверьте сами" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource Caption}" Margin="0,-4,0,10" Text="Здесь могут быть нужные файлы, поэтому Opti ничего не удаляет — только показывает, где много места."/>
+                <ItemsControl ItemsSource="{Binding ManualItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                                            <TextBlock Text="{Binding SizeText}" Style="{StaticResource Strong}" HorizontalAlignment="Right"/>
+                                            <Button Content="{Binding ManualActionText}" Margin="0,6,0,0" CommandParameter="{Binding}"
+                                                    Command="{Binding DataContext.OpenManualCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                        </StackPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="&#xE946;" Style="{StaticResource Icon}" VerticalAlignment="Top" Margin="2,2,14,0"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                            <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Warning}" Style="{StaticResource Caption}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,4,0,0"
+                                                       Visibility="{Binding Warning, Converter={StaticResource StrToVis}}"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <ItemsControl ItemsSource="{Binding Details}" Margin="30,8,0,0" Visibility="{Binding Details.Count, Converter={StaticResource CountToVis}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource LinkButton}" Content="{Binding Text}" Margin="0,3" ToolTip="{Binding Path}" HorizontalAlignment="Left"
+                                                        CommandParameter="{Binding}"
+                                                        Command="{Binding DataContext.RevealFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
-            <ProgressBar IsIndeterminate="True" Width="300" HorizontalAlignment="Left" Margin="0,12,0,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
-            <TextBlock Text="{Binding ResultText}" Style="{StaticResource Body}" Margin="0,12,0,0" Visibility="{Binding ResultText, Converter={StaticResource StrToVis}}"/>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

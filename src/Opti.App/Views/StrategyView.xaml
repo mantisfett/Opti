@@ -2,26 +2,39 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer>
-        <StackPanel Margin="40,32,40,40" MaxWidth="920" HorizontalAlignment="Left">
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="Исправления" Style="{StaticResource PageTitle}"/>
             <TextBlock Text="{Binding Header}" Style="{StaticResource Secondary}"/>
-            <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0"
-                       Text="Каждое исправление связано с найденной проблемой. Безопасные отмечены, рискованные — только по вашему выбору. Всё откатывается."/>
 
-            <ItemsControl ItemsSource="{Binding Fixes}" Margin="0,20,0,0">
+            <!-- Режим: можно сменить, план пересоберётся -->
+            <Border Style="{StaticResource Card}" Margin="0,18,0,0" Padding="16,12">
+                <StackPanel>
+                    <WrapPanel>
+                        <TextBlock Text="Режим" Style="{StaticResource Strong}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                        <ListBox Style="{StaticResource Segmented}" ItemsSource="{Binding Goals}" SelectedItem="{Binding SelectedGoal}"
+                                 DisplayMemberPath="Title" AutomationProperties.Name="Режим оптимизации"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding Fixes}" Margin="0,12,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource Card}">
                             <DockPanel>
                                 <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsSelected}" VerticalAlignment="Top" Margin="0,0,6,0" MinWidth="0"/>
                                 <StackPanel>
-                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Right" Style="{StaticResource Tag}" Margin="8,0,0,0" Background="{Binding RiskColor, Converter={StaticResource ToneToSoft}}">
+                                            <TextBlock Text="{Binding RiskText}" Style="{StaticResource TagText}" Foreground="{Binding RiskColor, Converter={StaticResource ToneToBrush}}"/>
+                                        </Border>
+                                        <Border DockPanel.Dock="Right" Style="{StaticResource Tag}" Margin="8,0,0,0" Background="{StaticResource AccentSoftBrush}"
+                                                Visibility="{Binding RequiresReboot, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="перезагрузка" Style="{StaticResource TagText}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                    </DockPanel>
                                     <TextBlock Text="{Binding Explanation}" Style="{StaticResource Secondary}" Margin="0,2,0,0"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                        <Ellipse Style="{StaticResource Dot}" Width="6" Height="6" Margin="0,0,6,0" Fill="{Binding RiskColor, Converter={StaticResource ToneToBrush}}"/>
-                                        <TextBlock Text="{Binding RiskText}" Style="{StaticResource Caption}"/>
-                                        <TextBlock Text="  ·  нужна перезагрузка" Style="{StaticResource Caption}" Visibility="{Binding RequiresReboot, Converter={StaticResource BoolToVis}}"/>
-                                    </StackPanel>
                                     <ItemsControl ItemsSource="{Binding Notes}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -70,7 +83,7 @@
                         <DataTemplate>
                             <Border Style="{StaticResource Card}">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="Проверить" VerticalAlignment="Center" CommandParameter="{Binding}"
+                                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Проверить" VerticalAlignment="Center" CommandParameter="{Binding}"
                                             Command="{Binding DataContext.StartAbCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     <StackPanel Margin="0,0,12,0">
                                         <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>

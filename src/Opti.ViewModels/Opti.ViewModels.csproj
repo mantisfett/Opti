@@ -8,4 +8,9 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Демо-профили (тот же файл, что в тестах): демо-режим и снимки интерфейса в CI -->
+    <EmbeddedResource Include="..\..\tests\Opti.Tests\Profiles\desktop-rtx.json" LogicalName="Opti.Demo.desktop-rtx.json" />
+    <EmbeddedResource Include="..\..\tests\Opti.Tests\Profiles\laptop-optimus.json" LogicalName="Opti.Demo.laptop-optimus.json" />
+  </ItemGroup>
 </Project>

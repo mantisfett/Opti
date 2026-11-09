@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Opti.Measure.Stats;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Reports;
 
@@ -11,7 +12,7 @@ public static class SvgCharts
 {
     private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
     /// <summary>Подписи для людей — с десятичной запятой.</summary>
-    private static string L(double v) => v.ToString(v >= 10 ? "0" : "0.#", CultureInfo.GetCultureInfo("ru-RU"));
+    private static string L(double v) => v.ToString(v >= 10 ? "0" : "0.#", Opti.Core.Localization.Loc.Culture);
 
     /// <summary>
     /// Наложенные графики фреймтайма. Ось X — время с начала прогона, Y — мс.
@@ -30,12 +31,12 @@ public static class SvgCharts
         double Y(double ms) => top + ph - Math.Min(ms, yMax) / yMax * ph;
 
         var sb = new StringBuilder();
-        sb.Append($"<svg class=\"chart\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"Фреймтайм во времени\">");
-        AppendGrid(sb, left, top, pw, ph, yMax, "мс", Y);
+        sb.Append(Loc.T($"<svg class=\"chart\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"Фреймтайм во времени\">"));
+        AppendGrid(sb, left, top, pw, ph, yMax, Loc.T("мс"), Y);
         for (int i = 0; i <= 5; i++)
         {
             double sec = xMax * i / 5;
-            sb.Append($"<text class=\"axis\" x=\"{F(X(sec))}\" y=\"{height - 8}\" text-anchor=\"middle\">{L(sec)} с</text>");
+            sb.Append(Loc.T($"<text class=\"axis\" x=\"{F(X(sec))}\" y=\"{height - 8}\" text-anchor=\"middle\">{L(sec)} с</text>"));
         }
         foreach (var s in series)
         {
@@ -76,7 +77,7 @@ public static class SvgCharts
         double Y(double pct) => top + ph - pct / yMax * ph;
 
         var sb = new StringBuilder();
-        sb.Append($"<svg class=\"chart\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"Распределение фреймтайма\">");
+        sb.Append(Loc.T($"<svg class=\"chart\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"Распределение фреймтайма\">"));
         AppendGrid(sb, left, top, pw, ph, yMax, "%", Y);
         double slot = pw / bins;
         double barW = Math.Max(1, (slot - 2) / Math.Max(1, series.Count));
@@ -87,12 +88,12 @@ public static class SvgCharts
                 if (v <= 0) continue;
                 double x = left + b * slot + 1 + si * barW;
                 sb.Append($"<rect x=\"{F(x)}\" y=\"{F(Y(v))}\" width=\"{F(barW)}\" height=\"{F(top + ph - Y(v))}\" rx=\"1\" fill=\"var({series[si].CssColorVar})\">" +
-                          $"<title>{System.Net.WebUtility.HtmlEncode(series[si].Name)}: {L(lo + b * bw)}–{L(lo + (b + 1) * bw)} мс — {L(v)} %</title></rect>");
+                          Loc.T($"<title>{System.Net.WebUtility.HtmlEncode(series[si].Name)}: {L(lo + b * bw)}–{L(lo + (b + 1) * bw)} мс — {L(v)} %</title></rect>"));
             }
         for (int i = 0; i <= 6; i++)
         {
             double ms = lo + (hi - lo) * i / 6;
-            sb.Append($"<text class=\"axis\" x=\"{F(left + pw * i / 6)}\" y=\"{height - 8}\" text-anchor=\"middle\">{L(ms)} мс</text>");
+            sb.Append(Loc.T($"<text class=\"axis\" x=\"{F(left + pw * i / 6)}\" y=\"{height - 8}\" text-anchor=\"middle\">{L(ms)} мс</text>"));
         }
         sb.Append("</svg>");
         return sb.ToString();

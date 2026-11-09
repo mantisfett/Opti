@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Opti.Core.Fixes;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Sessions;
 
@@ -52,14 +53,14 @@ public sealed class PostRebootCheck
             {
                 var actual = _backends.Get(rec.Type).Read(rec.Target);
                 if (actual == rec.After) report.Verified++;
-                else report.NotApplied.Add($"{rec.FixId}: {rec.Type} {rec.Target} — ожидалось {rec.After}, сейчас {actual}");
+                else report.NotApplied.Add(Loc.T($"{rec.FixId}: {rec.Type} {rec.Target} — ожидалось {rec.After}, сейчас {actual}"));
             }
             catch (Exception ex) { report.ReadErrors.Add($"{rec.FixId}: {rec.Target}: {ex.Message}"); }
         }
         if (_crashes is not null)
         {
             try { report.Crashes.AddRange(_crashes.Since(appliedAt)); }
-            catch (Exception ex) { report.ReadErrors.Add("Журнал событий: " + ex.Message); }
+            catch (Exception ex) { report.ReadErrors.Add(Loc.T("Журнал событий: ") + ex.Message); }
         }
         return report;
     }

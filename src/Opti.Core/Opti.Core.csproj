@@ -2,4 +2,8 @@
   <PropertyGroup>
     <RootNamespace>Opti.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Английские переводы (ключ — русская строка): см. Localization/Loc.cs и build/loc-extract.py -->
+    <EmbeddedResource Include="Localization\en\*.json" LogicalName="Opti.Loc.en.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

@@ -15,5 +15,6 @@
   "graphics": { "gameModeEnabled": true },
   "background": {},
   "network": [ { "name": "Ethernet", "kind": "Ethernet", "isUp": true, "allowComputerToTurnOff": true } ],
-  "games": []
+  "games": [],
+  "registryAudit": { "LARGE_SYSTEM_CACHE": "1", "TDR_DISABLED": "0", "SYSMAIN_DISABLED": "4", "WIN32_PRIORITY_SEPARATION": "2", "PREFETCH_DISABLED": null }
 }

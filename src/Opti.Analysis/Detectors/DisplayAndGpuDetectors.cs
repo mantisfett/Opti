@@ -1,6 +1,7 @@
 using Opti.Core.Findings;
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Detectors;
 
@@ -16,11 +17,11 @@ public sealed class DisplayLowHzDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Экран работает не на максимальной частоте",
+            Title = Loc.T("Экран работает не на максимальной частоте"),
             Severity = Severity.Critical,
-            Explanation = "Монитор умеет показывать больше кадров в секунду, чем сейчас выставлено в Windows. " +
-                          "Сколько бы FPS ни выдавала игра, вы видите не больше, чем частота экрана. Это самое дешёвое и заметное исправление.",
-            Evidence = low.Select(d => $"{d.FriendlyName ?? d.DeviceName}: {d.Width}×{d.Height}, сейчас {d.CurrentHz} Гц, доступно {d.MaxHzAtCurrentResolution} Гц").ToList(),
+            Explanation = Loc.T("Монитор умеет показывать больше кадров в секунду, чем сейчас выставлено в Windows. " +
+                          "Сколько бы FPS ни выдавала игра, вы видите не больше, чем частота экрана. Это самое дешёвое и заметное исправление."),
+            Evidence = low.Select(d => Loc.T($"{d.FriendlyName ?? d.DeviceName}: {d.Width}×{d.Height}, сейчас {d.CurrentHz} Гц, доступно {d.MaxHzAtCurrentResolution} Гц")).ToList(),
             FixIds = { FixIds.DisplayMaxHz },
             Links = { Sources.RefreshRate },
         };
@@ -43,15 +44,15 @@ public sealed class HybridGameOnIgpuDetector : DetectorBase
         var f = new Finding
         {
             Id = Id,
-            Title = "Игры могут запускаться на встроенной видеокарте",
+            Title = Loc.T("Игры могут запускаться на встроенной видеокарте"),
             Severity = unassigned.Count > 0 ? Severity.Critical : Severity.Advice,
-            Explanation = "В ноутбуке две видеокарты. Если Windows не знает, что игра «тяжёлая», она может запустить её на слабой встроенной " +
-                          $"графике вместо {p.DiscreteGpu.Name}. Явная привязка в настройках графики Windows убирает эту лотерею.",
+            Explanation = Loc.T("В ноутбуке две видеокарты. Если Windows не знает, что игра «тяжёлая», она может запустить её на слабой встроенной " +
+                          $"графике вместо {p.DiscreteGpu.Name}. Явная привязка в настройках графики Windows убирает эту лотерею."),
         };
-        foreach (var g in unassigned.Take(15)) f.Evidence.Add($"{g.Name} ({g.Launcher}): GPU не назначен");
-        if (unassigned.Count > 15) f.Evidence.Add($"…и ещё {unassigned.Count - 15}");
+        foreach (var g in unassigned.Take(15)) f.Evidence.Add(Loc.T($"{g.Name} ({g.Launcher}): GPU не назначен"));
+        if (unassigned.Count > 15) f.Evidence.Add(Loc.T($"…и ещё {unassigned.Count - 15}"));
         foreach (var g in userPowerSaving)
-            f.Evidence.Add($"{g.Name}: вручную выбрано «Энергосбережение» — программа это не трогает");
+            f.Evidence.Add(Loc.T($"{g.Name}: вручную выбрано «Энергосбережение» — программа это не трогает"));
         if (unassigned.Count > 0) f.FixIds.Add(FixIds.GpuPrefDgpu);
         yield return f;
     }
@@ -67,23 +68,23 @@ public sealed class HybridNoMuxInfoDetector : DetectorBase
         var f = new Finding
         {
             Id = Id,
-            Title = "Встроенный экран подключён к встроенной графике",
+            Title = Loc.T("Встроенный экран подключён к встроенной графике"),
             Severity = Severity.Advice,
-            Explanation = "Кадры с дискретной видеокарты копируются через встроенную графику (Optimus / AMD Hybrid). " +
+            Explanation = Loc.T("Кадры с дискретной видеокарты копируются через встроенную графику (Optimus / AMD Hybrid). " +
                           "Это добавляет немного задержки и снижает FPS, особенно в лёгких играх с высоким FPS. " +
                           "Если в ноутбуке есть MUX-переключатель, режим «только дискретная GPU» убирает эту прослойку. " +
-                          "Внешний монитор, подключённый к порту дискретной видеокарты, тоже обходит её.",
+                          "Внешний монитор, подключённый к порту дискретной видеокарты, тоже обходит её."),
             IsHardwareLimitation = p.Hybrid.HasMux == false,
             ManualSteps =
             {
-                "Найдите в фирменной утилите ноутбука (Armoury Crate, Legion Vantage, Omen Gaming Hub, MSI Center и т. п.) режим «Ultimate / dGPU / Discrete».",
-                "Если такого режима нет, проверьте BIOS: пункт «Graphics mode» / «Display mode».",
-                "Переключение MUX требует перезагрузки и увеличивает расход батареи.",
+                Loc.T("Найдите в фирменной утилите ноутбука (Armoury Crate, Legion Vantage, Omen Gaming Hub, MSI Center и т. п.) режим «Ultimate / dGPU / Discrete»."),
+                Loc.T("Если такого режима нет, проверьте BIOS: пункт «Graphics mode» / «Display mode»."),
+                Loc.T("Переключение MUX требует перезагрузки и увеличивает расход батареи."),
             },
         };
         if (p.Hybrid.DxDiagHybridInfo is { } info) f.Evidence.Add($"dxdiag: {info}");
         var internalDisplay = p.Displays.FirstOrDefault(d => d.IsInternal == true);
-        if (internalDisplay?.AdapterName is { } an) f.Evidence.Add($"Встроенный экран выводится через: {an}");
+        if (internalDisplay?.AdapterName is { } an) f.Evidence.Add(Loc.T($"Встроенный экран выводится через: {an}"));
         yield return f;
     }
 }
@@ -100,12 +101,12 @@ public sealed class DriverOldDetector : DetectorBase
         var f = new Finding
         {
             Id = Id,
-            Title = "Устаревший драйвер видеокарты",
+            Title = Loc.T("Устаревший драйвер видеокарты"),
             Severity = Severity.Important,
-            Explanation = "Драйверу больше полутора лет. В новых версиях исправляют ошибки, фризы и улучшают производительность в новых играх. " +
-                          "Скачивайте драйвер только с официального сайта производителя (для ноутбуков иногда — с сайта производителя ноутбука).",
-            Evidence = old.Select(g => $"{g.Name}: версия {g.DriverVersion}, от {g.DriverDate:yyyy-MM-dd}").ToList(),
-            ManualSteps = { "Скачайте драйвер по ссылке ниже, установите и перезагрузите компьютер." },
+            Explanation = Loc.T("Драйверу больше полутора лет. В новых версиях исправляют ошибки, фризы и улучшают производительность в новых играх. " +
+                          "Скачивайте драйвер только с официального сайта производителя (для ноутбуков иногда — с сайта производителя ноутбука)."),
+            Evidence = old.Select(g => Loc.T($"{g.Name}: версия {g.DriverVersion}, от {g.DriverDate:yyyy-MM-dd}")).ToList(),
+            ManualSteps = { Loc.T("Скачайте драйвер по ссылке ниже, установите и перезагрузите компьютер.") },
         };
         foreach (var vendor in old.Select(g => g.Vendor).Distinct())
         {

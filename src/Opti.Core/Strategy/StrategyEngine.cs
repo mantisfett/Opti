@@ -1,6 +1,7 @@
 using Opti.Core.Findings;
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Core.Strategy;
 
@@ -30,7 +31,7 @@ public sealed class StrategyPlan
 
 /// <summary>
 /// Превращает находки в план. Исправление попадает в план, только если сработал
-/// его детектор И оно совместимо с профилем устройства и целью.
+/// его детектор И оно совместимо с профилем устройства; режим решает, что отмечено по умолчанию.
 /// </summary>
 public sealed class StrategyEngine
 {
@@ -38,21 +39,6 @@ public sealed class StrategyEngine
 
     public StrategyEngine(IEnumerable<IFix> catalog) =>
         _catalog = catalog.ToDictionary(f => f.Id, StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Исправления, несовместимые с целью, и причина.</summary>
-    private static readonly Dictionary<UserGoal, Dictionary<string, string>> GoalConflicts = new()
-    {
-        [UserGoal.QuietCool] = new()
-        {
-            [FixIds.PowerSchemePerf] = "цель «Тихо и холодно» несовместима со схемой максимальной производительности",
-            [FixIds.PowerAcTuning] = "цель «Тихо и холодно»: не снимаем энергосберегающие ограничения",
-            [FixIds.PowerThrottlingOff] = "цель «Тихо и холодно»: Power Throttling экономит энергию и снижает нагрев",
-        },
-        [UserGoal.Streaming] = new(),
-        [UserGoal.LowLatency] = new(),
-        [UserGoal.Smoothness] = new(),
-        [UserGoal.MaxFps] = new(),
-    };
 
     public StrategyPlan Build(SystemProfile profile, IReadOnlyList<Finding> findings, UserGoal goal)
     {
@@ -76,27 +62,24 @@ public sealed class StrategyEngine
             var sourceIds = sources.Select(s => s.Id).Distinct().ToList();
             if (!_catalog.TryGetValue(fixId, out var fix))
             {
-                plan.Excluded.Add(new ExcludedFix(fixId, "исправление не реализовано в этой версии", sourceIds));
-                continue;
-            }
-            if (GoalConflicts.TryGetValue(goal, out var conflicts) && conflicts.TryGetValue(fixId, out var why))
-            {
-                plan.Excluded.Add(new ExcludedFix(fixId, why, sourceIds));
+                plan.Excluded.Add(new ExcludedFix(fixId, Loc.T("исправление не реализовано в этой версии"), sourceIds));
                 continue;
             }
             bool applicable;
-            try { applicable = fix.IsApplicable(profile); } catch { applicable = false; }
+            try { applicable = fix.IsApplicable(profile); }
+            catch (Exception ex) { applicable = false; Opti.Core.Diagnostics.OptiLog.Warn($"{fixId}: ошибка проверки применимости", ex); }
             if (!applicable)
             {
-                plan.Excluded.Add(new ExcludedFix(fixId, "не подходит для этого ПК", sourceIds));
+                plan.Excluded.Add(new ExcludedFix(fixId, Loc.T("не подходит для этого ПК"), sourceIds));
                 continue;
             }
             bool already;
-            try { already = fix.IsAlreadyApplied(profile); } catch { already = false; }
+            try { already = fix.IsAlreadyApplied(profile); }
+            catch (Exception ex) { already = false; Opti.Core.Diagnostics.OptiLog.Warn($"{fixId}: ошибка проверки «уже применено»", ex); }
             if (already)
             {
                 plan.Excluded.Add(new ExcludedFix(fixId,
-                    device.IsModifiedOs ? "уже применено (вероятно, сборкой Windows)" : "уже применено", sourceIds));
+                    device.IsModifiedOs ? Loc.T("уже применено (вероятно, сборкой Windows)") : Loc.T("уже применено"), sourceIds));
                 continue;
             }
 
@@ -105,22 +88,22 @@ public sealed class StrategyEngine
             if (fix.NeedsUserChoice)
             {
                 planned.Selected = false;
-                planned.Notes.Add("Выберите пункты вручную — программа изменит только отмеченные.");
+                planned.Notes.Add(Loc.T("Выберите пункты вручную — программа изменит только отмеченные."));
             }
             if (fix.RequiresAbTest)
-                planned.Notes.Add("Спорная настройка: будет проверена A/B-замером, останется лучший вариант.");
+                planned.Notes.Add(Loc.T("Спорная настройка: будет проверена A/B-замером, останется лучший вариант."));
             if (fix.Risk == RiskLevel.Risky)
-                planned.Notes.Add("Рискованно: включайте только осознанно.");
+                planned.Notes.Add(Loc.T("Рискованно: включайте только осознанно."));
             if (fix.TouchesBcd && profile.Security.BitLockerOnSystemDrive == true)
             {
                 planned.Selected = false;
-                planned.Notes.Add("На системном диске включён BitLocker: изменение BCD может запросить ключ восстановления. Подготовьте ключ или приостановите BitLocker.");
+                planned.Notes.Add(Loc.T("На системном диске включён BitLocker: изменение BCD может запросить ключ восстановления. Подготовьте ключ или приостановите BitLocker."));
             }
-            if (device.IsModifiedOs && fix.Category is FixCategory.Timers or FixCategory.Experimental
+            if (device.IsModifiedOs && fix.Category is FixCategory.Timers or FixCategory.Experimental or FixCategory.Registry
                 || device.IsModifiedOs && fix.Id == FixIds.MpoReset)
             {
                 planned.Selected = false;
-                planned.Notes.Add($"Значение, вероятно, задано сборкой {profile.Os.ModifiedBuild} намеренно — не отмечено по умолчанию.");
+                planned.Notes.Add(Loc.T($"Значение, вероятно, задано сборкой {profile.Os.ModifiedBuild} намеренно — не отмечено по умолчанию."));
             }
             ApplyGoalPreferences(planned, goal, profile);
             plan.Fixes.Add(planned);
@@ -138,24 +121,38 @@ public sealed class StrategyEngine
         return plan;
     }
 
+    /// <summary>
+    /// Политика режима. Исправления ошибок отмечены всегда; настройки под производительность — с «Баланса»;
+    /// изменения привычного поведения — только в «Максимальной». Неотмеченное остаётся в плане: его можно выбрать вручную.
+    /// </summary>
     private static void ApplyGoalPreferences(PlannedFix p, UserGoal goal, SystemProfile profile)
     {
+        var intent = p.Fix.Intent;
+        if (goal == UserGoal.Minimal && intent != FixIntent.Repair)
+        {
+            p.Selected = false;
+            p.Notes.Add(intent == FixIntent.Tuning
+                ? Loc.T("Режим «Минимальная»: это настройка под производительность, а не исправление ошибки — не отмечено.")
+                : Loc.T("Режим «Минимальная»: это меняет привычное поведение Windows, а не исправляет ошибку — не отмечено."));
+        }
+        else if (goal == UserGoal.Balanced && p.Fix.Id == FixIds.MouseAccelOff)
+        {
+            p.Selected = false;
+            p.Notes.Add(Loc.T("Меняет ощущение мыши и на рабочем столе — отмечено по умолчанию только в режиме «Максимальная»."));
+        }
+
         switch (p.Fix.Id)
         {
-            case FixIds.GameDvrOff when goal == UserGoal.Streaming:
-                p.Notes.Add("Фоновая запись Xbox Game Bar дублирует OBS; если вы пользуетесь именно Game Bar для записи — снимите галочку.");
-                break;
-            case FixIds.TimerResGlobal when goal is not (UserGoal.LowLatency or UserGoal.Smoothness):
-                p.Selected = false;
-                p.Notes.Add("Имеет смысл в основном для задержки и плавности.");
-                break;
-            case FixIds.MouseAccelOff when goal != UserGoal.LowLatency:
-                p.Selected = false;
-                p.Notes.Add("Меняет ощущение мыши и на рабочем столе — отмечено по умолчанию только для цели «Минимальная задержка».");
+            case FixIds.GameDvrOff:
+                p.Notes.Add(Loc.T("Если вы сохраняете клипы через Xbox Game Bar — снимите галочку."));
                 break;
             case FixIds.PowerThrottlingOff:
-                if (goal is not (UserGoal.MaxFps or UserGoal.LowLatency)) p.Selected = false;
-                if (profile.Device.IsLaptop) p.Notes.Add("На ноутбуке повышает нагрев и расход батареи.");
+                if (goal != UserGoal.Maximum)
+                {
+                    if (p.Selected) p.Notes.Add(Loc.T("Отмечено по умолчанию только в режиме «Максимальная»."));
+                    p.Selected = false;
+                }
+                if (profile.Device.IsLaptop) p.Notes.Add(Loc.T("На ноутбуке повышает нагрев и расход батареи."));
                 break;
         }
     }

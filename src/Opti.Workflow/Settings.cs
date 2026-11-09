@@ -7,7 +7,7 @@ namespace Opti.Workflow;
 /// <summary>Настройки программы (C:\ProgramData\Opti\settings.json).</summary>
 public sealed class OptiSettings
 {
-    public UserGoal DefaultGoal { get; set; } = UserGoal.Smoothness;
+    public UserGoal DefaultGoal { get; set; } = UserGoal.Balanced;
     /// <summary>Исправления, которые никогда не предлагать.</summary>
     public List<string> ExcludedFixIds { get; set; } = new();
     /// <summary>Свой путь к папке конфигурации OBS (если OBS портативный).</summary>
@@ -24,6 +24,16 @@ public sealed class OptiSettings
     public bool RollbackWhenNoEffect { get; set; }
     /// <summary>Проверять наличие новой версии на GitHub (только уведомление, ничего не скачивается).</summary>
     public bool CheckForUpdates { get; set; } = true;
+    /// <summary>При запуске проверять, не вернули ли Windows или драйверы настройки, изменённые Opti.</summary>
+    public bool VerifyOnStartup { get; set; } = true;
+    /// <summary>Включать схему «Высокая производительность», пока запущена одна из игр из списка, и возвращать после закрытия.</summary>
+    public bool AutoGameSession { get; set; }
+    /// <summary>Игры (имена процессов через запятую, «game.exe» или «game»).</summary>
+    public string GameProcesses { get; set; } = "";
+    /// <summary>Постоянный высокий приоритет процессов игр из списка (через Windows, с откатом).</summary>
+    public bool GamePriorityHigh { get; set; }
+    /// <summary>Язык интерфейса: "auto" (по Windows), "ru" или "en". Вступает в силу после перезапуска.</summary>
+    public string Language { get; set; } = "auto";
 
     public static OptiSettings Load(string? path = null)
     {

@@ -9,14 +9,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write       # создание релиза
+  id-token: write       # подпись происхождения сборки (Sigstore)
+  attestations: write   # публикация аттестации
 
 jobs:
   release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      # Сторонние действия закреплены по SHA коммита; версия — в комментарии
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: 10.0.x
       - name: Версия
@@ -30,15 +33,30 @@ jobs:
           "prerelease=$($v.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
       - name: Тесты
         run: dotnet test -c Release --nologo
+      # Подпись кода включается, когда в секретах репозитория есть OPTI_SIGN_CERT_BASE64 и OPTI_SIGN_CERT_PASSWORD (docs/signing.md);
+      # без них сборка остаётся неподписанной и релиз не падает.
       - name: Портативная сборка
         shell: pwsh
+        env:
+          OPTI_SIGN_CERT_BASE64: ${{ secrets.OPTI_SIGN_CERT_BASE64 }}
+          OPTI_SIGN_CERT_PASSWORD: ${{ secrets.OPTI_SIGN_CERT_PASSWORD }}
         run: ./build/publish.ps1 -Version ${{ steps.ver.outputs.version }}
+      # Аттестация: любой может проверить, что Opti.exe собран этим workflow из этого коммита:
+      #   gh attestation verify Opti.exe --repo mantisfett/Opti
+      - name: Аттестация происхождения сборки
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        # В приватном репозитории без GitHub Enterprise аттестации недоступны — релиз не должен из-за этого падать
+        continue-on-error: true
+        with:
+          subject-path: |
+            artifacts/Opti.exe
+            artifacts/opti-cli.exe
       - name: Описание релиза
         shell: pwsh
         run: |
           $notes = "docs/release-notes/${{ steps.ver.outputs.tag }}.md"
           if (Test-Path $notes) { Copy-Item $notes release-notes.md } else { Copy-Item CHANGELOG.md release-notes.md }
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           target_commitish: ${{ github.sha }}

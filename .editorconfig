@@ -1,0 +1,30 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,xaml}]
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets,yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+[*.cs]
+# Программа работает с правами администратора и с данными, от которых зависит откат,
+# поэтому несколько правил качества включены как ошибки сборки (Directory.Build.props: TreatWarningsAsErrors).
+# Сравнение строк без учёта культуры: пути, ключи реестра, аргументы командной строки
+dotnet_diagnostic.CA1309.severity = warning
+dotnet_diagnostic.CA1310.severity = warning
+# Код возврата WinAPI нельзя молча терять
+dotnet_diagnostic.CA1806.severity = warning
+# Токен отмены передаётся дальше или явно не передаётся
+dotnet_diagnostic.CA2016.severity = warning
+# Ошибки в обработке исключений и Dispose
+dotnet_diagnostic.CA2200.severity = warning
+dotnet_diagnostic.CA2213.severity = warning
+# Непроверенные аргументы P/Invoke
+dotnet_diagnostic.CA2101.severity = warning

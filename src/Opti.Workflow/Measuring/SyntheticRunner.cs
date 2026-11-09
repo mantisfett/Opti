@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Runtime.Versioning;
 using Opti.Core.Json;
 using Opti.Measure.Stats;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Measuring;
 
@@ -19,7 +20,7 @@ public sealed class SyntheticRunner : IMeasureRunner
         _exe = exe;
         _prefixArgs = prefixArgs;
     }
-    public string Name => "Синтетический тест Opti";
+    public string Name => Loc.T("Синтетический тест Opti");
 
     public int Instances { get; init; } = 8192;
     public double GpuLoad { get; init; } = 24;
@@ -36,23 +37,23 @@ public sealed class SyntheticRunner : IMeasureRunner
             outFile, req.DurationSec, req.WarmupSec, Instances, GpuLoad, CpuLoadMs, req.Label.Replace("\"", "'"));
         var probe = new ThrottleProbe();
         using var p = Process.Start(new ProcessStartInfo(_exe, args) { UseShellExecute = false })
-                      ?? throw new InvalidOperationException("Не удалось запустить Opti.Bench");
+                      ?? throw new InvalidOperationException(Loc.T("Не удалось запустить Opti.Bench"));
         var sw = Stopwatch.StartNew();
         double total = req.DurationSec + req.WarmupSec;
         int tick = 0;
         while (!p.HasExited)
         {
             if (ct.IsCancellationRequested) { try { p.Kill(true); } catch { } ct.ThrowIfCancellationRequested(); }
-            if (sw.Elapsed.TotalSeconds > total + 60) { try { p.Kill(true); } catch { } throw new TimeoutException("Синтетический тест завис."); }
+            if (sw.Elapsed.TotalSeconds > total + 60) { try { p.Kill(true); } catch { } throw new TimeoutException(Loc.T("Синтетический тест завис.")); }
             await Task.Delay(500, CancellationToken.None);
             if (++tick % 10 == 0) probe.SampleInBackground();
             progress?.Report(new MeasureProgress(Math.Min(sw.Elapsed.TotalSeconds, total), total, Array.Empty<double>(), "Opti.Bench", sw.Elapsed.TotalSeconds < req.WarmupSec));
         }
-        if (p.ExitCode == 2) throw new OperationCanceledException("Синтетический тест прерван клавишей Esc.");
+        if (p.ExitCode == 2) throw new OperationCanceledException(Loc.T("Синтетический тест прерван клавишей Esc."));
         if (p.ExitCode != 0 || !File.Exists(outFile))
         {
-            var err = File.Exists(outFile + ".error.txt") ? File.ReadAllText(outFile + ".error.txt") : $"код {p.ExitCode}";
-            throw new InvalidOperationException("Синтетический тест завершился с ошибкой: " + err.Split('\n')[0]);
+            var err = File.Exists(outFile + ".error.txt") ? File.ReadAllText(outFile + ".error.txt") : Loc.T($"код {p.ExitCode}");
+            throw new InvalidOperationException(Loc.T("Синтетический тест завершился с ошибкой: ") + err.Split('\n')[0]);
         }
         var run = OptiJson.Deserialize<MeasurementRun>(File.ReadAllText(outFile));
         try { File.Delete(outFile); } catch { }
@@ -69,9 +70,9 @@ public static class MeasureRunnerFactory
     public static IMeasureRunner Create(Sessions.MeasureMode mode, OptiSettings settings) => mode switch
     {
         Sessions.MeasureMode.Synthetic => new SyntheticRunner(SyntheticRunner.Locate()
-            ?? throw new FileNotFoundException("Не удалось определить путь к программе для запуска теста.")),
+            ?? throw new FileNotFoundException(Loc.T("Не удалось определить путь к программе для запуска теста."))),
         Sessions.MeasureMode.PresentMon => new PresentMonRunner(PresentMonRunner.Locate(settings.PresentMonPath)
-            ?? throw new FileNotFoundException("PresentMon не найден. Скачайте PresentMon (https://github.com/GameTechDev/PresentMon/releases), положите рядом с Opti или укажите путь в настройках.")),
+            ?? throw new FileNotFoundException(Loc.T("PresentMon не найден. Скачайте PresentMon (https://github.com/GameTechDev/PresentMon/releases), положите рядом с Opti или укажите путь в настройках."))),
         _ => new EtwGameRunner(),
     };
 }

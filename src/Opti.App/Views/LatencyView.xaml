@@ -1,0 +1,70 @@
+<UserControl x:Class="Opti.App.Views.LatencyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
+            <TextBlock Text="Задержки" Style="{StaticResource PageTitle}"/>
+            <TextBlock Text="Какие драйверы надолго занимают процессор. Из-за них бывают микрофризы, треск звука и «ватная» мышь. Тест только читает события ядра и ничего не меняет." Style="{StaticResource Secondary}"/>
+
+            <Border Style="{StaticResource Card}" Margin="0,20,0,0" Padding="18,16" CornerRadius="{StaticResource RadiusLarge}">
+                <StackPanel>
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                            <Button Content="Отмена" Command="{Binding CancelCommand}" Margin="0,0,8,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
+                            <Button Style="{StaticResource AccentButton}" Content="Запустить тест" Command="{Binding RunCommand}"/>
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Тест задержек системы" Style="{StaticResource CardTitle}" FontSize="16" LineHeight="22"/>
+                            <TextBlock Text="30 секунд; для редких всплесков — 2 минуты. Запустите и поиграйте: задержки ловятся, пока ПК занят делом" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <CheckBox Content="Дольше (2 минуты)" IsChecked="{Binding LongTest}" Margin="0,12,0,0" IsEnabled="{Binding CanChangeDuration}"/>
+                    <ProgressBar IsIndeterminate="True" Margin="0,12,0,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Text="{Binding ProgressText}" Style="{StaticResource Caption}" Margin="0,6,0,0" Visibility="{Binding ProgressText, Converter={StaticResource StrToVis}}" TextWrapping="Wrap"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,4" Visibility="{Binding Summary, Converter={StaticResource StrToVis}}">
+                        <Ellipse Style="{StaticResource Dot}" Fill="{Binding SummaryTone, Converter={StaticResource ToneToBrush}}"/>
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource Strong}" MaxWidth="760"/>
+                    </StackPanel>
+
+                    <Grid Margin="0,10,0,2" Visibility="{Binding Summary, Converter={StaticResource StrToVis}}">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/></Grid.ColumnDefinitions>
+                        <TextBlock Text="драйвер" Style="{StaticResource Caption}"/>
+                        <TextBlock Grid.Column="2" Text="DPC, макс." Style="{StaticResource Caption}" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="3" Text="ISR, макс." Style="{StaticResource Caption}" HorizontalAlignment="Right"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Driver}" Style="{StaticResource Mono}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <Border Grid.Column="1" Height="6" CornerRadius="3" Margin="8,0,12,0" Background="{DynamicResource ControlStrongStrokeColorDisabledBrush}" VerticalAlignment="Center">
+                                        <ProgressBar Value="{Binding Bar, Mode=OneWay}" Maximum="1" Height="6" Foreground="{Binding Tone, Converter={StaticResource ToneToBrush}}" Background="Transparent" BorderThickness="0"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="2" Text="{Binding DpcText}" Style="{StaticResource Strong}" HorizontalAlignment="Right" Foreground="{Binding Tone, Converter={StaticResource ToneToBrush}}"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding IsrText}" Style="{StaticResource Caption}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding TimerText}" Style="{StaticResource Caption}" Margin="0,12,0,0" TextWrapping="Wrap" Visibility="{Binding TimerText, Converter={StaticResource StrToVis}}"/>
+
+                    <ItemsControl ItemsSource="{Binding Steps}" Focusable="False" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="•" Style="{StaticResource Body}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource Body}" TextWrapping="Wrap" MaxWidth="740"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Style="{StaticResource Caption}" Margin="2,12,0,0"
+                       Text="DPC и ISR — время, которое драйвер занимает процессор на уровне ядра. До 0,5 мс — норма, больше 1 мс — повод обновить или отключить устройство. Для теста нужны права администратора."/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

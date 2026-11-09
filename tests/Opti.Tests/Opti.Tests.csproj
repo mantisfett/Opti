@@ -7,6 +7,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Opti.Core\Opti.Core.csproj" />
@@ -15,6 +16,10 @@
     <ProjectReference Include="..\..\src\Opti.Measure\Opti.Measure.csproj" />
     <ProjectReference Include="..\..\src\Opti.Workflow\Opti.Workflow.csproj" />
     <ProjectReference Include="..\..\src\Opti.ViewModels\Opti.ViewModels.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Лаунчер — отдельный однофайловый exe; его логику распаковки проверяем, подключив исходник -->
+    <Compile Include="..\..\src\Opti.Launcher\PayloadInstaller.cs" Link="Launcher\PayloadInstaller.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Profiles\*.json" CopyToOutputDirectory="PreserveNewest" />

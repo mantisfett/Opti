@@ -23,12 +23,101 @@ public interface IAppServices
     string ResumeExePath { get; }
     void RestartComputer();
     void OpenPath(string pathOrUrl);
+    /// <summary>Показать файл в Проводнике (выделенным).</summary>
+    void RevealFile(string path) => OpenPath(Path.GetDirectoryName(path) ?? path);
     Task<bool> ConfirmAsync(string title, string message);
     Task<UpdateInfo?> CheckForUpdatesAsync();
     /// <summary>Категории бережной очистки.</summary>
     IReadOnlyList<Opti.Workflow.Cleanup.ICleanupTarget> CleanupTargets();
+    /// <summary>Твики удобства (контекстное меню, Проводник, «Пуск»…).</summary>
+    Opti.Fixes.Services.TweakService Tweaks { get; }
+    /// <summary>Сборка Windows (0 — неизвестно).</summary>
+    int OsBuild => 0;
+    /// <summary>Перезапуск Проводника, чтобы твики вступили в силу без выхода из системы.</summary>
+    void RestartExplorer() { }
     /// <summary>Сообщение о переносе данных из GameTune (если был перенос).</summary>
     string? StartupNotice { get; }
+    /// <summary>Удалить Opti с компьютера: откат всего, задача продолжения, папка данных. null — недоступно (демо, тесты).</summary>
+    Task<Opti.Workflow.UninstallReport?> UninstallAsync() => Task.FromResult<Opti.Workflow.UninstallReport?>(null);
+    /// <summary>Закрыть программу (после удаления).</summary>
+    void Exit() { }
+    /// <summary>Демо-режим: данные примерные, система не меняется.</summary>
+    bool IsDemo => false;
+
+    /// <summary>Задержка, разброс и потери до облачных регионов (TCP-рукопожатие).</summary>
+    Task<IReadOnlyList<Opti.Measure.Capture.ProbeResult>> ProbeRegionsAsync(IProgress<Opti.Measure.Capture.ProbeResult> progress, CancellationToken ct) =>
+        Task.Run<IReadOnlyList<Opti.Measure.Capture.ProbeResult>>(async () => await Opti.Measure.Capture.ConnectionProbe.ProbeAllAsync(Opti.Measure.Capture.ConnectionProbe.Regions, progress, ct), ct);
+
+    /// <summary>Трассировка маршрута до сервера.</summary>
+    Task<IReadOnlyList<Opti.Measure.Capture.RouteHop>> TraceRouteAsync(string host, IProgress<Opti.Measure.Capture.RouteHop> progress, CancellationToken ct) =>
+        Task.Run<IReadOnlyList<Opti.Measure.Capture.RouteHop>>(async () => await Opti.Measure.Capture.RouteTrace.RunAsync(host, progress: progress, ct: ct), ct);
+
+    /// <summary>Пинг в простое и под нагрузкой (скачивание и отдача) — bufferbloat.</summary>
+    Task<Opti.Measure.Capture.BufferbloatResult> RunBufferbloatAsync(string target, IProgress<string> phase, CancellationToken ct) =>
+        Task.Run(() => Opti.Measure.Capture.Bufferbloat.RunAsync(target, phase, ct: ct), ct);
+
+    /// <summary>Живой пинг: замеры приходят, пока не отменят.</summary>
+    Task MonitorPingAsync(string target, IProgress<Opti.Measure.Capture.PingSample> progress, CancellationToken ct) =>
+        Task.Run(() => Opti.Measure.Capture.LivePing.RunAsync(target, progress, ct: ct), ct);
+
+    /// <summary>Wi-Fi: соседние сети по каналам и текущее подключение (netsh).</summary>
+    Task<Opti.Measure.Capture.WifiScanResult> ScanWifiAsync(CancellationToken ct) => Task.Run(() =>
+    {
+        var run = Opti.Native.ProcessRunner.Instance;
+        var nets = Opti.Measure.Capture.WifiChannels.ParseNetworks(run.RunConsoleUtf8("netsh wlan show networks mode=bssid").StdOut);
+        var cur = Opti.Measure.Capture.WifiChannels.ParseCurrent(run.RunConsoleUtf8("netsh wlan show interfaces").StdOut);
+        return new Opti.Measure.Capture.WifiScanResult(nets, cur);
+    }, ct);
+
+    /// <summary>Тест задержек системы: DPC/ISR по драйверам (нужны права администратора) и точность таймера.</summary>
+    Task<Opti.Measure.Capture.LatencyReport> MeasureLatencyAsync(int seconds, CancellationToken ct) => Task.Run(() =>
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException(Opti.Core.Localization.Loc.T("Тест задержек работает только в Windows."));
+        var dpc = Opti.Measure.Capture.EtwDpcCapture.Run(TimeSpan.FromSeconds(seconds), ct);
+        return new Opti.Measure.Capture.LatencyReport(dpc, Opti.Measure.Capture.TimerAccuracyTest.Run());
+    }, ct);
+
+    /// <summary>Сетевой трафик по программам за время замера (события ядра; нужны права администратора).</summary>
+    Task<List<Opti.Measure.Capture.NetUsageRow>> MeasureTrafficAsync(int seconds, CancellationToken ct) => Task.Run(() =>
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException(Opti.Core.Localization.Loc.T("Замер трафика работает только в Windows."));
+        return Opti.Measure.Capture.EtwNetUsageCapture.Run(TimeSpan.FromSeconds(seconds), ct);
+    }, ct);
+
+    /// <summary>Скорость DNS: текущие серверы и популярные публичные.</summary>
+    Task<IReadOnlyList<Opti.Measure.Capture.DnsResult>> BenchmarkDnsAsync(IProgress<Opti.Measure.Capture.DnsResult> progress, CancellationToken ct) =>
+        Task.Run<IReadOnlyList<Opti.Measure.Capture.DnsResult>>(async () =>
+        {
+            var list = new List<Opti.Measure.Capture.DnsResult>();
+            foreach (var r in Opti.Measure.Capture.DnsBenchmark.Current().Concat(Opti.Measure.Capture.DnsBenchmark.Public))
+            {
+                var res = await Opti.Measure.Capture.DnsBenchmark.RunAsync(r, ct: ct);
+                list.Add(res);
+                progress.Report(res);
+            }
+            return list;
+        }, ct);
+
+    /// <summary>Высокий приоритет процессов игр (через Windows, с откатом). null — недоступно.</summary>
+    Opti.Workflow.GamePriority? Priority => null;
+
+    /// <summary>Игровая сессия (закрыть лишнее + схема питания на время игры). null — недоступно.</summary>
+    Opti.Workflow.GameSession? Game => null;
+
+    /// <summary>Менеджер автозагрузки. null — недоступно.</summary>
+    Opti.Workflow.StartupManager? Startup => null;
+
+    /// <summary>Самые тяжёлые фоновые программы (замер процессора по процессам).</summary>
+    Task<List<Opti.Workflow.BackgroundApp>> ScanBackgroundAsync(CancellationToken ct) => Opti.Workflow.BackgroundScanner.ScanAsync(ct: ct);
+
+    /// <summary>Закрыть программу по имени процесса. Возвращает число закрытых процессов.</summary>
+    int CloseBackgroundApp(string name) => Opti.Workflow.BackgroundScanner.Close(name);
+
+    /// <summary>Применить DNS-серверы (через журнал: откат в «Истории»). null — недоступно (демо).</summary>
+    Task<Opti.Fixes.Services.ApplyReport?> ApplyDnsAsync(string servers) => Task.Run<Opti.Fixes.Services.ApplyReport?>(() =>
+        new Opti.Fixes.Services.ApplyService(Workflow.BackendsForRollback, Journal, null).Apply(new Opti.Core.Profile.SystemProfile(),
+            new Opti.Core.Fixes.IFix[] { new Opti.Fixes.Catalog.DnsSetFix() }, Opti.Core.Strategy.UserGoal.Balanced,
+            new Dictionary<string, IReadOnlyDictionary<string, string>> { [Opti.Core.Fixes.FixIds.DnsSet] = new Dictionary<string, string> { ["servers"] = servers } }, "network-" + DateTime.Now.ToString("yyyyMMdd-HHmmss")));
 }
 
 /// <summary>

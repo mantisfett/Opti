@@ -1,0 +1,75 @@
+<UserControl x:Class="Opti.App.Views.TweaksView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource ActionBar}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Margin="16,0,0,0" Text="{Binding Summary}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                <Button Style="{StaticResource AccentButton}" Content="Включить рекомендуемые" Command="{Binding EnableRecommendedCommand}"/>
+                <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,16,0"
+                           Text="Каждый твик выключается тем же переключателем — вернётся то, что было до Opti."/>
+            </DockPanel>
+        </Border>
+        <ScrollViewer>
+            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
+                <TextBlock Text="Твики" Style="{StaticResource PageTitle}"/>
+                <TextBlock Style="{StaticResource Secondary}" MaxWidth="680" HorizontalAlignment="Left"
+                           Text="Мелкие настройки удобства. На FPS не влияют; каждую можно выключить."/>
+
+                <!-- Что нужно, чтобы изменения вступили в силу -->
+                <Border Style="{StaticResource Callout}" Margin="0,16,0,0" Background="{Binding Source=accent, Converter={StaticResource ToneToSoft}}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Visibility="{Binding PendingText, Converter={StaticResource StrToVis}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Перезапустить Проводник" Command="{Binding RestartExplorerCommand}" VerticalAlignment="Center"
+                                Visibility="{Binding NeedsExplorerRestart, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="&#xE946;" Style="{StaticResource Icon}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,12,0"/>
+                        <TextBlock Text="{Binding PendingText}" Style="{StaticResource Body}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    </DockPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Groups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,24,0,10">
+                                    <TextBlock Text="{Binding Icon}" Style="{StaticResource Icon}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitle}" Margin="0"/>
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource Card}" IsEnabled="{Binding IsAvailable}">
+                                                <DockPanel>
+                                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding IsOn}" VerticalAlignment="Center"
+                                                              Margin="16,0,0,0" AutomationProperties.Name="{Binding Title}"/>
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}" VerticalAlignment="Center"/>
+                                                            <Border Style="{StaticResource Tag}" Margin="10,0,0,0" Background="{Binding Source=good, Converter={StaticResource ToneToSoft}}"
+                                                                    Visibility="{Binding Recommended, Converter={StaticResource BoolToVis}}">
+                                                                <TextBlock Text="рекомендуем" Style="{StaticResource TagText}" Foreground="{Binding Source=good, Converter={StaticResource ToneToBrush}}"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,3,0,0"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                            <TextBlock Text="{Binding ApplyText}" Style="{StaticResource Caption}"/>
+                                                            <Button Style="{StaticResource LinkButton}" Content="Источник" FontSize="12" Margin="12,0,0,0" CommandParameter="{Binding Link}"
+                                                                    Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    Visibility="{Binding Link, Converter={StaticResource StrToVis}}"/>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Error}" Style="{StaticResource Caption}" Foreground="{Binding Source=bad, Converter={StaticResource ToneToBrush}}"
+                                                                   Margin="0,4,0,0" Visibility="{Binding Error, Converter={StaticResource StrToVis}}"/>
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

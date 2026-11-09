@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
@@ -7,7 +8,7 @@ namespace Opti.Analysis.Collectors;
 [SupportedOSPlatform("windows")]
 public sealed class ExtrasCollector : ICollector
 {
-    public string Name => "Драйверы и настройки ввода";
+    public string Name => Loc.T("Драйверы и настройки ввода");
     private const string Cv = @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
 
     public void Collect(SystemProfile p)
@@ -26,7 +27,7 @@ public sealed class ExtrasCollector : ICollector
                 p.ProblemDevices.Add(new ProblemDevice { Name = d.Str("Name") ?? d.Str("PNPDeviceID") ?? "?", DeviceClass = d.Str("PNPClass"), ErrorCode = code, PnpDeviceId = d.Str("PNPDeviceID") });
             }
         }
-        catch (Exception ex) { p.CollectorErrors.Add("Устройства: " + ex.Message); }
+        catch (Exception ex) { p.CollectorErrors.Add(Loc.T("Устройства: ") + ex.Message); }
 
         if (p.Cpu.Vendor == CpuVendor.Amd)
         {
@@ -36,6 +37,7 @@ public sealed class ExtrasCollector : ICollector
         }
 
         if (Reg.Str(@"HKCU\Control Panel\Mouse", "MouseSpeed") is { } ms) p.Input.MouseAcceleration = ms.Trim() != "0";
+        if (int.TryParse(Reg.Str(@"HKCU\Control Panel\Mouse", "MouseSensitivity"), out var speed) && speed is >= 1 and <= 20) p.Input.MousePointerSpeed = speed;
         if (int.TryParse(Reg.Str(@"HKCU\Control Panel\Accessibility\StickyKeys", "Flags"), out var sk)) p.Input.StickyKeysFlags = sk;
         if (int.TryParse(Reg.Str(@"HKCU\Control Panel\Accessibility\Keyboard Response", "Flags"), out var fk)) p.Input.FilterKeysFlags = fk;
 
@@ -47,6 +49,6 @@ public sealed class ExtrasCollector : ICollector
             int usage = Wmi.Query("SELECT Name FROM Win32_PageFileUsage").Count;
             p.Memory.PageFileDisabled = !auto && settings == 0 && usage == 0;
         }
-        catch (Exception ex) { p.CollectorErrors.Add("Файл подкачки: " + ex.Message); }
+        catch (Exception ex) { p.CollectorErrors.Add(Loc.T("Файл подкачки: ") + ex.Message); }
     }
 }

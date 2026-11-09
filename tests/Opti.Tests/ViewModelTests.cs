@@ -44,6 +44,7 @@ public sealed class ViewModelTests : IDisposable
             Workflow = new TuneWorkflow(Settings, new SessionStore(Path.Combine(dir, "sessions")), reg, Journal);
             Runner = new FakeRunner(frameMs);
             DataDir = dir;
+            Tweaks = new Opti.Fixes.Services.TweakService(reg, Journal);
         }
         public Opti.Core.Profile.SystemProfile Profile { get; }
         public Dictionary<ChangeType, InMemoryBackend> Map { get; }
@@ -68,6 +69,10 @@ public sealed class ViewModelTests : IDisposable
         public List<Opti.Workflow.Cleanup.ICleanupTarget> Cleanup { get; } = new();
         public IReadOnlyList<Opti.Workflow.Cleanup.ICleanupTarget> CleanupTargets() => Cleanup;
         public string? StartupNotice => null;
+        public Opti.Fixes.Services.TweakService Tweaks { get; }
+        public int OsBuild => 26100;
+        public int ExplorerRestarts { get; private set; }
+        public void RestartExplorer() => ExplorerRestarts++;
     }
 
     [Fact]
@@ -79,11 +84,11 @@ public sealed class ViewModelTests : IDisposable
         Assert.Same(main.Home, main.CurrentPage);
         Assert.False(main.Nav[1].IsEnabled);
 
-        main.Home.SelectedGoal = GoalOption.All.First(g => g.Goal == Core.Strategy.UserGoal.Streaming);
+        main.Home.SelectedGoal = GoalOption.All.First(g => g.Goal == Core.Strategy.UserGoal.Balanced);
         await main.Home.AnalyzeCommand.ExecuteAsync(null);
         Assert.Same(main.Analysis, main.CurrentPage);
         Assert.True(main.Nav[1].IsEnabled);
-        Assert.Contains(main.Analysis.Findings, f => f.Finding.Id == "DISP_LOW_HZ" && f.SeverityText == "КРИТИЧНО");
+        Assert.Contains(main.Analysis.Findings, f => f.Finding.Id == "DISP_LOW_HZ" && f.SeverityText == "критично");
         Assert.NotNull(main.Analysis.Summary);
 
         main.Analysis.MeasureBeforeCommand.Execute(null);
@@ -226,7 +231,7 @@ public sealed class ViewModelTests : IDisposable
         Assert.False(svc.Map[ChangeType.Bcd].Read(Targets.Bcd("useplatformclock")).Exists);
     }
 
-    private static async Task<T> WaitForPage<T>(MainViewModel main, int timeoutMs = 10000) where T : PageViewModel
+    private static async Task<T> WaitForPage<T>(MainViewModel main, int timeoutMs = 60000) // с замером покрытия код в разы медленнее where T : PageViewModel
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (sw.ElapsedMilliseconds < timeoutMs)
@@ -242,12 +247,16 @@ public sealed class ViewModelTests : IDisposable
     {
         var svc = new FakeServices(_dir, "laptop-optimus", n => n < 2 ? 8.5 : 7.0);
         var main = new MainViewModel(svc);
-        main.Home.SelectedGoal = GoalOption.All.First(g => g.Goal == Core.Strategy.UserGoal.Streaming);
+        main.Home.SelectedGoal = GoalOption.All.First(g => g.Goal == Core.Strategy.UserGoal.Balanced);
         await main.Home.AnalyzeCommand.ExecuteAsync(null);
         Assert.True(main.Analysis.CanAutoFix);
         Assert.Contains("исправлен", main.Analysis.AutoFixText);
 
         await main.Analysis.AutoFixCommand.ExecuteAsync(null);
+        var setup = Assert.IsType<AutoSetupViewModel>(main.CurrentPage);
+        Assert.Equal(TestLevel.Full, setup.SelectedLevel.Level);
+        Assert.True(setup.SelectedCount > 0);
+        await setup.StartCommand.ExecuteAsync(null);
         var cmp = await WaitForPage<CompareViewModel>(main);
         var s = main.Session!;
         Assert.True(s.AutoMode);
@@ -265,6 +274,7 @@ public sealed class ViewModelTests : IDisposable
         var main = new MainViewModel(svc);
         await main.Home.AnalyzeCommand.ExecuteAsync(null);
         await main.Analysis.AutoFixCommand.ExecuteAsync(null);
+        await ((AutoSetupViewModel)main.CurrentPage).StartCommand.ExecuteAsync(null);
         var apply = await WaitForPage<ApplyViewModel>(main);
         Assert.True(apply.RebootRequired);
 
@@ -275,6 +285,166 @@ public sealed class ViewModelTests : IDisposable
         await main2.InitializeAsync();
         await WaitForPage<CompareViewModel>(main2);
         Assert.Equal(svc.Settings.MeasureRuns, main2.Session!.After.Count);
+    }
+
+    [Fact]
+    public async Task AutoFix_WithoutTest_AppliesOnlyChosenFixes()
+    {
+        var svc = new FakeServices(_dir, "laptop-optimus", _ => 8.0);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        await main.Analysis.AutoFixCommand.ExecuteAsync(null);
+        var setup = (AutoSetupViewModel)main.CurrentPage;
+        setup.SelectedLevel = setup.Levels.First(l => l.Level == TestLevel.None);
+        Assert.False(setup.ShowTestSettings);
+        setup.ClearAllCommand.Execute(null);
+        Assert.False(setup.StartCommand.CanExecute(null));
+        setup.Fixes.First(f => f.Id == FixIds.DisplayMaxHz).IsSelected = true;
+        await setup.StartCommand.ExecuteAsync(null);
+
+        var apply = await WaitForPage<ApplyViewModel>(main);
+        var s = main.Session!;
+        Assert.True(s.SkipMeasure);
+        Assert.Empty(s.Before);
+        Assert.Equal(new[] { FixIds.DisplayMaxHz }, s.AppliedFixIds);
+        Assert.Contains("Замер пропущен", apply.NextText);
+    }
+
+    [Fact]
+    public async Task AutoFix_QuickTest_UsesChosenRunsAndDuration()
+    {
+        var svc = new FakeServices(_dir, "laptop-optimus", n => n < 2 ? 8.5 : 7.0);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        await main.Analysis.AutoFixCommand.ExecuteAsync(null);
+        var setup = (AutoSetupViewModel)main.CurrentPage;
+        setup.SelectedLevel = setup.Levels.First(l => l.Level == TestLevel.Quick);
+        Assert.Equal(2, setup.Runs);
+        Assert.Equal(20, setup.Duration);
+        await setup.StartCommand.ExecuteAsync(null);
+        await WaitForPage<CompareViewModel>(main);
+        var s = main.Session!;
+        Assert.Equal(2, s.Before.Count);
+        Assert.Equal(2, s.After.Count);
+        Assert.Equal(20, s.MeasureDurationSec);
+    }
+
+    [Fact]
+    public async Task DriversPage_EnabledAfterAnalysis_ShowsAttentionAndLinks()
+    {
+        var svc = new FakeServices(_dir, "laptop-optimus", _ => 8.0);
+        var main = new MainViewModel(svc);
+        var nav = main.Nav.First(n => n.Title == "Драйверы");
+        Assert.False(nav.IsEnabled);
+        await main.Home.OpenDriversCommand.ExecuteAsync(null); // без анализа — запускает анализ сам
+        Assert.True(nav.IsEnabled);
+        Assert.Same(main.Drivers, main.CurrentPage);
+        Assert.Contains("требуют внимания 2", main.Drivers.Summary);
+        Assert.Equal("Поддержка ASUS", main.Drivers.OemTitle);
+        main.Drivers.OnlyAttention = true;
+        var rows = main.Drivers.Groups.SelectMany(g => g.Rows).ToList();
+        Assert.Equal(2, rows.Count);
+        Assert.All(rows, r => Assert.True(r.NeedsAttention));
+        main.Drivers.OpenLinkCommand.Execute(rows[0].Url);
+        Assert.Contains(rows[0].Url, svc.Opened);
+    }
+
+    [Fact]
+    public async Task Cleanup_SplitsManualItems_AndWarnsAboveThreshold()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8.0);
+        var dl = Directory.CreateDirectory(Path.Combine(_dir, "Downloads")).FullName;
+        File.WriteAllBytes(Path.Combine(dl, "big.iso"), new byte[5000]);
+        svc.Cleanup.Add(new Opti.Workflow.Cleanup.ManualCleanupTarget("downloads", "Загрузки", "", () => new[] { dl }, () => dl, warnAboveBytes: 4000, warnText: "разберите"));
+        svc.Cleanup.Add(new Opti.Workflow.Cleanup.FolderCleanupTarget("tmp", "Временные", "", () => Array.Empty<string>(), TimeSpan.Zero));
+        var main = new MainViewModel(svc);
+        await main.Cleanup.EstimateAsync();
+        var manual = Assert.Single(main.Cleanup.ManualItems);
+        Assert.Single(main.Cleanup.AutoItems);
+        Assert.Equal("разберите", manual.Warning);
+        Assert.Equal("Открыть папку", manual.ManualActionText);
+        main.Cleanup.OpenManualCommand.Execute(manual);
+        Assert.Contains(dl, svc.Opened);
+    }
+
+    [Fact]
+    public void SoftwarePage_OpensOfficialSite()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8.0);
+        var main = new MainViewModel(svc);
+        var wiztree = main.Software.Categories.SelectMany(c => c.Items).First(i => i.Name == "WizTree");
+        main.Software.OpenCommand.Execute(wiztree);
+        Assert.Equal("https://diskanalyzer.com/", Assert.Single(svc.Opened));
+    }
+
+    [Fact]
+    public async Task Analysis_StatTilesFilterFindings()
+    {
+        var svc = new FakeServices(_dir, "laptop-optimus", _ => 8.0);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        var a = main.Analysis;
+        int total = a.Findings.Count;
+        Assert.Equal(total, a.CriticalCount + a.ImportantCount + a.AdviceCount);
+        a.FilterCritical = true;
+        Assert.Equal(a.CriticalCount, a.Findings.Count);
+        Assert.All(a.Findings, f => Assert.Equal(Core.Findings.Severity.Critical, f.Finding.Severity));
+        a.FilterFixable = true; // плитки взаимоисключающие
+        Assert.False(a.FilterCritical);
+        Assert.All(a.Findings, f => Assert.True(f.HasFix));
+        a.ClearFilterCommand.Execute(null);
+        Assert.Equal(total, a.Findings.Count);
+        Assert.False(a.IsFiltered);
+    }
+
+    [Fact]
+    public void Tweaks_ToggleOnAndOff_RestoresOriginalValues()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8.0);
+        var reg = svc.Map[ChangeType.Registry];
+        var delayTarget = Opti.Fixes.Backends.Targets.Reg(@"HKCU\Control Panel\Desktop", "MenuShowDelay");
+        reg.Seed(delayTarget, StateValue.Str("400"));
+        var main = new MainViewModel(svc);
+        var page = main.Tweaks;
+        page.OnShown();
+        var items = page.Groups.SelectMany(g => g.Items).ToList();
+        Assert.True(items.Count >= 10);
+        Assert.All(items, i => Assert.False(i.IsOn));
+
+        var menu = items.First(i => i.Tweak.Id == "CLASSIC_CONTEXT_MENU");
+        menu.IsOn = true;
+        Assert.Null(menu.Error);
+        Assert.True(page.NeedsExplorerRestart);
+        page.RestartExplorerCommand.Execute(null);
+        Assert.Equal(1, svc.ExplorerRestarts);
+        Assert.False(page.NeedsExplorerRestart);
+
+        var delay = items.First(i => i.Tweak.Id == "FAST_MENUS");
+        delay.IsOn = true;
+        Assert.Equal(StateValue.Str("100"), reg.Read(delayTarget));
+        Assert.Contains("выхода", page.PendingText);
+
+        // Выключение — точное исходное состояние
+        delay.IsOn = false;
+        Assert.Equal(StateValue.Str("400"), reg.Read(delayTarget));
+        menu.IsOn = false;
+        Assert.False(reg.Read(Opti.Fixes.Backends.Targets.Reg(@"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32", "")).Exists);
+
+        // Повторная загрузка видит реальное состояние
+        page.EnableRecommendedCommand.Execute(null);
+        page.Load();
+        var reloaded = page.Groups.SelectMany(g => g.Items).ToList();
+        Assert.All(reloaded.Where(i => i.Recommended && i.IsAvailable), i => Assert.True(i.IsOn, i.Title));
+        Assert.Contains(svc.Journal.GetSessions(), x => x.SessionId == Opti.Fixes.Services.TweakService.SessionId);
+    }
+
+    [Fact]
+    public void Nav_GroupsToolsAndFooter()
+    {
+        var main = new MainViewModel(new FakeServices(_dir, "desktop-rtx", _ => 8.0));
+        Assert.Equal(new[] { "История", "Настройки" }, main.NavBottom.Select(n => n.Title));
+        Assert.Contains(main.NavTop, n => n.Header == "ИНСТРУМЕНТЫ" && n.Title == "Драйверы");
+        Assert.All(main.Nav.Where(n => !n.IsEnabled), n => Assert.False(string.IsNullOrEmpty(n.DisabledHint)));
     }
 
     [Fact]
@@ -328,5 +498,92 @@ public sealed class ViewModelTests : IDisposable
         Assert.Equal(10, svc.Settings.MeasureRuns);
         Assert.Contains(FixIds.MpoReset, svc.Settings.ExcludedFixIds);
         Assert.True(File.Exists(Path.Combine(_dir, "settings.json")));
+    }
+
+    [Fact]
+    public void Navigation_OnlyCurrentPageIsActive()
+    {
+        var main = new MainViewModel(new FakeServices(_dir, "desktop-rtx", _ => 8));
+        Assert.True(main.Nav[0].IsActive);
+        // «Результат» без сравнения не должен подсвечиваться вместе с «Главной»
+        Assert.All(main.Nav.Skip(1), n => Assert.False(n.IsActive));
+        main.Navigate(main.Home);
+        Assert.Single(main.Nav, n => n.IsActive);
+        main.NavigateToCommand.Execute(main.Nav[3]); // недоступный пункт — ничего не происходит
+        Assert.Same(main.Home, main.CurrentPage);
+    }
+
+    [Fact]
+    public async Task Home_OffersThreeModes_BalancedByDefault()
+    {
+        var main = new MainViewModel(new FakeServices(_dir, "desktop-rtx", _ => 8));
+        Assert.Equal(new[] { Core.Strategy.UserGoal.Maximum, Core.Strategy.UserGoal.Balanced, Core.Strategy.UserGoal.Minimal },
+            main.Home.Goals.Select(g => g.Goal));
+        Assert.Equal(Core.Strategy.UserGoal.Balanced, main.Home.SelectedGoal!.Goal);
+        Assert.All(main.Home.Goals, g => { Assert.NotEmpty(g.Summary); Assert.NotEmpty(g.Includes); });
+        Assert.All(main.Home.Comparison, r => Assert.Equal(3, r.Cells.Count));
+
+        main.Home.SelectedGoal = main.Home.Goals.Single(g => g.Goal == Core.Strategy.UserGoal.Minimal);
+        Assert.Contains("Минимальная", main.Home.SelectedGoalHint);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        Assert.Equal(Core.Strategy.UserGoal.Minimal, main.Session!.Goal);
+    }
+
+    [Fact]
+    public async Task Strategy_ModeSwitch_RebuildsPlanAndSavesSession()
+    {
+        var main = new MainViewModel(new FakeServices(_dir, "desktop-rtx", _ => 8));
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        var s = main.Session!;
+        main.Strategy.Load(s);
+        Assert.Equal(Core.Strategy.UserGoal.Balanced, main.Strategy.SelectedGoal!.Goal);
+        Assert.Contains(main.Strategy.Fixes, f => f.Id == FixIds.PowerSchemePerf && f.IsSelected);
+
+        main.Strategy.SelectedGoal = main.Strategy.Goals.Single(g => g.Goal == Core.Strategy.UserGoal.Minimal);
+        Assert.Equal(Core.Strategy.UserGoal.Minimal, s.Goal);
+        Assert.Equal(Core.Strategy.UserGoal.Minimal, main.Services.Workflow.Store.Load(s.Id)!.Goal);
+        Assert.Contains(main.Strategy.Fixes, f => f.Id == FixIds.PowerSchemePerf && !f.IsSelected);
+        Assert.All(main.Strategy.Fixes.Where(f => f.IsSelected), f => Assert.Equal(FixIntent.Repair, f.Fix.Intent));
+    }
+
+    [Fact]
+    public async Task Startup_FindsSettingsRevertedByWindows_AndReappliesFromHistory()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        var s = main.Session!;
+        var wf = svc.Workflow;
+        wf.Apply(s, wf.BuildPlan(s).Fixes.Where(f => f.Selected && !f.ApplySeparately).Select(f => f.Fix).ToList());
+        var rec = svc.Journal.GetAll().First(r => r.Type == ChangeType.Registry && !r.RolledBack);
+        svc.Map[ChangeType.Registry].Write(rec.Target, rec.Before); // «обновление Windows»
+
+        var restarted = new MainViewModel(svc);
+        await restarted.InitializeAsync();
+        Assert.Contains("вернули", restarted.Toast);
+        var row = Assert.Single(restarted.History.VerifyRows, r => r.Item.Record.Target == rec.Target);
+        Assert.True(row.IsChecked);
+
+        await restarted.History.ReapplyCommand.ExecuteAsync(null);
+        Assert.Equal(rec.After, svc.Map[ChangeType.Registry].Read(rec.Target));
+        Assert.False(restarted.History.HasDrift);
+    }
+
+    [Fact]
+    public async Task Verify_DoesNotPreselectBootSettings()
+    {
+        var svc = new FakeServices(_dir, "desktop-rtx", _ => 8);
+        var main = new MainViewModel(svc);
+        await main.Home.AnalyzeCommand.ExecuteAsync(null);
+        var s = main.Session!;
+        s.FixOptions[FixIds.BcdTimersReset] = new() { ["bitlockerAcknowledged"] = "1" };
+        svc.Workflow.Apply(s, new[] { svc.Workflow.Catalog.Single(f => f.Id == FixIds.BcdTimersReset) });
+        var rec = svc.Journal.GetAll().First(r => r.Type == ChangeType.Bcd);
+        svc.Map[ChangeType.Bcd].Write(rec.Target, rec.Before);
+
+        await main.History.VerifyCommand.ExecuteAsync(null);
+        var row = Assert.Single(main.History.VerifyRows, r => r.Item.Record.Type == ChangeType.Bcd && r.Item.Record.Target == rec.Target);
+        Assert.False(row.IsChecked);
+        Assert.Contains("BitLocker", row.StatusText);
     }
 }

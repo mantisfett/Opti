@@ -23,6 +23,22 @@ public sealed class Finding
     public bool IsHardwareLimitation { get; init; }
 }
 
+public static class FindingLocalization
+{
+    /// <summary>
+    /// Копия находки с текстами на языке интерфейса. Находки сохраняются в сессиях на языке, на котором их нашли,
+    /// поэтому перевод делается при показе, а не при создании.
+    /// </summary>
+    public static Finding Translated(this Finding f) => !Opti.Core.Localization.Loc.IsEnglish ? f : new Finding
+    {
+        Id = f.Id, Severity = f.Severity, IsHardwareLimitation = f.IsHardwareLimitation,
+        Title = Opti.Core.Localization.Loc.T(f.Title), Explanation = Opti.Core.Localization.Loc.T(f.Explanation),
+        Evidence = f.Evidence.Select(Opti.Core.Localization.Loc.T).ToList(),
+        ManualSteps = f.ManualSteps.Select(Opti.Core.Localization.Loc.T).ToList(),
+        FixIds = f.FixIds, Links = f.Links,
+    };
+}
+
 public sealed class DetectionContext
 {
     public required SystemProfile Profile { get; init; }

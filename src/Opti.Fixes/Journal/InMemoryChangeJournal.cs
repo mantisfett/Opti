@@ -15,11 +15,18 @@ public sealed class InMemoryChangeJournal : IChangeJournal
     public long Append(ChangeRecord record)
     {
         record.Id = _nextId++;
+        record.Committed = false;
         _records.Add(record);
         return record.Id;
     }
 
     public void Remove(long recordId) => _records.RemoveAll(r => r.Id == recordId);
+
+    public void Commit(long recordId)
+    {
+        var r = _records.FirstOrDefault(x => x.Id == recordId);
+        if (r is not null) r.Committed = true;
+    }
 
     public void MarkRolledBack(long recordId, DateTimeOffset at)
     {

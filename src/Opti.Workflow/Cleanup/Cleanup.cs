@@ -1,6 +1,10 @@
+using Opti.Core.Localization;
 namespace Opti.Workflow.Cleanup;
 
 public sealed record CleanupEstimate(long Bytes, int Files);
+
+/// <summary>Отдельный найденный объект (например, тяжёлое видео) — с путём, чтобы показать его в Проводнике.</summary>
+public sealed record CleanupDetail(string Text, string Path, long Bytes);
 
 public sealed class CleanupResult
 {
@@ -24,6 +28,13 @@ public interface ICleanupTarget
     string? ManualUri { get; }
     Task<CleanupEstimate> EstimateAsync(CancellationToken ct = default);
     Task<CleanupResult> CleanAsync(CancellationToken ct = default);
+    /// <summary>Порог, после которого показывается рекомендация WarnText (например, «Загрузки» больше 5 ГБ).</summary>
+    long? WarnAboveBytes => null;
+    string? WarnText => null;
+    /// <summary>Найденные объекты после оценки (тяжёлые видео и т. п.).</summary>
+    IReadOnlyList<CleanupDetail> Details => Array.Empty<CleanupDetail>();
+    /// <summary>Подпись кнопки для ручной цели.</summary>
+    string ManualActionText => Loc.T("Открыть параметры");
 }
 
 /// <summary>
@@ -156,16 +167,27 @@ public sealed class FolderCleanupTarget : ICleanupTarget
 public sealed class ManualCleanupTarget : ICleanupTarget
 {
     private readonly Func<IEnumerable<string>> _paths;
-    public ManualCleanupTarget(string id, string title, string description, Func<IEnumerable<string>> paths, string uri)
+    private readonly Func<string>? _uri;
+    public ManualCleanupTarget(string id, string title, string description, Func<IEnumerable<string>> paths, string uri,
+        long? warnAboveBytes = null, string? warnText = null, string? actionText = null)
     {
-        Id = id; Title = title; Description = description; _paths = paths; ManualUri = uri;
+        Id = id; Title = title; Description = description; _paths = paths; _staticUri = uri;
+        WarnAboveBytes = warnAboveBytes; WarnText = warnText; ManualActionText = actionText ?? Loc.T("Открыть параметры");
     }
+    /// <summary>Ручная цель, у которой адрес вычисляется при открытии (например, папка «Загрузки»).</summary>
+    public ManualCleanupTarget(string id, string title, string description, Func<IEnumerable<string>> paths, Func<string> uri,
+        long? warnAboveBytes = null, string? warnText = null, string? actionText = null)
+        : this(id, title, description, paths, "", warnAboveBytes, warnText, actionText ?? Loc.T("Открыть папку")) => _uri = uri;
+    private readonly string _staticUri;
+    public long? WarnAboveBytes { get; }
+    public string? WarnText { get; }
+    public string ManualActionText { get; }
     public string Id { get; }
     public string Title { get; }
     public string Description { get; }
     public bool DefaultSelected => false;
     public string? Caution => null;
-    public string? ManualUri { get; }
+    public string? ManualUri => _uri?.Invoke() ?? _staticUri;
 
     public Task<CleanupEstimate> EstimateAsync(CancellationToken ct = default) => Task.Run(() =>
     {
@@ -183,13 +205,67 @@ public sealed class ManualCleanupTarget : ICleanupTarget
     public Task<CleanupResult> CleanAsync(CancellationToken ct = default) => Task.FromResult(new CleanupResult());
 }
 
+/// <summary>
+/// Тяжёлые видеофайлы (записи игр, скачанные фильмы) в пользовательских папках. Ничего не удаляет —
+/// показывает список, чтобы человек сам решил, что ему не нужно.
+/// </summary>
+public sealed class LargeFilesTarget : ICleanupTarget
+{
+    public static readonly string[] VideoExtensions = { ".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv", ".ts", ".m2ts", ".wmv", ".m4v" };
+    private readonly Func<IEnumerable<string>> _roots;
+    private readonly long _minBytes;
+    private readonly int _maxItems;
+    private List<CleanupDetail> _details = new();
+
+    public LargeFilesTarget(string id, string title, string description, Func<IEnumerable<string>> roots, long minBytes, int maxItems = 15)
+    {
+        Id = id; Title = title; Description = description; _roots = roots; _minBytes = minBytes; _maxItems = maxItems;
+    }
+    public string Id { get; }
+    public string Title { get; }
+    public string Description { get; }
+    public bool DefaultSelected => false;
+    public string? Caution => null;
+    public string? ManualUri => _details.Count > 0 ? Path.GetDirectoryName(_details[0].Path) : _roots().FirstOrDefault(Directory.Exists);
+    public string ManualActionText => Loc.T("Открыть папку");
+    public IReadOnlyList<CleanupDetail> Details => _details;
+
+    public Task<CleanupEstimate> EstimateAsync(CancellationToken ct = default) => Task.Run(() =>
+    {
+        var opts = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint | FileAttributes.System };
+        var found = new List<CleanupDetail>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var root in _roots().Where(Directory.Exists).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            IEnumerable<string> files;
+            try { files = Directory.EnumerateFiles(root, "*", opts); } catch { continue; }
+            foreach (var f in files)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!VideoExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase) || !seen.Add(f)) continue;
+                try
+                {
+                    var fi = new FileInfo(f);
+                    if (fi.Length >= _minBytes)
+                        found.Add(new CleanupDetail($"{fi.Name} — {SizeFormat.Bytes(fi.Length)}, {fi.LastWriteTime:dd.MM.yyyy}", fi.FullName, fi.Length));
+                }
+                catch { }
+            }
+        }
+        _details = found.OrderByDescending(d => d.Bytes).Take(_maxItems).ToList();
+        return new CleanupEstimate(found.Sum(d => d.Bytes), found.Count);
+    }, ct);
+
+    public Task<CleanupResult> CleanAsync(CancellationToken ct = default) => Task.FromResult(new CleanupResult());
+}
+
 public static class SizeFormat
 {
     public static string Bytes(long b) => b switch
     {
-        >= 1L << 30 => $"{b / (double)(1L << 30):0.#} ГБ",
-        >= 1L << 20 => $"{b / (double)(1L << 20):0} МБ",
-        >= 1L << 10 => $"{b / (double)(1L << 10):0} КБ",
-        _ => $"{b} Б",
+        >= 1L << 30 => Loc.T($"{b / (double)(1L << 30):0.#} ГБ"),
+        >= 1L << 20 => Loc.T($"{b / (double)(1L << 20):0} МБ"),
+        >= 1L << 10 => Loc.T($"{b / (double)(1L << 10):0} КБ"),
+        _ => Loc.T($"{b} Б"),
     };
 }

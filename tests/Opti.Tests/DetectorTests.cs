@@ -63,7 +63,7 @@ public class DetectorTests
     {
         var f = TestProfiles.Findings(TestProfiles.Load("desktop-rtx")).Single(x => x.Id == "DPC_LATENCY_HIGH");
         Assert.StartsWith("rt640x64.sys", f.Evidence[0]);
-        Assert.DoesNotContain(f.Evidence, e => e.StartsWith("ndis.sys"));
+        Assert.DoesNotContain(f.Evidence, e => e.StartsWith("ndis.sys", StringComparison.Ordinal));
     }
 
     [Fact]

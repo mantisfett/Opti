@@ -1,0 +1,21 @@
+{
+"Приватность": "Privacy",
+"Выключить рекламный идентификатор": "Turn off the advertising ID",
+"Приложения перестают получать общий рекламный ID для персонализации рекламы. Программы продолжают работать как раньше.": "Apps stop receiving a shared advertising ID for ad personalization. Programs keep working as before.",
+"Без «персонализированных советов» из диагностических данных": "No “tailored experiences” from diagnostic data",
+"Windows не использует данные о работе устройства, чтобы подбирать советы и рекламу.": "Windows does not use device diagnostic data to pick tips and ads.",
+"Не вести и не отправлять журнал действий": "Do not keep or send the activity history",
+"Отключает «Журнал действий» (хронологию запущенных приложений и открытых файлов) и его отправку в Microsoft.": "Turns off Activity History (a timeline of launched apps and opened files) and sending it to Microsoft.",
+"Минимум диагностических данных": "Minimum diagnostic data",
+"Windows отправляет только обязательные диагностические данные (на Домашней и Pro это нижний уровень). Обновления и защита работают как прежде.": "Windows sends only required diagnostic data (the lowest level on Home and Pro). Updates and protection work as before.",
+"Без запросов отзывов о Windows": "No Windows feedback prompts",
+"Windows перестаёт просить оценить систему и оставить отзыв.": "Windows stops asking you to rate the system and leave feedback.",
+"Выключить онлайн-распознавание речи": "Turn off online speech recognition",
+"Голосовой ввод и диктовка перестают отправлять запись в облако для распознавания.": "Voice typing and dictation stop sending audio to the cloud for recognition.",
+"Отключить Windows Copilot": "Turn off Windows Copilot",
+"Политика убирает кнопку и панель Copilot. На новых сборках Copilot — отдельное приложение, его можно удалить в «Параметры» → «Приложения».": "The policy removes the Copilot button and pane. On newer builds Copilot is a separate app; you can uninstall it in Settings → Apps.",
+"Отключить сохранение снимков экрана (Recall)": "Turn off saving screen snapshots (Recall)",
+"Политика запрещает Windows сохранять снимки экрана и анализировать их ИИ. Уже сохранённое удаляется в параметрах Windows.": "The policy stops Windows from saving screenshots and analyzing them with AI. What is already saved is deleted in Windows settings.",
+"Отключить «Виджеты»": "Turn off Widgets",
+"Панель виджетов и новостей не запускается и не тратит память и трафик в фоне.": "The widgets and news panel does not start and does not use memory or traffic in the background."
+}

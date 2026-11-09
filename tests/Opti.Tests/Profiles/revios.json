@@ -14,5 +14,6 @@
   "graphics": { "hagsSupported": true, "hagsEnabled": true, "overlayTestMode": 5, "windowedOptimizationsEnabled": true, "vrrOptimizationsEnabled": true, "gameModeEnabled": true, "gameDvrEnabled": false },
   "background": {},
   "network": [],
-  "games": []
+  "games": [],
+  "registryAudit": { "WU_DISABLED_POLICY": "1", "DEFENDER_DISABLED_POLICY": "1", "SYSMAIN_DISABLED": "4" }
 }

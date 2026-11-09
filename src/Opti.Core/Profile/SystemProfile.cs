@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Opti.Core.Localization;
 
 namespace Opti.Core.Profile;
 
@@ -29,12 +30,21 @@ public sealed class SystemProfile
     public ObsInfo? Obs { get; set; }
     public List<NetAdapterInfo> Network { get; set; } = new();
     public NetworkQuality? NetQuality { get; set; }
+    /// <summary>
+    /// Режим «Оптимизации доставки» Windows (DODownloadMode): 0 — выкл., 1 — только локальная сеть, 2 — группа,
+    /// 3 — локальная сеть и интернет (раздаёт обновления другим ПК и занимает исходящий канал). null — не задан.
+    /// </summary>
+    public int? DeliveryOptimizationMode { get; set; }
     public DpcLatencyInfo? Dpc { get; set; }
     public List<GameInfo> Games { get; set; } = new();
     /// <summary>Устройства с ошибками (нет драйвера, отключены, конфликт).</summary>
     public List<ProblemDevice> ProblemDevices { get; set; } = new();
     public ChipsetDriversInfo Chipset { get; set; } = new();
     public InputInfo Input { get; set; } = new();
+    /// <summary>Драйверы ключевых устройств (видео, сеть, звук, чипсет, Bluetooth…).</summary>
+    public List<DriverInfo> Drivers { get; set; } = new();
+    /// <summary>Значения реестра из аудита (см. RegistryAuditCatalog): Id правила → значение (null — значения нет).</summary>
+    public Dictionary<string, string?> RegistryAudit { get; set; } = new();
 
     /// <summary>Ошибки коллекторов: что не удалось собрать и почему.</summary>
     public List<string> CollectorErrors { get; set; } = new();
@@ -54,6 +64,9 @@ public sealed class DeviceInfo
     public string? BiosVersion { get; set; }
     public DateTime? BiosDate { get; set; }
     public bool IsVirtualMachine { get; set; }
+    /// <summary>Производитель и модель материнской платы (Win32_BaseBoard) — для ссылок на драйверы.</summary>
+    public string? BoardManufacturer { get; set; }
+    public string? BoardProduct { get; set; }
 }
 
 public sealed class OsInfo
@@ -300,6 +313,8 @@ public sealed class NetAdapterInfo
     public bool? AllowComputerToTurnOff { get; set; }
     /// <summary>Для Wi-Fi: диапазон, ГГц (2.4/5/6).</summary>
     public double? WifiBandGhz { get; set; }
+    /// <summary>Для Wi-Fi: уровень сигнала, % (netsh wlan show interfaces).</summary>
+    public int? WifiSignalPercent { get; set; }
 }
 
 public sealed class NetworkQuality
@@ -352,16 +367,16 @@ public sealed class ProblemDevice
 
     public string ErrorText => ErrorCode switch
     {
-        1 => "устройство настроено неправильно",
-        10 => "устройство не запускается",
-        12 => "не хватает ресурсов",
-        18 => "нужно переустановить драйвер",
-        22 => "устройство отключено",
-        24 => "устройство отсутствует или не работает",
-        28 => "драйвер не установлен",
-        31 => "устройство работает неправильно",
-        43 => "устройство сообщило о сбое",
-        _ => $"код ошибки {ErrorCode}",
+        1 => Loc.T("устройство настроено неправильно"),
+        10 => Loc.T("устройство не запускается"),
+        12 => Loc.T("не хватает ресурсов"),
+        18 => Loc.T("нужно переустановить драйвер"),
+        22 => Loc.T("устройство отключено"),
+        24 => Loc.T("устройство отсутствует или не работает"),
+        28 => Loc.T("драйвер не установлен"),
+        31 => Loc.T("устройство работает неправильно"),
+        43 => Loc.T("устройство сообщило о сбое"),
+        _ => Loc.T($"код ошибки {ErrorCode}"),
     };
 }
 
@@ -377,8 +392,30 @@ public sealed class InputInfo
 {
     /// <summary>«Повышенная точность установки указателя» (ускорение мыши).</summary>
     public bool? MouseAcceleration { get; set; }
+    /// <summary>HKCU\Control Panel\Mouse\MouseSensitivity: скорость указателя 1–20; 10 («6 из 11») — движение 1:1.</summary>
+    public int? MousePointerSpeed { get; set; }
     /// <summary>HKCU\Control Panel\Accessibility\StickyKeys\Flags.</summary>
     public int? StickyKeysFlags { get; set; }
     /// <summary>HKCU\Control Panel\Accessibility\Keyboard Response\Flags (залипание фильтрации ввода).</summary>
     public int? FilterKeysFlags { get; set; }
+}
+
+public enum DriverCategory { Display, Network, Audio, Chipset, Storage, Bluetooth, Usb, Input, Other }
+
+/// <summary>Установленный драйвер устройства (Win32_PnPSignedDriver).</summary>
+public sealed class DriverInfo
+{
+    public string DeviceName { get; set; } = "";
+    public DriverCategory Category { get; set; }
+    /// <summary>Производитель устройства (по PnP ID или полю Manufacturer).</summary>
+    public string? Manufacturer { get; set; }
+    /// <summary>Кто выпустил драйвер (DriverProviderName): «Microsoft» у стандартных драйверов Windows.</summary>
+    public string? Provider { get; set; }
+    public string? Version { get; set; }
+    public DateTime? Date { get; set; }
+    public string? HardwareId { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsGenericMicrosoft => Provider is { } pr && pr.Contains("Microsoft", StringComparison.OrdinalIgnoreCase)
+                                      && !(Manufacturer ?? "").Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
 }

@@ -4,13 +4,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Opti.Core.Profile;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Collectors;
 
 [SupportedOSPlatform("windows")]
 public sealed class BackgroundCollector : ICollector
 {
-    public string Name => "Фоновые программы";
+    public string Name => Loc.T("Фоновые программы");
 
     private const string Explorer = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved";
     private static readonly (string RunKey, string ApprovedKey)[] RunKeys =
@@ -37,41 +38,7 @@ public sealed class BackgroundCollector : ICollector
 
     public void Collect(SystemProfile p)
     {
-        foreach (var (runKey, approvedKey) in RunKeys)
-        {
-            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
-            foreach (var (name, value) in Reg.Values(runKey))
-            {
-                approved.TryGetValue(name, out var flag);
-                p.Background.StartupItems.Add(new StartupItem
-                {
-                    Name = name,
-                    Command = value?.ToString(),
-                    Location = runKey,
-                    Enabled = IsEnabled(flag),
-                    ApprovedKey = approvedKey + "|" + name,
-                });
-            }
-        }
-        foreach (var (folder, approvedKey) in new[]
-                 {
-                     (Environment.GetFolderPath(Environment.SpecialFolder.Startup), @"HKCU\" + Explorer + @"\StartupFolder"),
-                     (Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), @"HKLM\" + Explorer + @"\StartupFolder"),
-                 })
-        {
-            if (!Directory.Exists(folder)) continue;
-            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
-            foreach (var file in Directory.EnumerateFiles(folder).Where(f => !f.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)))
-            {
-                var fn = Path.GetFileName(file);
-                approved.TryGetValue(fn, out var flag);
-                p.Background.StartupItems.Add(new StartupItem
-                {
-                    Name = Path.GetFileNameWithoutExtension(file), Command = file, Location = folder,
-                    Enabled = IsEnabled(flag), ApprovedKey = approvedKey + "|" + fn,
-                });
-            }
-        }
+        p.Background.StartupItems.AddRange(ReadStartupItems());
 
         var procs = Process.GetProcesses();
         try
@@ -101,6 +68,48 @@ public sealed class BackgroundCollector : ICollector
                 .OrderByDescending(u => u.CpuPercent).ThenByDescending(u => u.WorkingSetMb).Take(15).ToList();
         }
         finally { foreach (var pr in procs) pr.Dispose(); }
+    }
+
+    /// <summary>Пункты автозагрузки: ключи Run (пользователь, все пользователи, 32-бит) и папки «Автозагрузка», со статусом из StartupApproved.</summary>
+    public static List<StartupItem> ReadStartupItems()
+    {
+        var items = new List<StartupItem>();
+        foreach (var (runKey, approvedKey) in RunKeys)
+        {
+            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
+            foreach (var (name, value) in Reg.Values(runKey))
+            {
+                approved.TryGetValue(name, out var flag);
+                items.Add(new StartupItem
+                {
+                    Name = name,
+                    Command = value?.ToString(),
+                    Location = runKey,
+                    Enabled = IsEnabled(flag),
+                    ApprovedKey = approvedKey + "|" + name,
+                });
+            }
+        }
+        foreach (var (folder, approvedKey) in new[]
+                 {
+                     (Environment.GetFolderPath(Environment.SpecialFolder.Startup), @"HKCU\" + Explorer + @"\StartupFolder"),
+                     (Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), @"HKLM\" + Explorer + @"\StartupFolder"),
+                 })
+        {
+            if (!Directory.Exists(folder)) continue;
+            var approved = Reg.Values(approvedKey).ToDictionary(v => v.Name, v => v.Value as byte[], StringComparer.OrdinalIgnoreCase);
+            foreach (var file in Directory.EnumerateFiles(folder).Where(f => !f.EndsWith("desktop.ini", StringComparison.OrdinalIgnoreCase)))
+            {
+                var fn = Path.GetFileName(file);
+                approved.TryGetValue(fn, out var flag);
+                items.Add(new StartupItem
+                {
+                    Name = Path.GetFileNameWithoutExtension(file), Command = file, Location = folder,
+                    Enabled = IsEnabled(flag), ApprovedKey = approvedKey + "|" + fn,
+                });
+            }
+        }
+        return items;
     }
 
     /// <summary>StartupApproved: нечётный первый байт (03, 07) — отключено.</summary>
@@ -220,7 +229,7 @@ public static class ObsConfig
 [SupportedOSPlatform("windows")]
 public sealed partial class NetworkCollector : ICollector
 {
-    public string Name => "Сеть";
+    public string Name => Loc.T("Сеть");
 
     public void Collect(SystemProfile p)
     {
@@ -255,8 +264,33 @@ public sealed partial class NetworkCollector : ICollector
         {
             var w = ProcessRunner.Instance.RunConsoleUtf8("netsh wlan show interfaces");
             wifi.WifiBandGhz = ParseWifiBand(w.StdOut);
+            wifi.WifiSignalPercent = ParseWifiSignal(w.StdOut);
         }
+        p.DeliveryOptimizationMode = ReadDeliveryOptimizationMode();
     }
+
+    /// <summary>Политика (приоритетнее) или пользовательская настройка «Разрешить загрузки с других компьютеров».</summary>
+    private static int? ReadDeliveryOptimizationMode()
+    {
+        try
+        {
+            foreach (var path in new[] { @"SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization", @"SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" })
+            {
+                using var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(path);
+                if (k?.GetValue("DODownloadMode") is int mode) return mode;
+            }
+        }
+        catch { /* нет доступа — не задан */ }
+        return null;
+    }
+
+    public static int? ParseWifiSignal(string netshOutput)
+    {
+        var m = SignalRegex().Match(netshOutput);
+        return m.Success && int.TryParse(m.Groups[1].Value, out var v) ? v : null;
+    }
+
+    [GeneratedRegex(@"^\s*(?:Signal|Сигнал)\s*:\s*(\d{1,3})\s*%", RegexOptions.Multiline | RegexOptions.IgnoreCase)] private static partial Regex SignalRegex();
 
     public static double? ParseWifiBand(string netshOutput)
     {

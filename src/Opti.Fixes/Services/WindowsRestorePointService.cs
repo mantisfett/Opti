@@ -1,6 +1,7 @@
 using System.Management;
 using System.Runtime.Versioning;
 using Opti.Core.Fixes;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Services;
 
@@ -24,13 +25,13 @@ public sealed class WindowsRestorePointService : IRestorePointService
             var rc = Convert.ToUInt32(outParams["ReturnValue"]);
             if (rc == 0) return description;
             error = rc == 1058
-                ? "Защита системы выключена — точка восстановления не создана (журнал изменений Opti всё равно позволяет откат)."
-                : $"Точка восстановления не создана (код {rc}). Откат возможен через журнал Opti.";
+                ? Loc.T("Защита системы выключена — точка восстановления не создана (журнал изменений Opti всё равно позволяет откат).")
+                : Loc.T($"Точка восстановления не создана (код {rc}). Откат возможен через журнал Opti.");
             return null;
         }
         catch (Exception ex)
         {
-            error = $"Точка восстановления не создана: {ex.Message}. Откат возможен через журнал Opti.";
+            error = Loc.T($"Точка восстановления не создана: {ex.Message}. Откат возможен через журнал Opti.");
             return null;
         }
     }

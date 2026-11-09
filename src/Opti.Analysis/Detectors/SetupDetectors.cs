@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Opti.Core.Findings;
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Detectors;
 
@@ -17,12 +18,12 @@ public sealed class GpuDriverMissingDetector : DetectorBase
         var f = new Finding
         {
             Id = Id,
-            Title = "Не установлен драйвер видеокарты",
+            Title = Loc.T("Не установлен драйвер видеокарты"),
             Severity = Severity.Critical,
-            Explanation = "Видеокарта работает на стандартном драйвере Windows. В таком режиме нет 3D-ускорения в полную силу, высоких частот экрана и функций игр — " +
-                          "производительность может быть в разы ниже. Установите драйвер с сайта производителя видеокарты (для ноутбука — можно с сайта производителя ноутбука).",
+            Explanation = Loc.T("Видеокарта работает на стандартном драйвере Windows. В таком режиме нет 3D-ускорения в полную силу, высоких частот экрана и функций игр — " +
+                          "производительность может быть в разы ниже. Установите драйвер с сайта производителя видеокарты (для ноутбука — можно с сайта производителя ноутбука)."),
             Evidence = basic.Select(g => $"{g.Name} ({g.PnpDeviceId})").ToList(),
-            ManualSteps = { "Скачайте драйвер по ссылке ниже и установите, затем перезагрузитесь и повторите анализ." },
+            ManualSteps = { Loc.T("Скачайте драйвер по ссылке ниже и установите, затем перезагрузитесь и повторите анализ.") },
         };
         foreach (var g in basic)
             f.Links.Add(g.Vendor switch { GpuVendor.Nvidia => Sources.NvidiaDrivers, GpuVendor.Amd => Sources.AmdDrivers, _ => Sources.IntelDsa });
@@ -44,15 +45,15 @@ public sealed class ProblemDevicesDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = missing ? "Есть устройства без драйверов" : "Есть устройства с ошибками",
+            Title = missing ? Loc.T("Есть устройства без драйверов") : Loc.T("Есть устройства с ошибками"),
             Severity = Severity.Important,
-            Explanation = "Windows сообщает об устройствах, которые работают неправильно или вовсе без драйвера. После переустановки Windows это обычно чипсет, " +
-                          "сеть, звук или датчики. Без драйвера чипсета хуже работают управление питанием, USB и шины — это влияет и на игры.",
+            Explanation = Loc.T("Windows сообщает об устройствах, которые работают неправильно или вовсе без драйвера. После переустановки Windows это обычно чипсет, " +
+                          "сеть, звук или датчики. Без драйвера чипсета хуже работают управление питанием, USB и шины — это влияет и на игры."),
             Evidence = bad.Take(12).Select(d => $"{d.Name}{(d.DeviceClass is null ? "" : $" [{d.DeviceClass}]")}: {d.ErrorText}").ToList(),
             ManualSteps =
             {
-                "Откройте «Центр обновления Windows» → «Дополнительные параметры» → «Необязательные обновления» → «Обновления драйверов» и установите предложенное.",
-                "Драйвер чипсета скачайте с сайта производителя материнской платы или ноутбука (или AMD/Intel).",
+                Loc.T("Откройте «Центр обновления Windows» → «Дополнительные параметры» → «Необязательные обновления» → «Обновления драйверов» и установите предложенное."),
+                Loc.T("Драйвер чипсета скачайте с сайта производителя материнской платы или ноутбука (или AMD/Intel)."),
             },
             Links = { Sources.WindowsOptionalUpdates },
         };
@@ -72,16 +73,16 @@ public sealed class MonitorOnIgpuDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Монитор подключён к материнской плате, а не к видеокарте",
+            Title = Loc.T("Монитор подключён к материнской плате, а не к видеокарте"),
             Severity = Severity.Critical,
-            Explanation = $"В компьютере есть {dgpu.Name}, но экран выводится через встроенную графику процессора. Кадры гоняются через лишнюю копию, " +
-                          "растёт задержка, а частота экрана может быть ограничена. Это одна из самых частых ошибок при сборке и переустановке.",
+            Explanation = Loc.T($"В компьютере есть {dgpu.Name}, но экран выводится через встроенную графику процессора. Кадры гоняются через лишнюю копию, " +
+                          "растёт задержка, а частота экрана может быть ограничена. Это одна из самых частых ошибок при сборке и переустановке."),
             Evidence = onIgpu.Select(d => $"{d.FriendlyName ?? d.DeviceName} → {d.AdapterName}").ToList(),
             IsHardwareLimitation = true,
             ManualSteps =
             {
-                "Выключите компьютер и переключите кабель монитора в разъём видеокарты — он ниже, на отдельной планке сзади корпуса, а не рядом с USB.",
-                "Если кабель уже в видеокарте — в BIOS выберите основным выводом PCIe/PEG вместо IGD.",
+                Loc.T("Выключите компьютер и переключите кабель монитора в разъём видеокарты — он ниже, на отдельной планке сзади корпуса, а не рядом с USB."),
+                Loc.T("Если кабель уже в видеокарте — в BIOS выберите основным выводом PCIe/PEG вместо IGD."),
             },
         };
     }
@@ -98,18 +99,18 @@ public sealed class FreshInstallDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Windows установлена недавно — чек-лист после установки",
+            Title = Loc.T("Windows установлена недавно — чек-лист после установки"),
             Severity = Severity.Advice,
-            Explanation = $"Система установлена {installed:dd.MM.yyyy}. После переустановки чаще всего «теряются» драйвер видеокарты и чипсета, XMP в BIOS, " +
-                          "частота экрана и схема питания. Opti проверяет всё это автоматически; ниже — то, что делаете вы.",
-            Evidence = { $"Дата установки: {installed:dd.MM.yyyy}" },
+            Explanation = Loc.T($"Система установлена {installed:dd.MM.yyyy}. После переустановки чаще всего «теряются» драйвер видеокарты и чипсета, XMP в BIOS, " +
+                          "частота экрана и схема питания. Opti проверяет всё это автоматически; ниже — то, что делаете вы."),
+            Evidence = { Loc.T($"Дата установки: {installed:dd.MM.yyyy}") },
             ManualSteps =
             {
-                "Установите все обновления Windows и перезагрузитесь.",
-                "Поставьте драйвер видеокарты с сайта NVIDIA / AMD / Intel (не только из Центра обновления).",
-                "Поставьте драйвер чипсета с сайта производителя материнской платы или AMD/Intel.",
-                "Если BIOS сбрасывался — снова включите XMP/EXPO.",
-                "Повторите анализ Opti после установки драйверов.",
+                Loc.T("Установите все обновления Windows и перезагрузитесь."),
+                Loc.T("Поставьте драйвер видеокарты с сайта NVIDIA / AMD / Intel (не только из Центра обновления)."),
+                Loc.T("Поставьте драйвер чипсета с сайта производителя материнской платы или AMD/Intel."),
+                Loc.T("Если BIOS сбрасывался — снова включите XMP/EXPO."),
+                Loc.T("Повторите анализ Opti после установки драйверов."),
             },
             Links = { Sources.WindowsUpdate, Sources.NvidiaDrivers, Sources.AmdDrivers, Sources.IntelDsa },
         };
@@ -129,15 +130,15 @@ public sealed partial class AmdX3dDriverDetector : DetectorBase
             yield return new Finding
             {
                 Id = Id,
-                Title = "Для процессора X3D не установлен драйвер чипсета AMD",
+                Title = Loc.T("Для процессора X3D не установлен драйвер чипсета AMD"),
                 Severity = Severity.Important,
-                Explanation = "У двухкристальных Ryzen X3D игры должны выполняться на кристалле с дополнительным кешем. Это обеспечивает драйвер чипсета AMD " +
-                              "(AMD 3D V-Cache Performance Optimizer) вместе с Xbox Game Bar. Без него игра может попасть на «не тот» кристалл и потерять заметную часть FPS.",
-                Evidence = { $"{name}: AMD 3D V-Cache Performance Optimizer не найден" },
+                Explanation = Loc.T("У двухкристальных Ryzen X3D игры должны выполняться на кристалле с дополнительным кешем. Это обеспечивает драйвер чипсета AMD " +
+                              "(AMD 3D V-Cache Performance Optimizer) вместе с Xbox Game Bar. Без него игра может попасть на «не тот» кристалл и потерять заметную часть FPS."),
+                Evidence = { Loc.T($"{name}: AMD 3D V-Cache Performance Optimizer не найден") },
                 ManualSteps =
                 {
-                    "Скачайте свежий драйвер чипсета AMD для вашей платформы и установите, затем перезагрузитесь.",
-                    "Не удаляйте Xbox Game Bar и не отключайте игровой режим — они нужны для определения игр.",
+                    Loc.T("Скачайте свежий драйвер чипсета AMD для вашей платформы и установите, затем перезагрузитесь."),
+                    Loc.T("Не удаляйте Xbox Game Bar и не отключайте игровой режим — они нужны для определения игр."),
                 },
                 Links = { Sources.AmdDrivers, Sources.AmdX3dGuide },
             };
@@ -147,10 +148,10 @@ public sealed partial class AmdX3dDriverDetector : DetectorBase
             yield return new Finding
             {
                 Id = "AMD_CHIPSET_DRIVER",
-                Title = "Драйвер чипсета AMD, похоже, не установлен",
+                Title = Loc.T("Драйвер чипсета AMD, похоже, не установлен"),
                 Severity = Severity.Advice,
-                Explanation = "Драйвер чипсета AMD настраивает управление питанием и планирование под процессоры Ryzen. После переустановки Windows его часто забывают.",
-                Evidence = { "AMD PPM Provisioning File Driver не найден" },
+                Explanation = Loc.T("Драйвер чипсета AMD настраивает управление питанием и планирование под процессоры Ryzen. После переустановки Windows его часто забывают."),
+                Evidence = { Loc.T("AMD PPM Provisioning File Driver не найден") },
                 Links = { Sources.AmdDrivers },
             };
         }
@@ -172,13 +173,13 @@ public sealed partial class IntelHybridWin10Detector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Процессор Intel с P- и E-ядрами на Windows 10",
+            Title = Loc.T("Процессор Intel с P- и E-ядрами на Windows 10"),
             Severity = Severity.Important,
-            Explanation = "У этого процессора два типа ядер. Распределять игру на быстрые P-ядра помогает Intel Thread Director, но полноценно он работает только в Windows 11. " +
-                          "Intel рекомендует Windows 11 для оптимальной производительности таких процессоров.",
-            Evidence = { $"{name}: {p.Cpu.Cores} ядер / {p.Cpu.Threads} потоков, Windows сборки {p.Os.Build}" },
+            Explanation = Loc.T("У этого процессора два типа ядер. Распределять игру на быстрые P-ядра помогает Intel Thread Director, но полноценно он работает только в Windows 11. " +
+                          "Intel рекомендует Windows 11 для оптимальной производительности таких процессоров."),
+            Evidence = { Loc.T($"{name}: {p.Cpu.Cores} ядер / {p.Cpu.Threads} потоков, Windows сборки {p.Os.Build}") },
             IsHardwareLimitation = false,
-            ManualSteps = { "Рассмотрите обновление до Windows 11." },
+            ManualSteps = { Loc.T("Рассмотрите обновление до Windows 11.") },
             Links = { Sources.IntelHybridWin10 },
         };
     }
@@ -196,11 +197,11 @@ public sealed class PendingRebootDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Windows ждёт перезагрузку для завершения обновлений",
+            Title = Loc.T("Windows ждёт перезагрузку для завершения обновлений"),
             Severity = Severity.Advice,
-            Explanation = "Пока обновления не завершены, в фоне может работать установка, а после перезагрузки поведение системы изменится. " +
-                          "Перезагрузитесь перед замерами — иначе сравнение «до / после» будет нечестным.",
-            Evidence = { "В реестре есть флаг ожидающей перезагрузки" },
+            Explanation = Loc.T("Пока обновления не завершены, в фоне может работать установка, а после перезагрузки поведение системы изменится. " +
+                          "Перезагрузитесь перед замерами — иначе сравнение «до / после» будет нечестным."),
+            Evidence = { Loc.T("В реестре есть флаг ожидающей перезагрузки") },
         };
     }
 }
@@ -215,11 +216,11 @@ public sealed class PageFileDisabledDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Файл подкачки отключён",
+            Title = Loc.T("Файл подкачки отключён"),
             Severity = Severity.Important,
-            Explanation = "Популярный «твик», который вредит: без файла подкачки система не может вытеснить редко используемые данные, и при заполнении памяти " +
-                          "игры вылетают или зависают, а дампы ошибок не создаются. Microsoft рекомендует размер, управляемый системой.",
-            Evidence = { "Не задан ни один файл подкачки" },
+            Explanation = Loc.T("Популярный «твик», который вредит: без файла подкачки система не может вытеснить редко используемые данные, и при заполнении памяти " +
+                          "игры вылетают или зависают, а дампы ошибок не создаются. Microsoft рекомендует размер, управляемый системой."),
+            Evidence = { Loc.T("Не задан ни один файл подкачки") },
             FixIds = { FixIds.PageFileAuto },
             Links = { Sources.PageFile },
         };
@@ -236,12 +237,27 @@ public sealed class InputDetector : DetectorBase
             yield return new Finding
             {
                 Id = "MOUSE_ACCEL_ON",
-                Title = "Включено ускорение мыши («Повышенная точность указателя»)",
+                Title = Loc.T("Включено ускорение мыши («Повышенная точность указателя»)"),
                 Severity = Severity.Advice,
-                Explanation = "С ускорением курсор проходит разное расстояние при одном и том же движении руки — в зависимости от скорости. " +
-                              "Для прицеливания в играх это мешает выработать мышечную память. Многие игры читают мышь напрямую, но меню, лаунчеры и часть игр — нет.",
+                Explanation = Loc.T("С ускорением курсор проходит разное расстояние при одном и том же движении руки — в зависимости от скорости. " +
+                              "Для прицеливания в играх это мешает выработать мышечную память. Многие игры читают мышь напрямую, но меню, лаунчеры и часть игр — нет."),
                 Evidence = { @"HKCU\Control Panel\Mouse\MouseSpeed ≠ 0" },
                 FixIds = { FixIds.MouseAccelOff },
+                Links = { Sources.MouseSettings },
+            };
+
+        // Скорость указателя: при ускорении мыши она уже не при чём (его и так предлагают отключить)
+        if (p.Input.MouseAcceleration != true && p.Input.MousePointerSpeed is { } speed && speed != 10)
+            yield return new Finding
+            {
+                Id = "MOUSE_POINTER_SPEED",
+                Title = Loc.T("Скорость указателя мыши не «6 из 11»"),
+                Severity = Severity.Advice,
+                Explanation = Loc.T("Только на отметке «6 из 11» Windows двигает указатель 1:1 с мышью. На других отметках она умножает или пропускает пиксели: " +
+                              "для игр, которые читают мышь напрямую, это не важно, но для меню, лаунчеров и игр на указателе Windows прицеливание становится неточным. " +
+                              "Чувствительность лучше настраивать в самой игре и значением DPI мыши."),
+                Evidence = { Loc.T($"Скорость указателя: {speed} (норма для 1:1 — 10)") },
+                ManualSteps = { Loc.T("Параметры → Bluetooth и устройства → Мышь → «Скорость указателя»: шестое деление из одиннадцати.") },
                 Links = { Sources.MouseSettings },
             };
 
@@ -251,11 +267,11 @@ public sealed class InputDetector : DetectorBase
             yield return new Finding
             {
                 Id = "ACCESSIBILITY_HOTKEYS_ON",
-                Title = "Включены горячие клавиши залипания",
+                Title = Loc.T("Включены горячие клавиши залипания"),
                 Severity = Severity.Advice,
-                Explanation = "Пятикратное нажатие Shift (или удержание правого Shift) в игре открывает окно «Залипание клавиш» и сворачивает игру. " +
-                              "Можно отключить только сочетание — сами специальные возможности останутся доступны в параметрах.",
-                Evidence = new List<string> { sticky ? "Залипание клавиш: сочетание Shift×5 включено" : null!, filter ? "Фильтрация ввода: удержание правого Shift включено" : null! }.Where(x => x is not null).ToList(),
+                Explanation = Loc.T("Пятикратное нажатие Shift (или удержание правого Shift) в игре открывает окно «Залипание клавиш» и сворачивает игру. " +
+                              "Можно отключить только сочетание — сами специальные возможности останутся доступны в параметрах."),
+                Evidence = new List<string> { sticky ? Loc.T("Залипание клавиш: сочетание Shift×5 включено") : null!, filter ? Loc.T("Фильтрация ввода: удержание правого Shift включено") : null! }.Where(x => x is not null).ToList(),
                 FixIds = { FixIds.AccessibilityHotkeysOff },
             };
     }

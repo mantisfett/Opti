@@ -1,0 +1,98 @@
+<UserControl x:Class="Opti.App.Views.AutoSetupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource ActionBar}">
+            <DockPanel>
+                <Button Style="{StaticResource AccentButton}" Content="Начать" Padding="28,9" Command="{Binding StartCommand}"/>
+                <Button Content="Назад" Command="{Binding BackCommand}" Margin="0,0,16,0"/>
+                <TextBlock Text="{Binding PlanText}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+        <ScrollViewer>
+            <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
+                <TextBlock Text="Исправить автоматически" Style="{StaticResource PageTitle}"/>
+                <TextBlock Style="{StaticResource Secondary}" MaxWidth="660" HorizontalAlignment="Left"
+                           Text="Выберите, что исправить и нужен ли тест. Перед изменениями создаётся точка восстановления, каждое изменение можно откатить."/>
+
+                <TextBlock Text="Тест до и после" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource Caption}" Margin="0,-4,0,10" Text="Замер «до» уже сделан — Opti повторит его в тех же условиях после исправлений."
+                           Visibility="{Binding HasBefore, Converter={StaticResource BoolToVis}}"/>
+                <ListBox Style="{StaticResource ChoiceList}" ItemsSource="{Binding Levels}" SelectedItem="{Binding SelectedLevel}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Width="200">
+                                <Border Style="{StaticResource IconTile}" Width="36" Height="36" CornerRadius="9" Margin="0,0,0,10">
+                                    <TextBlock Text="{Binding Icon}" Style="{StaticResource IconTileGlyph}" FontSize="16"/>
+                                </Border>
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Visibility="{Binding ShowTestSettings, Converter={StaticResource BoolToVis}}">
+                    <Button Style="{StaticResource LinkButton}" Content="Настроить прогоны" Command="{Binding ToggleAdvancedCommand}" Margin="0,4,0,0" HorizontalAlignment="Left"/>
+                    <Border Style="{StaticResource Card}" Margin="0,10,0,0" Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Margin="16,0,0,0" Style="{StaticResource Strong}" Width="60" TextAlignment="Right">
+                                    <Run Text="{Binding Runs, Mode=OneWay}"/>
+                                </TextBlock>
+                                <TextBlock Text="Прогонов" Width="160" VerticalAlignment="Center"/>
+                                <Slider Minimum="1" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Runs}" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,10,0,0">
+                                <TextBlock DockPanel.Dock="Right" Margin="16,0,0,0" Style="{StaticResource Strong}" Width="60" TextAlignment="Right">
+                                    <Run Text="{Binding Duration, Mode=OneWay}"/><Run Text=" с"/>
+                                </TextBlock>
+                                <TextBlock Text="Длительность прогона" Width="160" VerticalAlignment="Center"/>
+                                <Slider Minimum="10" Maximum="120" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Duration}" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,0"
+                                       Text="Больше прогонов — точнее вывод. Меньше 2 прогонов не позволяет оценить разброс между запусками."/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <DockPanel Margin="0,28,0,10">
+                    <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button Style="{StaticResource LinkButton}" Content="Отметить все" Command="{Binding SelectAllCommand}" Margin="0,0,16,0"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Снять все" Command="{Binding ClearAllCommand}"/>
+                    </StackPanel>
+                    <TextBlock Text="Исправления" Style="{StaticResource SectionTitle}" Margin="0"/>
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding Fixes}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" VerticalAlignment="Top" Margin="16,0,0,0">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding RiskColor, Converter={StaticResource ToneToBrush}}" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding RiskText}" Style="{StaticResource Caption}"/>
+                                        </StackPanel>
+                                        <TextBlock Text="перезагрузка" Style="{StaticResource Caption}" HorizontalAlignment="Right"
+                                                   Visibility="{Binding RequiresReboot, Converter={StaticResource BoolToVis}}"/>
+                                    </StackPanel>
+                                    <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsSelected}" VerticalAlignment="Top" MinWidth="0" Margin="0,0,6,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                        <TextBlock Text="{Binding Explanation}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
+                                        <ItemsControl ItemsSource="{Binding Notes}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" Style="{StaticResource Caption}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,4,0,0"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

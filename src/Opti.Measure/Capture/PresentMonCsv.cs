@@ -1,4 +1,5 @@
 using System.Globalization;
+using Opti.Core.Localization;
 
 namespace Opti.Measure.Capture;
 
@@ -37,12 +38,12 @@ public static class PresentMonCsv
 
     public static List<PresentMonProcessData> Parse(TextReader reader)
     {
-        var header = reader.ReadLine() ?? throw new InvalidDataException("Пустой CSV PresentMon");
+        var header = reader.ReadLine() ?? throw new InvalidDataException(Loc.T("Пустой CSV PresentMon"));
         var cols = SplitCsv(header).Select((name, i) => (name: name.Trim(), i)).ToList();
         int Find(string[] names) => cols.FirstOrDefault(c => names.Any(n => n.Equals(c.name, StringComparison.OrdinalIgnoreCase)), (name: "", i: -1)).i;
         int iFrame = Find(FrameCols), iMode = Find(ModeCols), iPc = Find(PcLatencyCols), iDisp = Find(DisplayLatencyCols),
             iApp = Find(AppCols), iPid = Find(PidCols);
-        if (iFrame < 0) throw new InvalidDataException("В CSV PresentMon нет столбца MsBetweenPresents");
+        if (iFrame < 0) throw new InvalidDataException(Loc.T("В CSV PresentMon нет столбца MsBetweenPresents"));
 
         var byKey = new Dictionary<(string, int), PresentMonProcessData>();
         string? line;

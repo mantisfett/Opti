@@ -1,17 +1,28 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Opti.Core.Localization;
 
 namespace Opti.ViewModels;
+
+public sealed record LanguageOption(string Code, string Title);
 
 public sealed partial class SettingsViewModel : PageViewModel
 {
     public SettingsViewModel(MainViewModel main) : base(main) => Reload();
-    public override string Title => "Настройки";
+    public override string Title => Loc.T("Настройки");
 
-    public IReadOnlyList<GoalOption> Goals => GoalOption.All;
+    public IReadOnlyList<GoalOption> Goals { get; } = GoalOption.All;
     public ObservableCollection<ChoiceItem> ExcludedFixes { get; } = new();
     [ObservableProperty] private GoalOption? _defaultGoal;
+    /// <summary>Язык интерфейса: название выбирается на своём языке, чтобы его можно было найти при любом текущем.</summary>
+    public IReadOnlyList<LanguageOption> Languages { get; } = new LanguageOption[]
+    {
+        new("auto", Loc.T("Автоматически (как в Windows)")),
+        new("ru", Loc.T("Русский")),
+        new("en", "English"),
+    };
+    [ObservableProperty] private LanguageOption? _language;
     [ObservableProperty] private int _measureRuns;
     [ObservableProperty] private int _measureDuration;
     [ObservableProperty] private int _measureWarmup;
@@ -21,6 +32,10 @@ public sealed partial class SettingsViewModel : PageViewModel
     [ObservableProperty] private string? _networkTarget;
     [ObservableProperty] private bool _rollbackWhenNoEffect;
     [ObservableProperty] private bool _checkForUpdates;
+    [ObservableProperty] private bool _verifyOnStartup;
+    [ObservableProperty] private bool _autoGameSession;
+    [ObservableProperty] private bool _gamePriorityHigh;
+    [ObservableProperty] private string? _gameProcesses;
     [ObservableProperty] private string? _updateStatus;
     public string Version => Main.Services.AppVersion;
     public string DataDir => Main.Services.DataDir;
@@ -28,7 +43,8 @@ public sealed partial class SettingsViewModel : PageViewModel
     private void Reload()
     {
         var s = Main.Services.Settings;
-        DefaultGoal = GoalOption.All.First(g => g.Goal == s.DefaultGoal);
+        DefaultGoal = Goals.First(g => g.Goal == s.DefaultGoal);
+        Language = Languages.FirstOrDefault(l => l.Code == s.Language) ?? Languages[0];
         MeasureRuns = s.MeasureRuns;
         MeasureDuration = s.MeasureDurationSec;
         MeasureWarmup = s.MeasureWarmupSec;
@@ -38,6 +54,10 @@ public sealed partial class SettingsViewModel : PageViewModel
         NetworkTarget = s.NetworkTarget;
         RollbackWhenNoEffect = s.RollbackWhenNoEffect;
         CheckForUpdates = s.CheckForUpdates;
+        VerifyOnStartup = s.VerifyOnStartup;
+        AutoGameSession = s.AutoGameSession;
+        GamePriorityHigh = s.GamePriorityHigh;
+        GameProcesses = s.GameProcesses;
         ExcludedFixes.Clear();
         foreach (var f in Main.Services.Workflow.Catalog)
             ExcludedFixes.Add(new ChoiceItem { Name = f.Id, Detail = f.Title, IsChecked = s.ExcludedFixIds.Contains(f.Id, StringComparer.OrdinalIgnoreCase) });
@@ -48,6 +68,7 @@ public sealed partial class SettingsViewModel : PageViewModel
     {
         var s = Main.Services.Settings;
         s.DefaultGoal = DefaultGoal?.Goal ?? s.DefaultGoal;
+        s.Language = Language?.Code ?? "auto";
         s.MeasureRuns = Math.Clamp(MeasureRuns, 1, 10);
         s.MeasureDurationSec = Math.Clamp(MeasureDuration, 10, 600);
         s.MeasureWarmupSec = Math.Clamp(MeasureWarmup, 0, 120);
@@ -57,30 +78,84 @@ public sealed partial class SettingsViewModel : PageViewModel
         s.NetworkTarget = string.IsNullOrWhiteSpace(NetworkTarget) ? "1.1.1.1" : NetworkTarget.Trim();
         s.RollbackWhenNoEffect = RollbackWhenNoEffect;
         s.CheckForUpdates = CheckForUpdates;
+        s.VerifyOnStartup = VerifyOnStartup;
+        s.AutoGameSession = AutoGameSession;
+        s.GamePriorityHigh = GamePriorityHigh;
+        s.GameProcesses = string.Join(", ", Opti.Workflow.GameWatcher.ParseNames(GameProcesses));
         s.ExcludedFixIds = ExcludedFixes.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         try
         {
             s.Save(Path.Combine(Main.Services.DataDir, "settings.json"));
-            Main.ShowMessage("Настройки сохранены.");
+            Main.ShowMessage(SyncPriority() ?? Loc.T("Настройки сохранены."), error: false);
         }
-        catch (Exception ex) { Main.ShowMessage("Не удалось сохранить: " + ex.Message, error: true); }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Не удалось сохранить: ") + ex.Message, error: true); }
         Reload();
+    }
+
+    /// <summary>Приводит приоритет игр в системе к настройкам. Возвращает текст для пользователя, если есть что сказать.</summary>
+    private string? SyncPriority()
+    {
+        var prio = Main.Services.Priority;
+        if (prio is null) return null;
+        var s = Main.Services.Settings;
+        var r = prio.Sync(Opti.Workflow.GameWatcher.ParseNames(s.GameProcesses), s.GamePriorityHigh);
+        var parts = new List<string> { Loc.T("Настройки сохранены.") };
+        if (r.Added.Count > 0) parts.Add(Loc.T($"Высокий приоритет включён для: {string.Join(", ", r.Added)}. Вступит в силу при следующем запуске игры."));
+        if (r.Removed.Count > 0) parts.Add(Loc.T($"Приоритет возвращён для: {string.Join(", ", r.Removed)}."));
+        if (r.Invalid.Count > 0) parts.Add(Loc.T($"Пропущены странные имена: {string.Join(", ", r.Invalid)}."));
+        if (r.Errors.Count > 0) parts.Add(Loc.T("Ошибки: ") + string.Join("; ", r.Errors));
+        Main.History.Refresh();
+        return string.Join(" ", parts);
     }
 
     [RelayCommand]
     private async Task CheckUpdatesAsync()
     {
-        UpdateStatus = "Проверяю…";
+        UpdateStatus = Loc.T("Проверяю…");
         var u = await Main.Services.CheckForUpdatesAsync();
-        UpdateStatus = u is null ? "Не удалось проверить (нет сети или репозиторий недоступен)."
-                     : u.IsNewer ? $"Доступна версия {u.LatestVersion}." : "Установлена последняя версия.";
+        UpdateStatus = u is null ? Loc.T("Не удалось проверить (нет сети или репозиторий недоступен).")
+                     : u.IsNewer ? Loc.T($"Доступна версия {u.LatestVersion}.") : Loc.T("Установлена последняя версия.");
         if (u is { IsNewer: true })
         {
-            Main.UpdateMessage = $"Доступна новая версия {u.LatestVersion}";
+            Main.UpdateMessage = Loc.T($"Доступна новая версия {u.LatestVersion}");
             Main.UpdateUrl = u.Url;
         }
     }
 
     [RelayCommand] private void OpenDataDir() => Main.Services.OpenPath(DataDir);
+
+    [RelayCommand]
+    private async Task UninstallAsync()
+    {
+        if (!await Main.Services.ConfirmAsync(Loc.T("Удалить Opti с компьютера?"),
+                Loc.T("Opti откатит ВСЕ свои изменения, уберёт задачу продолжения и удалит свою папку данных (журнал, отчёты, файлы программы в ") +
+                DataDir + Loc.T("). После этого закроется; файл Opti.exe удалите сами. Для части настроек понадобится перезагрузка."))) return;
+        var r = await Main.Services.UninstallAsync();
+        if (r is null) { Main.ShowMessage(Loc.T("В этом режиме удаление недоступно.")); return; }
+        if (r.Rollback.Errors.Count > 0)
+        {
+            Main.ShowMessage(Loc.T("Часть изменений откатить не удалось, поэтому папка данных оставлена — без журнала их не вернуть. ") +
+                             string.Join("; ", r.Rollback.Errors), error: true);
+            return;
+        }
+        Main.ShowMessage(r.Rollback.Summary(Loc.T("Откачено изменений")) + Loc.T(" Папка данных будет удалена после закрытия. Перезагрузите компьютер."));
+        await Task.Delay(1500);
+        Main.Services.Exit();
+    }
+
+    /// <summary>Архив для обращения в поддержку: сохраняется на рабочий стол и показывается в Проводнике.</summary>
+    [RelayCommand]
+    private void CreateProblemReport()
+    {
+        try
+        {
+            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var path = Opti.Workflow.ProblemReport.Create(DataDir, Main.Services.Journal,
+                string.IsNullOrEmpty(desktop) ? Main.Services.ReportsDir : desktop, Main.Services.AppVersion);
+            Main.ShowMessage(Loc.T("Отчёт о проблеме сохранён: ") + path + Loc.T(". Он нигде не публикуется — приложите его к обращению сами."));
+            Main.Services.RevealFile(path);
+        }
+        catch (Exception ex) { Main.ShowMessage(Loc.T("Не удалось собрать отчёт: ") + ex.Message, error: true); }
+    }
     [RelayCommand] private void OpenReleases() => Main.Services.OpenPath(Opti.Workflow.AppInfo.ReleasesUrl);
 }

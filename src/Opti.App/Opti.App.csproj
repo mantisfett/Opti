@@ -30,5 +30,6 @@
     <Page Include="App.xaml" />
     <Resource Include="Assets\opti.ico" />
     <Resource Include="Assets\opti.png" />
+    <Resource Include="Assets\opti-wordmark.png" />
   </ItemGroup>
 </Project>

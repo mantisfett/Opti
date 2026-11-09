@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
 using Opti.Fixes.Backends;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Catalog;
 
@@ -11,9 +12,9 @@ namespace Opti.Fixes.Catalog;
 public sealed class ObsGameCaptureFix : FixBase
 {
     public override string Id => FixIds.ObsGameCapture;
-    public override string Title => "OBS: «Захват экрана» → «Захват игры»";
-    public override string Explanation => "Меняет тип источника в сценах OBS на «Захват игры» (режим: любое полноэкранное приложение). Имя источника, фильтры и положение сохраняются. " +
-                                          "Обратите внимание: «Захват игры» показывает только игру, а не рабочий стол. Перед изменением OBS нужно закрыть.";
+    public override string Title => Loc.T("OBS: «Захват экрана» → «Захват игры»");
+    public override string Explanation => Loc.T("Меняет тип источника в сценах OBS на «Захват игры» (режим: любое полноэкранное приложение). Имя источника, фильтры и положение сохраняются. ") +
+                                          Loc.T("Обратите внимание: «Захват игры» показывает только игру, а не рабочий стол. Перед изменением OBS нужно закрыть.");
     public override RiskLevel Risk => RiskLevel.Moderate;
     public override FixCategory Category => FixCategory.Obs;
 
@@ -23,7 +24,7 @@ public sealed class ObsGameCaptureFix : FixBase
     protected override void Execute(ChangeContext ctx)
     {
         if (OperatingSystem.IsWindows() && Process.GetProcessesByName("obs64").Length > 0)
-            throw new ChangeAbortedException("OBS запущен — закройте его, иначе при выходе он перезапишет сцены.");
+            throw new ChangeAbortedException(Loc.T("OBS запущен — закройте его, иначе при выходе он перезапишет сцены."));
         foreach (var file in ctx.Profile.Obs!.SceneFilesWithDisplayCapture)
         {
             var before = ctx.Read(ChangeType.File, file);
@@ -36,7 +37,7 @@ public sealed class ObsGameCaptureFix : FixBase
 
     public static (string Json, int Replaced) ReplaceDisplayCapture(string json)
     {
-        var root = JsonNode.Parse(json) ?? throw new InvalidDataException("Пустой файл сцен OBS");
+        var root = JsonNode.Parse(json) ?? throw new InvalidDataException(Loc.T("Пустой файл сцен OBS"));
         int n = 0;
         if (root["sources"] is JsonArray sources)
         {
@@ -62,8 +63,8 @@ public sealed class ObsNoAdminFix : FixBase
     public const string LayersKeyHklm = @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers";
 
     public override string Id => FixIds.ObsNoAdmin;
-    public override string Title => "OBS: не запускать от администратора";
-    public override string Explanation => "Снимает галочку «Запускать от имени администратора» для OBS. Остальные флаги совместимости сохраняются.";
+    public override string Title => Loc.T("OBS: не запускать от администратора");
+    public override string Explanation => Loc.T("Снимает галочку «Запускать от имени администратора» для OBS. Остальные флаги совместимости сохраняются.");
     public override FixCategory Category => FixCategory.Obs;
 
     public override bool IsApplicable(SystemProfile p) => p.Obs is { Installed: true, ExePath: not null };

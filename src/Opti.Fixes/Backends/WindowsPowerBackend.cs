@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Opti.Core.Fixes;
 using Opti.Native;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -35,7 +36,7 @@ public sealed partial class WindowsPowerBackend : IStateBackend
     {
         if (target == Targets.ActiveScheme)
         {
-            var guid = Guid.Parse(value.Value ?? throw new ArgumentException("Нужен GUID схемы")).ToString();
+            var guid = Guid.Parse(value.Value ?? throw new ArgumentException(Loc.T("Нужен GUID схемы"))).ToString();
             Check(_runner.RunConsoleUtf8($"powercfg /setactive {guid}"), "powercfg /setactive");
             return;
         }
@@ -43,7 +44,7 @@ public sealed partial class WindowsPowerBackend : IStateBackend
         {
             if (!value.Exists) return;
             if (PowerNative.GetStatus().OnAc == false)
-                throw new IOException("Компьютер работает от батареи — режим питания для сети сейчас изменить нельзя. Подключите зарядку и повторите.");
+                throw new IOException(Loc.T("Компьютер работает от батареи — режим питания для сети сейчас изменить нельзя. Подключите зарядку и повторите."));
             PowerNative.SetOverlay(Guid.Parse(value.Value!));
             return;
         }
@@ -60,7 +61,7 @@ public sealed partial class WindowsPowerBackend : IStateBackend
         var r = _runner.RunConsoleUtf8("powercfg /getactivescheme");
         Check(r, "powercfg /getactivescheme");
         var m = GuidRegex().Match(r.StdOut);
-        if (!m.Success) throw new IOException("Не удалось определить активную схему питания");
+        if (!m.Success) throw new IOException(Loc.T("Не удалось определить активную схему питания"));
         return m.Value.ToLowerInvariant();
     }
 
@@ -69,9 +70,9 @@ public sealed partial class WindowsPowerBackend : IStateBackend
     private static (string, string, string) ParseSetting(string target)
     {
         var parts = target.Split(Targets.Sep);
-        if (parts.Length != 4 || parts[3] != "AC") throw new FormatException($"Неверный адрес параметра питания: {target}");
+        if (parts.Length != 4 || parts[3] != "AC") throw new FormatException(Loc.T($"Неверный адрес параметра питания: {target}"));
         foreach (var p in parts.Take(3))
-            if (!Guid.TryParse(p, out _)) throw new FormatException($"Ожидался GUID: {p}");
+            if (!Guid.TryParse(p, out _)) throw new FormatException(Loc.T($"Ожидался GUID: {p}"));
         return (parts[0], parts[1], parts[2]);
     }
 

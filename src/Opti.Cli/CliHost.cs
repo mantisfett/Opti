@@ -7,6 +7,7 @@ using Opti.Fixes.Journal;
 using Opti.Fixes.Services;
 using Opti.Workflow;
 using Opti.Workflow.Sessions;
+using Opti.Core.Localization;
 
 namespace Opti.Cli;
 
@@ -41,9 +42,9 @@ internal static class AnalysisLoader
             var profileJson = doc.RootElement.TryGetProperty("profile", out var p) ? p.GetRawText() : text;
             return SystemAnalyzer.FromProfile(OptiJson.Deserialize<SystemProfile>(profileJson));
         }
-        Console.Write("Анализ системы: ");
+        Console.Write(Loc.T("Анализ системы: "));
         var r = SystemAnalyzer.Collect(SystemAnalyzer.DefaultCollectors(Opti.Workflow.OptiSettings.Load().ObsConfigDir), name => Console.Write(name + "… "));
-        Console.WriteLine("готово.");
+        Console.WriteLine(Loc.T("готово."));
         return r;
     }
 }

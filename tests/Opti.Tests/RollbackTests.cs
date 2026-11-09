@@ -52,8 +52,8 @@ public class RollbackTests
         var journal = new InMemoryChangeJournal();
 
         var fixes = FixCatalog.All().Where(f => f.IsApplicable(profile)).ToList();
-        var report = new ApplyService(reg, journal, null).Apply(profile, fixes, UserGoal.MaxFps, Options);
-        Assert.DoesNotContain(report.Results, r => r.Outcome == FixOutcome.Failed && !r.FixId.StartsWith("OBS_GAME"));
+        var report = new ApplyService(reg, journal, null).Apply(profile, fixes, UserGoal.Maximum, Options);
+        Assert.DoesNotContain(report.Results, r => r.Outcome == FixOutcome.Failed && !r.FixId.StartsWith("OBS_GAME", StringComparison.Ordinal));
         // После применения каждое «уже применено» должно стать правдой хотя бы для данных эмуляции
         Assert.True(report.Results.Count(r => r.Outcome == FixOutcome.Applied) > 0);
 
@@ -77,8 +77,8 @@ public class RollbackTests
         var hags = new HagsAbFix();
 
         // HAGS: исходно ключа нет → «on» → «off» → откат должен вернуть «нет ключа», а не «on»
-        svc.Apply(profile, new[] { hags }, UserGoal.LowLatency, Variant("on"));
-        svc.Apply(profile, new[] { hags }, UserGoal.LowLatency, Variant("off"));
+        svc.Apply(profile, new[] { hags }, UserGoal.Maximum, Variant("on"));
+        svc.Apply(profile, new[] { hags }, UserGoal.Maximum, Variant("off"));
         var target = Targets.Reg(HagsAbFix.Key, "HwSchMode");
         Assert.Equal(StateValue.DWord(1), map[ChangeType.Registry].Read(target));
         Assert.All(journal.GetAll().Where(r => r.Target == target), r => Assert.False(r.Before.Exists));
@@ -96,7 +96,7 @@ public class RollbackTests
         var journal = new InMemoryChangeJournal();
         map[ChangeType.Registry].FailWriteWhen = t => t.Contains("AppCaptureEnabled");
 
-        var report = new ApplyService(reg, journal, null).Apply(profile, new[] { new GameDvrOffFix() }, UserGoal.MaxFps);
+        var report = new ApplyService(reg, journal, null).Apply(profile, new[] { new GameDvrOffFix() }, UserGoal.Maximum);
         var r = Assert.Single(report.Results);
         Assert.Equal(FixOutcome.Failed, r.Outcome);
         AssertSameState(before, Snapshot(map));
@@ -108,7 +108,7 @@ public class RollbackTests
         var profile = TestProfiles.Load("desktop-rtx");
         var (reg, map) = Backends();
         var before = Snapshot(map);
-        var report = new ApplyService(reg, new BrokenJournal(), null).Apply(profile, new[] { new GameModeOnFix() }, UserGoal.MaxFps);
+        var report = new ApplyService(reg, new BrokenJournal(), null).Apply(profile, new[] { new GameModeOnFix() }, UserGoal.Maximum);
         Assert.Equal(FixOutcome.Failed, report.Results.Single().Outcome);
         AssertSameState(before, Snapshot(map));
     }
@@ -119,7 +119,7 @@ public class RollbackTests
         var profile = TestProfiles.Load("desktop-rtx");
         var (reg, map) = Backends();
         var journal = new InMemoryChangeJournal();
-        new ApplyService(reg, journal, null).Apply(profile, new IFix[] { new GameModeOnFix(), new MpoResetFix() }, UserGoal.MaxFps);
+        new ApplyService(reg, journal, null).Apply(profile, new IFix[] { new GameModeOnFix(), new MpoResetFix() }, UserGoal.Maximum);
         Assert.False(map[ChangeType.Registry].Read(Targets.Reg(MpoResetFix.Key, "OverlayTestMode")).Exists);
 
         new RollbackService(reg, journal).RollbackFix(FixIds.MpoReset);
@@ -132,7 +132,7 @@ public class RollbackTests
     {
         var profile = TestProfiles.Load("desktop-rtx");
         var (reg, map) = Backends();
-        new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(profile, new[] { new WindowedOptimizationsFix() }, UserGoal.MaxFps);
+        new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(profile, new[] { new WindowedOptimizationsFix() }, UserGoal.Maximum);
         var v = map[ChangeType.Registry].Read(Targets.Reg(GpuPreferenceDgpuFix.Key, WindowedOptimizationsFix.ValueName)).Value;
         Assert.Equal("AutoHDREnable=1;SwapEffectUpgradeEnable=1;VRROptimizeEnable=1;", v);
     }
@@ -142,7 +142,7 @@ public class RollbackTests
     {
         var profile = TestProfiles.Load("laptop-optimus");
         var (reg, map) = Backends();
-        var report = new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(profile, new[] { new GpuPreferenceDgpuFix() }, UserGoal.MaxFps);
+        var report = new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(profile, new[] { new GpuPreferenceDgpuFix() }, UserGoal.Maximum);
         var changes = report.Results.Single().Changes;
         Assert.Single(changes);
         Assert.EndsWith("cs2.exe", changes[0].Target);
@@ -155,7 +155,7 @@ public class RollbackTests
         var profile = TestProfiles.Load("desktop-rtx");
         profile.Security.BitLockerOnSystemDrive = true;
         var (reg, map) = Backends();
-        var report = new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(profile, new[] { new BcdTimersResetFix() }, UserGoal.LowLatency);
+        var report = new ApplyService(reg, new InMemoryChangeJournal(), null).Apply(profile, new[] { new BcdTimersResetFix() }, UserGoal.Maximum);
         Assert.Equal(FixOutcome.Failed, report.Results.Single().Outcome);
         Assert.True(map[ChangeType.Bcd].Read(Targets.Bcd("useplatformclock")).Exists);
     }
@@ -172,7 +172,7 @@ public class RollbackTests
             string session;
             using (var journal = new SqliteChangeJournal(path))
             {
-                var rep = new ApplyService(reg, journal, null).Apply(profile, new IFix[] { new MpoResetFix(), new PowerSchemePerfFix(), new DisplayMaxHzFix() }, UserGoal.MaxFps);
+                var rep = new ApplyService(reg, journal, null).Apply(profile, new IFix[] { new MpoResetFix(), new PowerSchemePerfFix(), new DisplayMaxHzFix() }, UserGoal.Maximum);
                 session = rep.SessionId;
                 Assert.Equal(2, rep.Results.Count(r => r.Outcome == FixOutcome.Applied)); // экран уже на максимуме
             }
@@ -207,7 +207,7 @@ public class RollbackTests
             profile.Obs!.SceneFilesWithDisplayCapture = new() { scene };
             var reg = new BackendRegistry(new IStateBackend[] { new FileBackend(Path.Combine(dir, "backups")) });
             var journal = new InMemoryChangeJournal();
-            var rep = new ApplyService(reg, journal, null).Apply(profile, new[] { new ObsGameCaptureFix() }, UserGoal.Streaming);
+            var rep = new ApplyService(reg, journal, null).Apply(profile, new[] { new ObsGameCaptureFix() }, UserGoal.Balanced);
             Assert.Equal(FixOutcome.Applied, rep.Results.Single().Outcome);
             var changed = File.ReadAllText(scene);
             Assert.Contains("game_capture", changed);
@@ -227,7 +227,7 @@ public class RollbackTests
         var before = Snapshot(map);
         var dry = new DryRunBackendRegistry(reg);
         var rep = new ApplyService(dry, new InMemoryChangeJournal(), null)
-            .Apply(TestProfiles.Load("desktop-rtx"), new IFix[] { new MpoResetFix(), new GameModeOnFix() }, UserGoal.MaxFps);
+            .Apply(TestProfiles.Load("desktop-rtx"), new IFix[] { new MpoResetFix(), new GameModeOnFix() }, UserGoal.Maximum);
         Assert.All(rep.Results, r => Assert.Equal(FixOutcome.Applied, r.Outcome));
         AssertSameState(before, Snapshot(map));
     }

@@ -15,6 +15,19 @@ public enum FixCategory
     Network = 6,
     Timers = 7,
     Experimental = 8,
+    /// <summary>Возврат стандартных значений реестра после «оптимизаторов».</summary>
+    Registry = 9,
+}
+
+/// <summary>Зачем нужно исправление — от этого зависит, в каких режимах оно отмечено по умолчанию.</summary>
+public enum FixIntent
+{
+    /// <summary>Исправляет явную ошибку или возвращает стандарт Windows. Отмечено во всех режимах.</summary>
+    Repair = 0,
+    /// <summary>Настройка под производительность (питание, сеть, таймеры). Режимы «Баланс» и «Максимальная».</summary>
+    Tuning = 1,
+    /// <summary>Меняет привычное поведение (мышь, автозагрузка). По умолчанию — только «Максимальная».</summary>
+    Preference = 2,
 }
 
 public interface IFix
@@ -26,6 +39,8 @@ public interface IFix
     RiskLevel Risk { get; }
     bool RequiresReboot { get; }
     FixCategory Category { get; }
+    /// <summary>Исправление ошибки, настройка под производительность или изменение привычек.</summary>
+    FixIntent Intent => FixIntent.Repair;
 
     /// <summary>Эффект спорный — оставлять только по результату A/B-замера.</summary>
     bool RequiresAbTest => false;

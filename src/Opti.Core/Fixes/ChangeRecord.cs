@@ -1,6 +1,6 @@
 namespace Opti.Core.Fixes;
 
-public enum ChangeType { Registry, Bcd, Service, PowerSetting, NetAdapter, File, Display }
+public enum ChangeType { Registry, Bcd, Service, PowerSetting, NetAdapter, File, Display, Dns }
 
 /// <summary>
 /// Значение настройки. Exists=false — значения/ключа не было (откат = удаление).
@@ -29,5 +29,10 @@ public sealed class ChangeRecord
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.Now;
     public required string SessionId { get; init; }
     public bool RolledBack { get; set; }
+    /// <summary>
+    /// false — запись сделана, но подтверждения записи настройки не было (программа завершилась между журналом и изменением).
+    /// Исходное значение в ней верное, поэтому откат безопасен; в истории такая запись помечается.
+    /// </summary>
+    public bool Committed { get; set; } = true;
     public DateTimeOffset? RolledBackAt { get; set; }
 }

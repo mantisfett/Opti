@@ -128,4 +128,30 @@ public class StatsTests
         var c = new Comparer();
         Assert.Equal(c.BootstrapCi(MetricId.Low1Fps, runs), c.BootstrapCi(MetricId.Low1Fps, runs));
     }
+
+    [Fact]
+    public void SameDistribution_NeverClaimsImprovement()
+    {
+        // Ложные «улучшения» при отсутствии эффекта: шесть пар замеров из одного распределения
+        for (int k = 0; k < 6; k++)
+        {
+            var before = Enumerable.Range(0, 3).Select(i => Run($"b{i}", 8, 1.5, 20, 1000 * k + i)).ToList();
+            var after = Enumerable.Range(0, 3).Select(i => Run($"a{i}", 8, 1.5, 20, 1000 * k + 500 + i)).ToList();
+            var r = new Comparer { BootstrapIterations = 300 }.Compare(before, after);
+            Assert.NotEqual(Verdict.Better, r.Overall);
+            Assert.NotEqual(Verdict.Worse, r.Overall);
+        }
+    }
+
+    [Fact]
+    public void SmallButConsistentGain_IsDetected_ByDifferenceInterval()
+    {
+        // Медиана −0,3 мс при шуме ±1,5 мс: интервалы замеров пересекаются, но разность устойчиво меньше нуля
+        var before = Enumerable.Range(0, 3).Select(i => Run($"b{i}", 8.0, 1.5, 0, 10 + i, frames: 8000)).ToList();
+        var after = Enumerable.Range(0, 3).Select(i => Run($"a{i}", 7.7, 1.5, 0, 20 + i, frames: 8000)).ToList();
+        var r = new Comparer { BootstrapIterations = 300 }.Compare(before, after);
+        var fps = r.Metrics.Single(m => m.Metric.Id == MetricId.AvgFps);
+        Assert.True(fps.DiffCi.Low > 0, $"интервал разности {fps.DiffCi}");
+        Assert.Equal(Verdict.Better, fps.Verdict);
+    }
 }

@@ -1,6 +1,7 @@
 using Opti.Core.Findings;
 using Opti.Core.Fixes;
 using Opti.Core.Profile;
+using Opti.Core.Localization;
 
 namespace Opti.Analysis.Detectors;
 
@@ -24,23 +25,23 @@ public sealed class PowerPlanDetector : DetectorBase
         if (pw.OnAcPower != true) yield break;
         var ev = new List<string>();
         if (PowerSchemes.Is(pw.ActiveSchemeGuid, PowerSchemes.PowerSaver))
-            ev.Add($"Активная схема: {pw.ActiveSchemeName ?? "Экономия энергии"}");
+            ev.Add(Loc.T($"Активная схема: {pw.ActiveSchemeName ?? "Экономия энергии"}"));
         if (pw.AcMaxProcessorState is < 100)
-            ev.Add($"Максимальное состояние процессора от сети: {pw.AcMaxProcessorState} %");
+            ev.Add(Loc.T($"Максимальное состояние процессора от сети: {pw.AcMaxProcessorState} %"));
         if (pw.AcCoreParkingMinCores is < 100 && !p.Device.IsLaptop && PowerSchemes.Is(pw.ActiveSchemeGuid, PowerSchemes.Balanced))
-            ev.Add($"Сбалансированная схема с парковкой ядер (минимум {pw.AcCoreParkingMinCores} % ядер)");
+            ev.Add(Loc.T($"Сбалансированная схема с парковкой ядер (минимум {pw.AcCoreParkingMinCores} % ядер)"));
         if (string.Equals(pw.PowerModeOverlay, "BetterBattery", StringComparison.OrdinalIgnoreCase))
-            ev.Add("Режим питания Windows: «Экономия заряда» / «Эффективность»");
+            ev.Add(Loc.T("Режим питания Windows: «Экономия заряда» / «Эффективность»"));
         if (ev.Count == 0) yield break;
 
         var f = new Finding
         {
             Id = Id,
-            Title = "Компьютер от сети, но питание настроено на экономию",
+            Title = Loc.T("Компьютер от сети, но питание настроено на экономию"),
             Severity = Severity.Important,
-            Explanation = "Схема питания ограничивает частоту процессора или паркует ядра, хотя компьютер подключён к сети. " +
+            Explanation = Loc.T("Схема питания ограничивает частоту процессора или паркует ядра, хотя компьютер подключён к сети. " +
                           "Из-за этого процессор медленнее «просыпается» под нагрузкой, и в играх появляются провалы кадров. " +
-                          "Исправление меняет только параметры для работы от сети — режим батареи не трогается.",
+                          "Исправление меняет только параметры для работы от сети — режим батареи не трогается."),
             Evidence = ev,
             FixIds = { FixIds.PowerSchemePerf, FixIds.PowerAcTuning },
         };
@@ -57,18 +58,18 @@ public sealed class BcdRiskyTimersDetector : DetectorBase
     {
         var t = p.Timers;
         var ev = new List<string>();
-        if (t.UsePlatformClock == true) ev.Add("bcdedit: useplatformclock = Yes (принудительный HPET)");
+        if (t.UsePlatformClock == true) ev.Add(Loc.T("bcdedit: useplatformclock = Yes (принудительный HPET)"));
         if (t.UsePlatformTick == true) ev.Add("bcdedit: useplatformtick = Yes");
         if (ev.Count == 0) yield break;
-        if (t.DisableDynamicTick == true) ev.Add("bcdedit: disabledynamictick = Yes (оставляем, проверим замером)");
+        if (t.DisableDynamicTick == true) ev.Add(Loc.T("bcdedit: disabledynamictick = Yes (оставляем, проверим замером)"));
         yield return new Finding
         {
             Id = Id,
-            Title = "Нестандартные настройки системного таймера",
+            Title = Loc.T("Нестандартные настройки системного таймера"),
             Severity = Severity.Important,
-            Explanation = "Кто-то (твикер, гайд или сборка) изменил источник системного таймера. Принудительный HPET увеличивает " +
+            Explanation = Loc.T("Кто-то (твикер, гайд или сборка) изменил источник системного таймера. Принудительный HPET увеличивает " +
                           "стоимость получения времени, что на многих современных системах снижает FPS и ухудшает фреймтайм. " +
-                          "Программа вернёт стандартные значения и проверит результат замером.",
+                          "Программа вернёт стандартные значения и проверит результат замером."),
             Evidence = ev,
             FixIds = { FixIds.BcdTimersReset },
         };
@@ -85,11 +86,11 @@ public sealed class MpoKeyDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Задан ключ отключения MPO (OverlayTestMode)",
+            Title = Loc.T("Задан ключ отключения MPO (OverlayTestMode)"),
             Severity = Severity.Important,
-            Explanation = "Старый «фикс мерцания» через OverlayTestMode на Windows 11 24H2 и новее не работает как раньше и может мешать " +
-                          "режиму Independent Flip — а это лишняя задержка в оконных играх. Рекомендуется вернуть стандарт.",
-            Evidence = { $@"HKLM\SOFTWARE\Microsoft\Windows\Dwm\OverlayTestMode = {v}", $"Сборка Windows: {p.Os.Build}" },
+            Explanation = Loc.T("Старый «фикс мерцания» через OverlayTestMode на Windows 11 24H2 и новее не работает как раньше и может мешать " +
+                          "режиму Independent Flip — а это лишняя задержка в оконных играх. Рекомендуется вернуть стандарт."),
+            Evidence = { $@"HKLM\SOFTWARE\Microsoft\Windows\Dwm\OverlayTestMode = {v}", Loc.T($"Сборка Windows: {p.Os.Build}") },
             FixIds = { FixIds.MpoReset },
         };
     }
@@ -105,13 +106,13 @@ public sealed class HvciDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Включена «Целостность памяти» (Memory Integrity / HVCI)",
+            Title = Loc.T("Включена «Целостность памяти» (Memory Integrity / HVCI)"),
             Severity = Severity.Advice,
-            Explanation = "Это защита ядра Windows от вредоносных драйверов. На части систем она стоит несколько процентов производительности " +
+            Explanation = Loc.T("Это защита ядра Windows от вредоносных драйверов. На части систем она стоит несколько процентов производительности " +
                           "(больше всего — на старых процессорах). Это компромисс между безопасностью и скоростью: программа её не отключает. " +
-                          "Некоторые античиты (например, Vanguard, FACEIT) требуют, чтобы она была включена.",
-            Evidence = { "Win32_DeviceGuard: HVCI работает" },
-            ManualSteps = { "Если решите отключить: «Безопасность Windows» → «Безопасность устройства» → «Изоляция ядра» → «Целостность памяти». Требуется перезагрузка." },
+                          "Некоторые античиты (например, Vanguard, FACEIT) требуют, чтобы она была включена."),
+            Evidence = { Loc.T("Win32_DeviceGuard: HVCI работает") },
+            ManualSteps = { Loc.T("Если решите отключить: «Безопасность Windows» → «Безопасность устройства» → «Изоляция ядра» → «Целостность памяти». Требуется перезагрузка.") },
             Links = { Sources.HvciGaming },
         };
     }
@@ -131,16 +132,16 @@ public sealed class DpcLatencyDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Драйвер с большой задержкой обработки прерываний",
+            Title = Loc.T("Драйвер с большой задержкой обработки прерываний"),
             Severity = Severity.Critical,
-            Explanation = "Один или несколько драйверов надолго занимают процессор на уровне ядра (DPC/ISR дольше 1 мс). " +
+            Explanation = Loc.T("Один или несколько драйверов надолго занимают процессор на уровне ядра (DPC/ISR дольше 1 мс). " +
                           "В это время не обрабатываются ввод, звук и кадры — отсюда микрофризы, треск звука и «ватная» мышь. " +
-                          "Обычно помогает обновление драйвера этого устройства (сеть, Wi-Fi, звук, ACPI, видео) или его отключение, если оно не нужно.",
-            Evidence = bad.Take(5).Select(d => $"{d.Driver}: DPC до {d.MaxDpcUs:0} мкс, ISR до {d.MaxIsrUs:0} мкс").ToList(),
+                          "Обычно помогает обновление драйвера этого устройства (сеть, Wi-Fi, звук, ACPI, видео) или его отключение, если оно не нужно."),
+            Evidence = bad.Take(5).Select(d => Loc.T($"{d.Driver}: DPC до {d.MaxDpcUs:0} мкс, ISR до {d.MaxIsrUs:0} мкс")).ToList(),
             ManualSteps =
             {
-                "Обновите драйвер указанного устройства с сайта производителя (ноутбука или устройства).",
-                "Если устройство не нужно (например, второй сетевой адаптер), отключите его в «Диспетчере устройств» и повторите тест задержки.",
+                Loc.T("Обновите драйвер указанного устройства с сайта производителя (ноутбука или устройства)."),
+                Loc.T("Если устройство не нужно (например, второй сетевой адаптер), отключите его в «Диспетчере устройств» и повторите тест задержки."),
             },
         };
     }
@@ -159,11 +160,11 @@ public sealed class StartupHeavyDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Много программ в автозагрузке",
+            Title = Loc.T("Много программ в автозагрузке"),
             Severity = Severity.Advice,
-            Explanation = "Каждая программа в автозагрузке занимает память и иногда процессор в фоне. Выберите, что не нужно запускать вместе с Windows — " +
-                          "программа отключит только отмеченные пункты (так же, как «Диспетчер задач»), их можно вернуть в любой момент.",
-            Evidence = enabled.OrderByDescending(i => i.Impact).Take(20).Select(i => $"{i.Name}" + (i.Impact > StartupImpact.None ? $" (влияние: {i.Impact})" : "")).ToList(),
+            Explanation = Loc.T("Каждая программа в автозагрузке занимает память и иногда процессор в фоне. Выберите, что не нужно запускать вместе с Windows — " +
+                          "программа отключит только отмеченные пункты (так же, как «Диспетчер задач»), их можно вернуть в любой момент."),
+            Evidence = enabled.OrderByDescending(i => i.Impact).Take(20).Select(i => $"{i.Name}" + (i.Impact > StartupImpact.None ? Loc.T($" (влияние: {i.Impact})") : "")).ToList(),
             FixIds = { FixIds.StartupDisable },
         };
     }
@@ -180,9 +181,9 @@ public sealed class GameSettingsDetector : DetectorBase
             yield return new Finding
             {
                 Id = "GAME_MODE_OFF",
-                Title = "Игровой режим Windows выключен",
+                Title = Loc.T("Игровой режим Windows выключен"),
                 Severity = Severity.Advice,
-                Explanation = "Игровой режим откладывает установку обновлений и фоновое обслуживание во время игры и отдаёт игре приоритет.",
+                Explanation = Loc.T("Игровой режим откладывает установку обновлений и фоновое обслуживание во время игры и отдаёт игре приоритет."),
                 Evidence = { @"HKCU\Software\Microsoft\GameBar\AutoGameModeEnabled = 0" },
                 FixIds = { FixIds.GameModeOn },
             };
@@ -190,9 +191,9 @@ public sealed class GameSettingsDetector : DetectorBase
             yield return new Finding
             {
                 Id = "GAME_DVR_ON",
-                Title = "Включена фоновая запись Xbox Game Bar",
+                Title = Loc.T("Включена фоновая запись Xbox Game Bar"),
                 Severity = Severity.Advice,
-                Explanation = "Фоновая запись игрового процесса постоянно кодирует видео, нагружая GPU и диск. Если вы не пользуетесь «Записать последние 30 секунд», её стоит выключить.",
+                Explanation = Loc.T("Фоновая запись игрового процесса постоянно кодирует видео, нагружая GPU и диск. Если вы не пользуетесь «Записать последние 30 секунд», её стоит выключить."),
                 Evidence = { @"HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR\HistoricalCaptureEnabled = 1" },
                 FixIds = { FixIds.GameDvrOff },
             };
@@ -200,14 +201,14 @@ public sealed class GameSettingsDetector : DetectorBase
             yield return new Finding
             {
                 Id = "WINDOWED_OPT_OFF",
-                Title = "Не включена оптимизация для игр в окне",
+                Title = Loc.T("Не включена оптимизация для игр в окне"),
                 Severity = Severity.Advice,
-                Explanation = "В Windows 11 игры DirectX 10/11 в окне или «окне без рамки» могут работать в режиме Flip, как в полноэкранном: " +
-                              "меньше задержка и работает VRR (G-Sync/FreeSync) в оконном режиме.",
+                Explanation = Loc.T("В Windows 11 игры DirectX 10/11 в окне или «окне без рамки» могут работать в режиме Flip, как в полноэкранном: " +
+                              "меньше задержка и работает VRR (G-Sync/FreeSync) в оконном режиме."),
                 Evidence =
                 {
-                    $"Оптимизация оконных игр: {(g.WindowedOptimizationsEnabled is null ? "по умолчанию" : g.WindowedOptimizationsEnabled.Value ? "вкл" : "выкл")}",
-                    $"Оптимизация VRR: {(g.VrrOptimizationsEnabled is null ? "по умолчанию" : g.VrrOptimizationsEnabled.Value ? "вкл" : "выкл")}",
+                    Loc.T($"Оптимизация оконных игр: {(g.WindowedOptimizationsEnabled is null ? "по умолчанию" : g.WindowedOptimizationsEnabled.Value ? "вкл" : "выкл")}"),
+                    Loc.T($"Оптимизация VRR: {(g.VrrOptimizationsEnabled is null ? "по умолчанию" : g.VrrOptimizationsEnabled.Value ? "вкл" : "выкл")}"),
                 },
                 FixIds = { FixIds.WindowedOptimizations },
                 Links = { Sources.WindowedGames },
@@ -225,11 +226,11 @@ public sealed class HagsAbCandidateDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Аппаратное планирование GPU (HAGS) можно проверить замером",
+            Title = Loc.T("Аппаратное планирование GPU (HAGS) можно проверить замером"),
             Severity = Severity.Advice,
-            Explanation = "Влияние HAGS зависит от видеокарты, драйвера и игры: где-то снижает задержку, где-то даёт фризы. " +
-                          "Единого правильного значения нет, поэтому программа проверит оба варианта A/B-замером и оставит лучший.",
-            Evidence = { $"HAGS сейчас: {(p.Graphics.HagsEnabled == true ? "включено" : p.Graphics.HagsEnabled == false ? "выключено" : "неизвестно")}" },
+            Explanation = Loc.T("Влияние HAGS зависит от видеокарты, драйвера и игры: где-то снижает задержку, где-то даёт фризы. " +
+                          "Единого правильного значения нет, поэтому программа проверит оба варианта A/B-замером и оставит лучший."),
+            Evidence = { Loc.T($"HAGS сейчас: {(p.Graphics.HagsEnabled == true ? "включено" : p.Graphics.HagsEnabled == false ? "выключено" : "неизвестно")}") },
             FixIds = { FixIds.HagsAb },
             Links = { Sources.Hags },
         };
@@ -246,11 +247,11 @@ public sealed class TimerResolutionAbCandidateDetector : DetectorBase
         yield return new Finding
         {
             Id = Id,
-            Title = "Разрешение таймера для свёрнутых игр можно проверить замером",
+            Title = Loc.T("Разрешение таймера для свёрнутых игр можно проверить замером"),
             Severity = Severity.Advice,
-            Explanation = "В Windows 11 запрос точного таймера от игры перестаёт действовать, когда окно не на переднем плане (например, игра на втором экране " +
-                          "или поверх неё оверлей). Ключ GlobalTimerResolutionRequests возвращает старое поведение. Эффект зависит от игры — проверяется A/B-замером.",
-            Evidence = { "GlobalTimerResolutionRequests не задан" },
+            Explanation = Loc.T("В Windows 11 запрос точного таймера от игры перестаёт действовать, когда окно не на переднем плане (например, игра на втором экране " +
+                          "или поверх неё оверлей). Ключ GlobalTimerResolutionRequests возвращает старое поведение. Эффект зависит от игры — проверяется A/B-замером."),
+            Evidence = { Loc.T("GlobalTimerResolutionRequests не задан") },
             FixIds = { FixIds.TimerResGlobal },
         };
     }

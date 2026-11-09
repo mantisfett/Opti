@@ -33,7 +33,7 @@ public class ReportTests
         var reg = ProfileSeeder.CreateEmulation(profile, out _);
         var journal = new InMemoryChangeJournal();
         var wf = new TuneWorkflow(new OptiSettings(), new SessionStore(dir), reg, journal);
-        var s = wf.StartSession(SystemAnalyzer.FromProfile(profile), UserGoal.Streaming);
+        var s = wf.StartSession(SystemAnalyzer.FromProfile(profile), UserGoal.Balanced);
         wf.RecordBefore(s, Runs("до", 9.0, 22, 1, new() { ["Composed: Flip"] = 7000, ["Hardware: Independent Flip"] = 14000 }));
         var plan = wf.BuildPlan(s);
         wf.Apply(s, plan.Fixes.Where(f => f.Selected && !f.ApplySeparately).Select(f => f.Fix).ToList());

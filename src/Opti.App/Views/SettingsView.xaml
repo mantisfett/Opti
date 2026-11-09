@@ -9,37 +9,54 @@
         </Style>
     </UserControl.Resources>
     <ScrollViewer>
-        <StackPanel Margin="40,32,40,40" MaxWidth="920" HorizontalAlignment="Left">
+        <StackPanel Margin="{StaticResource PageMargin}" MaxWidth="{StaticResource ContentMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="Настройки" Style="{StaticResource PageTitle}"/>
 
-            <TextBlock Text="Цель по умолчанию" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="Режим по умолчанию" Style="{StaticResource SectionTitle}"/>
             <ListBox Style="{StaticResource ChoiceList}" ItemsSource="{Binding Goals}" SelectedItem="{Binding DefaultGoal}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal" Width="150">
-                            <TextBlock Text="{Binding Icon}" Style="{StaticResource Icon}" Margin="0,0,10,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <DockPanel Width="220">
+                            <Border DockPanel.Dock="Left" Style="{StaticResource IconTile}" Width="32" Height="32" CornerRadius="8" Margin="0,0,12,0" VerticalAlignment="Top">
+                                <TextBlock Text="{Binding Icon}" Style="{StaticResource IconTileGlyph}" FontSize="15"/>
+                            </Border>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}"/>
+                                <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}"/>
+                            </StackPanel>
+                        </DockPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
 
+            <TextBlock Text="Язык интерфейса" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <ComboBox DockPanel.Dock="Right" Width="270" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" DisplayMemberPath="Title"
+                              VerticalAlignment="Center" AutomationProperties.Name="Язык интерфейса"/>
+                    <StackPanel>
+                        <TextBlock Text="Язык интерфейса" Style="{StaticResource Strong}"/>
+                        <TextBlock Text="Вступит в силу после перезапуска Opti" Style="{StaticResource Caption}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <TextBlock Text="Замеры" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="90" Text="{Binding MeasureRuns, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="90" Text="{Binding MeasureRuns, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     <StackPanel><TextBlock Text="Прогонов" Style="{StaticResource Strong}"/><TextBlock Text="Больше прогонов — точнее вывод (1–10)" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="90" Text="{Binding SyntheticDuration, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="90" Text="{Binding SyntheticDuration, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     <StackPanel><TextBlock Text="Синтетический тест, секунд на прогон" Style="{StaticResource Strong}"/><TextBlock Text="Сцена всегда одинаковая — 30 секунд обычно достаточно" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel DockPanel.Dock="Right" Margin="16,0,0,0" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBox Width="70" Text="{Binding MeasureDuration, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
                         <TextBox Width="70" Text="{Binding MeasureWarmup, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
@@ -50,19 +67,44 @@
             <TextBlock Text="Поведение" Style="{StaticResource SectionTitle}"/>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding RollbackWhenNoEffect}" VerticalAlignment="Center" MinWidth="0"/>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding RollbackWhenNoEffect}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Предлагать откат, если эффекта нет" Style="{StaticResource Strong}"/><TextBlock Text="Иначе изменения остаются с пометкой «не дало эффекта»" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding VerifyOnStartup}" VerticalAlignment="Center" MinWidth="0"/>
+                    <StackPanel><TextBlock Text="Проверять при запуске, на месте ли изменения" Style="{StaticResource Strong}"/><TextBlock Text="Обновления Windows и драйверов иногда возвращают настройки — Opti подскажет и применит их снова по вашему выбору" Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding AutoGameSession}" VerticalAlignment="Center" MinWidth="0"/>
+                    <StackPanel><TextBlock Text="Автоматическая игровая сессия" Style="{StaticResource Strong}"/><TextBlock Text="Пока запущена одна из игр из списка ниже, включена схема питания «Высокая производительность»; после закрытия игры схема возвращается. Программы не закрываются." Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="260" Text="{Binding GameProcesses, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"
+                             AutomationProperties.Name="Игры для автоматической сессии"/>
+                    <StackPanel><TextBlock Text="Игры для автоматической сессии" Style="{StaticResource Strong}"/><TextBlock Text="Имена процессов через запятую, например: cs2, VALORANT-Win64-Shipping" Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding GamePriorityHigh}" VerticalAlignment="Center" MinWidth="0"/>
+                    <StackPanel><TextBlock Text="Высокий приоритет процессов игр" Style="{StaticResource Strong}"/><TextBlock Text="Для игр из списка выше Windows сама ставит приоритет «Высокий» при запуске (без фоновой программы-регулятора). Эффект зависит от игры — проверяйте замером «до / после»; откат в «Истории»." Style="{StaticResource Caption}"/></StackPanel>
+                </DockPanel>
+            </Border>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <CheckBox DockPanel.Dock="Right" Margin="16,0,0,0" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" MinWidth="0"/>
                     <StackPanel><TextBlock Text="Сообщать о новых версиях" Style="{StaticResource Strong}"/><TextBlock Text="Только уведомление — ничего не скачивается" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
             <Border Style="{StaticResource Row}">
                 <DockPanel>
-                    <TextBox DockPanel.Dock="Right" Width="160" Text="{Binding NetworkTarget, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                    <TextBox DockPanel.Dock="Right" Margin="16,0,0,0" Width="160" Text="{Binding NetworkTarget, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     <StackPanel><TextBlock Text="Сервер для теста сети" Style="{StaticResource Strong}"/><TextBlock Text="Пинг и проверка bufferbloat" Style="{StaticResource Caption}"/></StackPanel>
                 </DockPanel>
             </Border>
@@ -88,9 +130,23 @@
                 <Button Style="{StaticResource AccentButton}" Content="Сохранить" Command="{Binding SaveCommand}"/>
                 <Button Content="Проверить обновления" Command="{Binding CheckUpdatesCommand}" Margin="0,0,8,0"/>
                 <Button Content="Папка данных" Command="{Binding OpenDataDirCommand}" Margin="0,0,8,0"/>
+                <Button Content="Отчёт о проблеме" Command="{Binding CreateProblemReportCommand}" Margin="0,0,8,0"
+                        ToolTip="Архив с журналом работы, сессиями и журналом изменений — на рабочий стол. Никуда не отправляется."/>
                 <Button Content="Все версии" Command="{Binding OpenReleasesCommand}"/>
             </StackPanel>
             <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Caption}" Margin="0,8,0,0"/>
+
+            <TextBlock Text="Удаление" Style="{StaticResource SectionTitle}"/>
+            <Border Style="{StaticResource Row}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="Удалить Opti с компьютера" Command="{Binding UninstallCommand}" VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBlock Text="Вернуть всё как было и убрать следы Opti" Style="{StaticResource Strong}"/>
+                        <TextBlock Style="{StaticResource Caption}"
+                                   Text="Откат всех изменений, удаление задачи продолжения и папки данных. Файл Opti.exe после этого просто удалите."/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
             <TextBlock Style="{StaticResource Caption}" Margin="0,16,0,0">
                 <Run Text="Opti"/>
                 <Run Text="{Binding Version, Mode=OneWay}"/>

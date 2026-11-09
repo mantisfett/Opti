@@ -54,7 +54,7 @@ public sealed class WorkflowTests : IDisposable
     [Fact]
     public void FullScenario_RebootContinuation_SelfCheck_Compare()
     {
-        var (wf, map, sched, _, s) = Create("desktop-rtx", UserGoal.LowLatency);
+        var (wf, map, sched, _, s) = Create("desktop-rtx", UserGoal.Maximum);
         wf.RecordBefore(s, Runs(8.5, 25, 1));
         var plan = wf.BuildPlan(s);
         var fixes = plan.Fixes.Where(f => f.Selected && !f.ApplySeparately).Select(f => f.Fix).ToList();
@@ -90,7 +90,7 @@ public sealed class WorkflowTests : IDisposable
     [Fact]
     public void SelfCheck_DetectsNotAppliedAndCrashes()
     {
-        var (wf, map, _, crashes, s) = Create("desktop-rtx", UserGoal.MaxFps);
+        var (wf, map, _, crashes, s) = Create("desktop-rtx", UserGoal.Maximum);
         wf.Apply(s, new IFix[] { new MpoResetFix(), new GameModeOnFix() });
         s.Stage = SessionStage.AwaitingReboot;
         s.AppliedAt = RebootHelper.LastBootTime.AddMinutes(-5);
@@ -107,7 +107,7 @@ public sealed class WorkflowTests : IDisposable
     [Fact]
     public void WorseResult_SuggestsRollback_AndRollbackRestores()
     {
-        var (wf, map, _, _, s) = Create("desktop-rtx", UserGoal.MaxFps);
+        var (wf, map, _, _, s) = Create("desktop-rtx", UserGoal.Maximum);
         var before = map[ChangeType.Registry].Snapshot();
         wf.RecordBefore(s, Runs(7.0, 8, 1));
         wf.Apply(s, new IFix[] { new GameModeOnFix(), new MpoResetFix() });
@@ -124,7 +124,7 @@ public sealed class WorkflowTests : IDisposable
     [Fact]
     public void NoEffect_RespectsSetting()
     {
-        var (wf, _, _, _, s) = Create("desktop-rtx", UserGoal.MaxFps, new OptiSettings { RollbackWhenNoEffect = true });
+        var (wf, _, _, _, s) = Create("desktop-rtx", UserGoal.Maximum, new OptiSettings { RollbackWhenNoEffect = true });
         wf.RecordBefore(s, Runs(8.0, 10, 1));
         wf.RecordAfter(s, Runs(8.0, 10, 1000));
         Assert.Equal(Recommendation.SuggestRollback, wf.Compare(s).Recommendation);
@@ -134,7 +134,7 @@ public sealed class WorkflowTests : IDisposable
     [Fact]
     public void ExcludedInSettings_RemovedFromPlan()
     {
-        var (wf, _, _, _, s) = Create("desktop-rtx", UserGoal.MaxFps, new OptiSettings { ExcludedFixIds = { FixIds.MpoReset } });
+        var (wf, _, _, _, s) = Create("desktop-rtx", UserGoal.Maximum, new OptiSettings { ExcludedFixIds = { FixIds.MpoReset } });
         var plan = wf.BuildPlan(s);
         Assert.DoesNotContain(plan.Fixes, f => f.Fix.Id == FixIds.MpoReset);
         Assert.Contains(plan.Excluded, e => e.FixId == FixIds.MpoReset && e.Reason.Contains("настройках"));
@@ -145,7 +145,7 @@ public sealed class WorkflowTests : IDisposable
     [InlineData(false)]
     public void AbTest_KeepsOnlyProvenImprovement(bool bIsBetter)
     {
-        var (wf, map, sched, _, s) = Create("desktop-rtx", UserGoal.LowLatency);
+        var (wf, map, sched, _, s) = Create("desktop-rtx", UserGoal.Maximum);
         var target = Targets.Reg(HagsAbFix.Key, "HwSchMode");
         var original = map[ChangeType.Registry].Read(target);   // HAGS выключен (1)
 
@@ -179,9 +179,9 @@ public sealed class WorkflowTests : IDisposable
     public void Settings_RoundTrip()
     {
         var path = Path.Combine(_dir, "settings.json");
-        new OptiSettings { DefaultGoal = UserGoal.LowLatency, ExcludedFixIds = { "HAGS_AB" }, MeasureRuns = 5 }.Save(path);
+        new OptiSettings { DefaultGoal = UserGoal.Maximum, ExcludedFixIds = { "HAGS_AB" }, MeasureRuns = 5 }.Save(path);
         var s = OptiSettings.Load(path);
-        Assert.Equal(UserGoal.LowLatency, s.DefaultGoal);
+        Assert.Equal(UserGoal.Maximum, s.DefaultGoal);
         Assert.Equal(5, s.MeasureRuns);
         Assert.Contains("HAGS_AB", s.ExcludedFixIds);
         Assert.Equal(3, OptiSettings.Load(Path.Combine(_dir, "missing.json")).MeasureRuns);
@@ -197,6 +197,13 @@ public class UpdateCheckerTests
     [InlineData("v1.0.0-beta", "1.0.0", false)]
     [InlineData("v0.9.9", "1.0.0", false)]
     [InlineData("v2.0", "1.9.9", true)]
+    [InlineData("v1.3.0-beta.2", "1.3.0-beta.1", true)]
+    [InlineData("v1.3.0-beta.10", "1.3.0-beta.2", true)]
+    [InlineData("v1.3.0-beta", "1.3.0-beta.1", false)]
+    [InlineData("v1.3.0-rc.1", "1.3.0-beta.5", true)]
+    [InlineData("v1.3.0-beta.1", "1.3.0-rc.1", false)]
+    [InlineData("v1.3.0+build.7", "1.3.0", false)]
+    [InlineData("v1.3.0", "1.3.0-rc.2", true)]
     public void ComparesVersions(string candidate, string current, bool newer) =>
         Assert.Equal(newer, UpdateChecker.IsNewer(candidate, current));
 }

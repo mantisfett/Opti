@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.Versioning;
 using Opti.Core.Fixes;
 using Microsoft.Win32;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -26,12 +27,18 @@ public sealed class WindowsRegistryBackend : IStateBackend
         var (keyPath, name) = Targets.Split2(target);
         if (!value.Exists)
         {
-            using var k = OpenKey(keyPath, writable: true, create: false);
-            k?.DeleteValue(name, throwOnMissingValue: false);
+            using (var k = OpenKey(keyPath, writable: true, create: false))
+            {
+                if (k is null) return;
+                k.DeleteValue(name, throwOnMissingValue: false);
+            }
+            // Значение по умолчанию («») само по себе создаёт смысл ключа (например, переопределение COM-класса
+            // для классического контекстного меню). При откате удаляем ключ, если он остался пустым, и его пустого родителя.
+            if (name.Length == 0) PruneEmptyKey(keyPath, levels: 2);
             return;
         }
         using var key = OpenKey(keyPath, writable: true, create: true)
-                        ?? throw new IOException($"Не удалось открыть ключ {keyPath}");
+                        ?? throw new IOException(Loc.T($"Не удалось открыть ключ {keyPath}"));
         var (kind, data) = FromState(value);
         key.SetValue(name, data, kind);
     }
@@ -55,8 +62,24 @@ public sealed class WindowsRegistryBackend : IStateBackend
         "ExpandString" => (RegistryValueKind.ExpandString, v.Value ?? ""),
         "MultiString" => (RegistryValueKind.MultiString, (v.Value ?? "").Split('\0')),
         "Binary" => (RegistryValueKind.Binary, Convert.FromHexString(v.Value ?? "")),
-        _ => throw new NotSupportedException($"Тип значения реестра {v.Kind} не поддерживается"),
+        _ => throw new NotSupportedException(Loc.T($"Тип значения реестра {v.Kind} не поддерживается")),
     };
+
+    private static void PruneEmptyKey(string keyPath, int levels)
+    {
+        for (int i = 0; i < levels; i++)
+        {
+            int sep = keyPath.LastIndexOf('\\');
+            if (sep < 0 || keyPath.Count(c => c == '\\') < 3) return; // не трогаем ключи верхних уровней
+            using (var k = OpenKey(keyPath, writable: false, create: false))
+            {
+                if (k is null || k.ValueCount > 0 || k.SubKeyCount > 0) return;
+            }
+            using (var parent = OpenKey(keyPath[..sep], writable: true, create: false))
+                parent?.DeleteSubKey(keyPath[(sep + 1)..], throwOnMissingSubKey: false);
+            keyPath = keyPath[..sep];
+        }
+    }
 
     private static RegistryKey? OpenKey(string path, bool writable, bool create)
     {
@@ -69,7 +92,7 @@ public sealed class WindowsRegistryBackend : IStateBackend
             "HKCU" or "HKEY_CURRENT_USER" => RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64),
             "HKU" or "HKEY_USERS" => RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64),
             "HKCR" or "HKEY_CLASSES_ROOT" => RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64),
-            _ => throw new ArgumentException($"Неизвестный раздел реестра: {hive}"),
+            _ => throw new ArgumentException(Loc.T($"Неизвестный раздел реестра: {hive}")),
         };
         using (root)
             return create ? root.CreateSubKey(sub, writable) : root.OpenSubKey(sub, writable);

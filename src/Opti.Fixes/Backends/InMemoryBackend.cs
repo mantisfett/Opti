@@ -1,4 +1,5 @@
 using Opti.Core.Fixes;
+using Opti.Core.Localization;
 
 namespace Opti.Fixes.Backends;
 
@@ -16,7 +17,7 @@ public sealed class InMemoryBackend : IStateBackend
 
     public void Write(string target, StateValue value)
     {
-        if (FailWriteWhen?.Invoke(target) == true) throw new IOException($"Отказ записи (тест): {target}");
+        if (FailWriteWhen?.Invoke(target) == true) throw new IOException(Loc.T($"Отказ записи (тест): {target}"));
         Writes.Add((target, value));
         if (value.Exists) _values[target] = value; else _values.Remove(target);
     }

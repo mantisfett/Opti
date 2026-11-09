@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using Opti.Measure.Capture;
 using Opti.Measure.Stats;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Measuring;
 
@@ -43,7 +44,7 @@ public sealed class PresentMonRunner : IMeasureRunner
 
         int exit = await RunPm(args2, total, req, progress, probe, ct);
         if (exit != 0 && !File.Exists(csv)) exit = await RunPm(args1, total, req, progress, probe, ct);
-        if (!File.Exists(csv)) throw new InvalidOperationException($"PresentMon не создал файл замера (код {exit}). Запущена ли игра и есть ли права администратора?");
+        if (!File.Exists(csv)) throw new InvalidOperationException(Loc.T($"PresentMon не создал файл замера (код {exit}). Запущена ли игра и есть ли права администратора?"));
 
         List<PresentMonProcessData> data;
         using (var reader = new StreamReader(csv)) data = PresentMonCsv.Parse(reader);
@@ -51,7 +52,7 @@ public sealed class PresentMonRunner : IMeasureRunner
 
         var ignored = new[] { "dwm.exe", "explorer.exe", "obs64.exe", "Discord.exe", "steamwebhelper.exe", "chrome.exe", "msedge.exe", "firefox.exe" };
         var game = data.FirstOrDefault(d => !ignored.Contains(d.Application, StringComparer.OrdinalIgnoreCase))
-                   ?? throw new InvalidOperationException("PresentMon не увидел ни одного процесса игры.");
+                   ?? throw new InvalidOperationException(Loc.T("PresentMon не увидел ни одного процесса игры."));
         var run = new MeasurementRun
         {
             Label = req.Label,
@@ -71,9 +72,10 @@ public sealed class PresentMonRunner : IMeasureRunner
     private async Task<int> RunPm(string args, int total, MeasureRequest req, IProgress<MeasureProgress>? progress, ThrottleProbe probe, CancellationToken ct)
     {
         var psi = new ProcessStartInfo(_exe, args) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
-        using var p = Process.Start(psi) ?? throw new InvalidOperationException("Не удалось запустить PresentMon");
-        _ = p.StandardOutput.ReadToEndAsync();
-        _ = p.StandardError.ReadToEndAsync();
+        using var p = Process.Start(psi) ?? throw new InvalidOperationException(Loc.T("Не удалось запустить PresentMon"));
+        // Вывод только вычитывается, чтобы PresentMon не завис на полном буфере; отмена — через Kill ниже.
+        _ = p.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        _ = p.StandardError.ReadToEndAsync(CancellationToken.None);
         var sw = Stopwatch.StartNew();
         int tick = 0;
         while (!p.HasExited)

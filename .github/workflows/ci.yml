@@ -5,17 +5,85 @@ on:
     branches: [main, opti-prototype]
   pull_request:
 
+# Только чтение: CI ничего не публикует
+permissions:
+  contents: read
+
+# Сторонние действия закреплены по SHA коммита (тег можно переписать, SHA — нет); версия — в комментарии.
 jobs:
-  test:
-    runs-on: windows-latest
+  # Быстрая проверка: вся логика, ViewModel'и и сборка XAML собираются и тестируются без Windows
+  linux:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: 10.0.x
-      - name: Тесты
+      - name: Тесты (предупреждения — ошибки сборки)
         run: dotnet test -c Release --nologo
       - name: Сборка интерфейса и командной строки
         run: |
           dotnet build src/Opti.App -c Release --nologo
           dotnet build src/Opti.Cli -c Release --nologo
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: 10.0.x
+      # На Windows дополнительно проверяются права папки данных и мьютекс одного экземпляра (раннер — администратор)
+      - name: Тесты и покрытие
+        run: dotnet test -c Release --nologo --collect "XPlat Code Coverage" --results-directory coverage
+      - name: Сборка интерфейса и командной строки
+        run: |
+          dotnet build src/Opti.App -c Release --nologo
+          dotnet build src/Opti.Cli -c Release --nologo
+      # Скрипты сборки и подписи не запускаются в CI целиком (подпись нужен сертификат), но разбираются парсером PowerShell:
+      # синтаксическая ошибка в build/*.ps1 иначе вскрылась бы только при релизе.
+      - name: Синтаксис скриптов сборки
+        shell: pwsh
+        run: |
+          $bad = 0
+          foreach ($f in Get-ChildItem build -Filter *.ps1) {
+            $errs = $null; $tokens = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errs)
+            foreach ($e in $errs) { Write-Host "::error file=$($f.FullName),line=$($e.Extent.StartLineNumber)::$($e.Message)"; $bad++ }
+          }
+          if ($bad) { exit 1 }
+      - name: Отчёт о покрытии
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage
+          path: coverage/**/coverage.cobertura.xml
+          if-no-files-found: ignore
+
+  # Снимки всех страниц на демо-данных (светлая и тёмная тема) — чтобы интерфейс можно было проверить глазами в каждом PR
+  screenshots:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: 10.0.x
+      - name: Сборка
+        run: dotnet build src/Opti.App -c Release --nologo
+      - name: Снимки интерфейса
+        shell: pwsh
+        timeout-minutes: 10
+        run: |
+          $exe = Resolve-Path src/Opti.App/bin/Release/net10.0-windows/Opti.exe
+          $p = Start-Process -FilePath $exe -ArgumentList '--screenshots', "$PWD\screenshots" -Wait -PassThru
+          Get-ChildItem screenshots | Format-Table Name, Length
+          if (Test-Path screenshots/error.txt) { Get-Content screenshots/error.txt }
+          if ($p.ExitCode -ne 0) { throw "Opti.exe --screenshots: код $($p.ExitCode)" }
+      - name: Сохранить снимки
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: warn

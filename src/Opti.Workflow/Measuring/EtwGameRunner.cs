@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using Opti.Measure.Capture;
 using Opti.Measure.Stats;
+using Opti.Core.Localization;
 
 namespace Opti.Workflow.Measuring;
 
@@ -8,7 +9,7 @@ namespace Opti.Workflow.Measuring;
 [SupportedOSPlatform("windows")]
 public sealed class EtwGameRunner : IMeasureRunner
 {
-    public string Name => "Реальная игра (ETW)";
+    public string Name => Loc.T("Реальная игра (ETW)");
 
     public async Task<MeasurementRun> RunAsync(MeasureRequest req, IProgress<MeasureProgress>? progress = null, CancellationToken ct = default)
     {
@@ -36,7 +37,7 @@ public sealed class EtwGameRunner : IMeasureRunner
         finally { cap.Stop(); }
 
         var proc = cap.GuessGameProcess(req.ProcessName)
-                   ?? throw new InvalidOperationException("Не найдено ни одного процесса, выводящего кадры. Игра запущена и находится на экране?");
+                   ?? throw new InvalidOperationException(Loc.T("Не найдено ни одного процесса, выводящего кадры. Игра запущена и находится на экране?"));
         var frames = MeasurementRun.TrimWarmup(MeasurementRun.FromTimestamps(cap.GetTimestamps(proc.Pid)), req.WarmupSec);
         var run = new MeasurementRun
         {

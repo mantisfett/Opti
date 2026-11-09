@@ -29,8 +29,10 @@ public interface IChangeJournal
 {
     /// <summary>Самое раннее исходное значение для активной (не откаченной) цепочки изменений этой настройки.</summary>
     StateValue? GetActiveOriginal(ChangeType type, string target);
-    /// <summary>Записывает изменение. Вызывается ДО фактического изменения настройки.</summary>
+    /// <summary>Записывает изменение как неподтверждённое. Вызывается ДО фактического изменения настройки.</summary>
     long Append(ChangeRecord record);
+    /// <summary>Подтверждает, что настройка изменена (вызывается ПОСЛЕ изменения).</summary>
+    void Commit(long recordId) { }
     void Remove(long recordId);
     void MarkRolledBack(long recordId, DateTimeOffset at);
     IReadOnlyList<ChangeRecord> GetAll();

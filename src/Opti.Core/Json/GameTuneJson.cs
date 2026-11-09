@@ -20,6 +20,8 @@ public static class OptiJson
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true,
         };
+        // Режимы: читает и старые цели (до 1.3). Должен стоять раньше общего конвертера перечислений.
+        o.Converters.Add(new Opti.Core.Strategy.UserGoalJsonConverter());
         o.Converters.Add(new JsonStringEnumConverter());
         return o;
     }
